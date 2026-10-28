@@ -10,7 +10,7 @@ Upload the contents of `mlt-notes-deploy.zip` to the root of a new GitHub reposi
 
 1. Import that GitHub repository in Vercel.
 2. Keep Root Directory as the repository root (`.`), not `notes-site`.
-3. Deploy. `vercel.json` installs the Python Markdown dependency, generates all 12 pages, checks links, and serves `notes-site/dist`.
+3. Deploy. `vercel.json` creates an isolated `.venv`, installs the Python Markdown dependency there, generates all 12 pages, checks links, and serves `notes-site/dist`. This avoids modifying Vercel's externally managed Python installation.
 
 ### GitHub Pages
 
@@ -25,9 +25,10 @@ All page and image URLs are relative, so project paths such as `username.github.
 Edit the original `week1` through `week12` Markdown files and images. There is no second content copy to maintain.
 
 ```sh
-python3 -m pip install -r requirements.txt
-python3 notes-site/build.py
-python3 notes-site/check.py
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python notes-site/build.py
+.venv/bin/python notes-site/check.py
 node notes-site/check-theme.cjs
 python3 -m http.server 8000 --directory notes-site/dist
 ```
