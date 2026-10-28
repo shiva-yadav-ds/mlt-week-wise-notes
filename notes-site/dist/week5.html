@@ -1,0 +1,1300 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Week 5 · Linear and Kernel Regression | MLT Notes</title>
+<script src="theme.js"></script>
+<link rel="stylesheet" href="style.css">
+<script>window.MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']],processEscapes:true},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']},svg:{fontCache:'global'}};</script>
+<script defer src="vendor/tex-svg.js"></script></head>
+<body><a class="skip" href="#notes">Skip to notes</a>
+<header><a class="brand" href="index.html"><span class="brand-mark">m</span> MLT <span class="brand-muted">/ study notes</span></a><label class="theme-control">Theme <select id="theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label></header>
+<div class="layout"><aside class="weeks"><details open><summary>Course weeks <span>12</span></summary><nav aria-label="Course weeks"><a class="week-link " href="index.html" ><span class="week-number">01</span><span>Principal Component Analysis</span></a><a class="week-link " href="week2.html" ><span class="week-number">02</span><span>Kernel PCA</span></a><a class="week-link " href="week3.html" ><span class="week-number">03</span><span>K-Means Clustering</span></a><a class="week-link " href="week4.html" ><span class="week-number">04</span><span>Estimation, GMM and EM Algorithm</span></a><a class="week-link selected" href="week5.html" aria-current=page><span class="week-number">05</span><span>Linear and Kernel Regression</span></a><a class="week-link " href="week6.html" ><span class="week-number">06</span><span>Regularisation and Cross-Validation</span></a><a class="week-link " href="week7.html" ><span class="week-number">07</span><span>KNN and Decision Tree</span></a><a class="week-link " href="week8.html" ><span class="week-number">08</span><span>Naive Bayes</span></a><a class="week-link " href="week9.html" ><span class="week-number">09</span><span>Perceptron and Logistic Regression</span></a><a class="week-link " href="week10.html" ><span class="week-number">10</span><span>Support Vector Machine</span></a><a class="week-link " href="week11.html" ><span class="week-number">11</span><span>Soft-Margin SVM and Ensemble Methods</span></a><a class="week-link " href="week12.html" ><span class="week-number">12</span><span>Loss Functions and Artificial Neural Networks</span></a></nav></details></aside>
+<main id="notes"><div class="eyebrow">MACHINE LEARNING TECHNIQUES <span>/ WEEK 05</span></div><article><h1 id="topic-0">MLT Week 5: Linear and Kernel Regression Notes</h1>
+<p><strong>Flow:</strong> Supervised prediction → squared error → linear model aur normal equations → projection geometry → gradient descent → held-out validation → Gaussian likelihood → nonlinear features aur kernel regression.</p>
+<h2 id="topic-1">Topic index</h2>
+<table>
+<thead>
+<tr>
+<th>Topic</th>
+<th>Subtopics</th>
+<th>Questions</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1. Regression foundations</td>
+<td>Features, targets, intercept, SSE/MSE, memorization</td>
+<td>Q25</td>
+</tr>
+<tr>
+<td>2. Least-squares fitting</td>
+<td>Normal equation, scalar fit, scaling, added data</td>
+<td>Q7, Q2, Q12, Q21</td>
+</tr>
+<tr>
+<td>3. Geometry</td>
+<td>Feature/data spans, zero error, residual orthogonality</td>
+<td>Q31, Q6, Q5, Q32, Q23, Q33, Q24</td>
+</tr>
+<tr>
+<td>4. Optimization</td>
+<td>Gradient, GD, learning rate, SGD, loss normalization</td>
+<td>Q10, Q15, Q18, Q9, Q30, Q1</td>
+</tr>
+<tr>
+<td>5. LOOCV</td>
+<td>Intercept fitting and held-out error</td>
+<td>Q3, Q13, Q14</td>
+</tr>
+<tr>
+<td>6. Probabilistic regression</td>
+<td>Gaussian/Laplace noise, noise scale, log-mean models</td>
+<td>Q22, Q28, Q29, Q26, Q20, Q34</td>
+</tr>
+<tr>
+<td>7. Kernel regression</td>
+<td>Feature maps, polynomial/RBF kernels, dual prediction</td>
+<td>Q16, Q27, Q4, Q8, Q11, Q17, Q19</td>
+</tr>
+<tr>
+<td>8. Revision</td>
+<td>Formula sheet, mistakes, checklist</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="topic-2">1. Supervised learning and regression</h2>
+<h3 id="topic-3">1.1 Features, labels and generalization</h3>
+<p><strong>Short definition:</strong> Supervised learning mein model ko input ke saath correct output diya jaata hai; model examples se mapping learn karta hai.</p>
+<p>$$D=\{(x_i,y_i)\}_{i=1}^n,\qquad x_i\in\mathbb R^d.$$</p>
+<ul>
+<li>n = number of observations.</li>
+<li>d = features per observation.</li>
+<li>$x_i$ = one observation's feature vector.</li>
+<li>$y_i$ = observed target/label.</li>
+</ul>
+<p><strong>Regression:</strong> Real-valued numerical output, e.g. temperature se thickness, area se house price. Model $h:\mathbb R^d\to\mathbb R$.</p>
+<p><strong>Classification:</strong> Finite categories, e.g. spam/not-spam. Binary means two classes; multiclass means more than two.</p>
+<p><strong>Real-life connection:</strong> Past house transactions train examples hain. Goal unhi transactions ko yaad karna nahi, naye house ki price predict karna hai. Unseen examples par useful performance <strong>generalization</strong> hai.</p>
+<h3 id="topic-4">1.2 Linear model, slope and intercept</h3>
+<p>Without intercept:</p>
+<p>$$\boxed{\hat y=w^Tx=\sum_{j=1}^dw_jx_j}.$$</p>
+<p>One feature mein $\hat y=wx$ line origin se pass hoti hai. With intercept:</p>
+<p>$$\boxed{\hat y=w_0+w_1x}.$$</p>
+<p>$w_0$ baseline/intercept, $w_1$ slope. Intercept include karne ka matrix trick: augmented feature $\widetilde x=[1,x]^T$, weights $[w_0,w_1]^T$.</p>
+<p><strong>Counterexample:</strong> $(0,1)$ ko no-intercept model $wx$ exactly fit nahi kar sakta, because x=0 par prediction always 0. Intercept model can predict 1.</p>
+<p>“Linear” means <strong>linear in learned coefficients</strong>. $a_0+a_1x+a_2x^2$ original x mein curved hai, but transformed features $(1,x,x^2)$ par linear regression hai.</p>
+<h3 id="topic-5">1.3 Residuals and squared-error loss</h3>
+<p>Use error $e_i=\hat y_i-y_i$. Some geometry formulas residual $r_i=y_i-\hat y_i=-e_i$ use karengi; squared error dono sign conventions mein same hai.</p>
+<p>$$\boxed{\operatorname{SSE}=\sum_i(\hat y_i-y_i)^2},\qquad\boxed{\operatorname{MSE}=\frac1n\operatorname{SSE}}.$$</p>
+<p><strong>Why square?</strong> Positive/negative errors cancel nahi hote; large errors more heavily penalized hote hain.</p>
+<p>Example $y=(2,4,5)$, $\hat y=(3,3,5)$ → errors $(1,-1,0)$ → SSE 2, MSE $2/3$. Raw error sum 0 misleadingly perfect lagega.</p>
+<p>Optimization often $\frac12\operatorname{SSE}$ or $\frac1{2n}\operatorname{SSE}$ use karta hai. Positive scaling minimizers same rakhti hai, but <strong>gradient and fixed-learning-rate updates change</strong>. Har question ka exact normalization read karo.</p>
+<p><img src="assets/week5/regression_residuals.png" loading="lazy" alt="Observed data, fitted line and vertical residuals" /></p>
+<h3 id="topic-6">Q25 — Guaranteed zero training error</h3>
+<p><strong>Source:</strong> 2026 Apr 06 Quiz 2, Q25.</p>
+<p><strong>Question:</strong></p>
+<p>Consider a training dataset $(x_i,y_i)_{i=1}^n$ where all input points $x_i\in\mathbb R^d$ are distinct. Which of the following models is guaranteed to achieve a training error of zero?</p>
+<p>(a) $h(x_i)=\frac1n\sum_{j=1}^n y_j\quad\forall i\in\{1,\ldots,n\}$</p>
+<p>(b) $h(x_i)=0\quad\forall i\in\{1,\ldots,n\}$</p>
+<p>(c) $h(x_i)=w^Tx_i+b\quad\forall i\in\{1,\ldots,n\}$, given $n&gt;d+1$</p>
+<p>(d) $h(x_i)=y_i\quad\forall i\in\{1,\ldots,n\}$</p>
+<p><strong>Solution:</strong></p>
+<ol>
+<li>Mean predictor exactly fits only when all targets equal that mean.</li>
+<li>Zero predictor exactly fits only if all targets zero.</li>
+<li>Affine model cannot fit arbitrary labels when there are more observations than its maximum independent degrees of freedom.</li>
+<li>Option (d) explicitly returns each observed target, so every residual zero.</li>
+</ol>
+<p>$$\boxed{\text{(d)}}.$$</p>
+<p>Distinct inputs ensure a lookup mapping can assign each target without contradictory labels at identical inputs. Training memorization gives no guarantee for an unseen input.</p>
+<hr />
+<h2 id="topic-7">2. Least squares: Weight vector kaise fit karein?</h2>
+<h3 id="topic-8">2.1 Matrix orientation and normal equations</h3>
+<p>Most questions use observations as <strong>columns</strong>:</p>
+<p>$$X=[x_1\ \cdots\ x_n]\in\mathbb R^{d\times n},\quad w\in\mathbb R^d,\quad y\in\mathbb R^n.$$</p>
+<p>$$\hat y=X^Tw,\qquad L(w)=\lVert X^Tw-y\rVert_2^2.$$</p>
+<p>Gradient and normal equation:</p>
+<p>$$\nabla L=2X(X^Tw-y),\qquad\boxed{XX^Tw=Xy}.$$</p>
+<p>If X has full row rank d:</p>
+<p>$$\boxed{w^*=(XX^T)^{-1}Xy}.$$</p>
+<p>If rank deficient, inverse may not exist. Minimum-norm least-squares solution:</p>
+<p>$$\boxed{w_{\min}=(XX^T)^\dagger Xy}.$$</p>
+<p>Other minimizers can differ by $v\in\operatorname{null}(X^T)$, since $X^T(w_{\min}+v)=X^Tw_{\min}$. Prediction vector unique hai even when weights not unique.</p>
+<p><strong>Convexity property:</strong> Hessian $2XX^T$ positive semidefinite hai, so every local minimum global hai. <strong>Unique</strong> optimum requires positive definiteness/full row rank; convexity alone uniqueness imply nahi karti.</p>
+<p>If question uses rows as samples, predictions $Xw$ and normal equation $X^TXw=X^Ty$. Shapes pehle check karo.</p>
+<h3 id="topic-9">2.2 One feature, no intercept</h3>
+<p>$$\boxed{w^*=\frac{\sum_i x_i y_i}{\sum_i x_i^2}},\qquad\sum_i x_i^2&gt;0.$$</p>
+<p><strong>Meaning:</strong> Input-target alignment ko input squared magnitude se normalize karte hain. If all x=0, predictions zero for every w; weights not identifiable.</p>
+<h3 id="topic-10">Q7 — Scalar optimal slope</h3>
+<p><strong>Source:</strong> 2024 Aug 04 Quiz 2, Q7.</p>
+<p><strong>Question:</strong></p>
+<p>Consider the following training dataset for a linear regression problem with one feature:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:right">$x_i$</th>
+<th style="text-align:right">$y_i$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1.2</td>
+</tr>
+<tr>
+<td style="text-align:right">−1</td>
+<td style="text-align:right">0.1</td>
+</tr>
+<tr>
+<td style="text-align:right">2</td>
+<td style="text-align:right">2.1</td>
+</tr>
+<tr>
+<td style="text-align:right">−2</td>
+<td style="text-align:right">−1</td>
+</tr>
+</tbody>
+</table>
+<p>Find the value of $w^*$, the optimal weight.</p>
+<p><strong>Solution:</strong> Model is $\hat y=wx$, no intercept specified.</p>
+<p><strong>Step 1:</strong></p>
+<p>$$\sum x_i y_i=1(1.2)+(-1)(0.1)+2(2.1)+(-2)(-1)=1.2-0.1+4.2+2=7.3.$$</p>
+<p><strong>Step 2:</strong></p>
+<p>$$\sum x_i^2=1+1+4+4=10.$$</p>
+<p><strong>Step 3:</strong></p>
+<p>$$\boxed{w^*=7.3/10=0.73}.$$</p>
+<h3 id="topic-11">Q2 — Fit a two-feature linear relationship and training MSE</h3>
+<p><strong>Source:</strong> May 2025 Quiz 1, Q2.</p>
+<p><strong>Question:</strong></p>
+<p>Comprehension: Consider the following dataset with feature vector x and label y:</p>
+<table>
+<thead>
+<tr>
+<th>x</th>
+<th style="text-align:right">y</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$[4,1]^T$</td>
+<td style="text-align:right">2</td>
+</tr>
+<tr>
+<td>$[2,8]^T$</td>
+<td style="text-align:right">−14</td>
+</tr>
+<tr>
+<td>$[1,4]^T$</td>
+<td style="text-align:right">−7</td>
+</tr>
+<tr>
+<td>$[3,2]^T$</td>
+<td style="text-align:right">−1</td>
+</tr>
+</tbody>
+</table>
+<p>Based on the above data, answer the given subquestions.</p>
+<p>(i) Fit the linear regression model $y=wx$, $w=[w_1\ w_2]^T$ using the squared error.</p>
+<p>(a) $y=x_1+2x_2$</p>
+<p>(b) $y=x_1-2x_2$</p>
+<p>(c) $y=x_1-x_2$</p>
+<p>(d) $y=x_1+x_2$</p>
+<p>(ii) Find the mean squared error for the training dataset.</p>
+<p><strong>Solution:</strong> Interpret the stated dot-product model as $\hat y=w^Tx$.</p>
+<p><strong>(i) Step 1:</strong> First two observations give equations if exact fit is possible:</p>
+<p>$$4w_1+w_2=2,\qquad2w_1+8w_2=-14.$$</p>
+<p>From first, $w_2=2-4w_1$. Substitute:</p>
+<p>$$2w_1+8(2-4w_1)=-14\Rightarrow-30w_1=-30\Rightarrow w_1=1,\ w_2=-2.$$</p>
+<p><strong>Step 2:</strong> Verify <strong>all</strong> points, not only the two used to solve:</p>
+<table>
+<thead>
+<tr>
+<th>Input</th>
+<th style="text-align:right">Prediction $x_1-2x_2$</th>
+<th style="text-align:right">Target</th>
+<th style="text-align:right">Squared error</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$(4,1)$</td>
+<td style="text-align:right">2</td>
+<td style="text-align:right">2</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td>$(2,8)$</td>
+<td style="text-align:right">−14</td>
+<td style="text-align:right">−14</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td>$(1,4)$</td>
+<td style="text-align:right">−7</td>
+<td style="text-align:right">−7</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td>$(3,2)$</td>
+<td style="text-align:right">−1</td>
+<td style="text-align:right">−1</td>
+<td style="text-align:right">0</td>
+</tr>
+</tbody>
+</table>
+<p>Zero SSE is the global lower bound, so this is an optimal fit.</p>
+<p>$$\boxed{\text{(i) (b)},\qquad\text{(ii) MSE}=0/4=0}.$$</p>
+<h3 id="topic-12">2.3 Scaling properties</h3>
+<p>For unregularized least squares, with consistent choice of solution:</p>
+<ul>
+<li>Labels multiplied by c → weights can be multiplied by c.</li>
+<li>All feature vectors multiplied by nonzero c → weights can be divided by c to preserve predictions.</li>
+</ul>
+<p>These statements are exact for the unique/minimum-norm solution. If separate unscaled intercept is present, scaling raw x halves slope but doesn't halve intercept; question must specify which features are scaled.</p>
+<h3 id="topic-13">Q12 — Doubling labels or inputs</h3>
+<p><strong>Source:</strong> 2024 Dec 01 Quiz 2, Q12.</p>
+<p><strong>Question:</strong></p>
+<p>Consider a linear regression model with loss</p>
+<p>$$L(w)=\sum_{i=1}^n(w^Tx_i-y_i)^2,$$</p>
+<p>where $x_i$'s are the d-dimensional training data points and $y_i$'s are their corresponding labels. For the optimal weight vector $w^*$, which among the following is correct? (MSQ)</p>
+<p>(a) If we double all the values of $y_i$, $w^*$ will also get doubled.</p>
+<p>(b) If we double all the values of $y_i$, $w^*$ will get halved.</p>
+<p>(c) If we double all the values of $x_i$, $w^*$ will get halved.</p>
+<p>(d) If we double all the values of $x_i$, $w^*$ will also get doubled.</p>
+<p><strong>Solution:</strong></p>
+<p><strong>Labels double:</strong> Normal-equation expression linear in y:</p>
+<p>$$w_{new}=(XX^T)^{-1}X(2y)=2w^*.$$</p>
+<p><strong>Inputs double:</strong></p>
+<p>$$w_{new}=((2X)(2X)^T)^{-1}(2X)y=(4XX^T)^{-1}2Xy=\tfrac12w^*.$$</p>
+<p>$$\boxed{\text{(a), (c)}}.$$</p>
+<p>Same scaling holds for minimum-norm solutions if inverse replaced appropriately. Arbitrary null-space components in nonunique solutions need not follow a uniquely forced scaling.</p>
+<h3 id="topic-14">Q21 — Duplicate observations and add points exactly on the fitted model</h3>
+<p><strong>Source:</strong> 2025 Aug 03 Quiz 2, Q21.</p>
+<p><strong>Question:</strong></p>
+<p>Consider a dataset $D=\{(x_1,y_1),\ldots,(x_n,y_n)\}$. Let $w^*\in\mathbb R^d$ be the solution of the optimization problem $\min_{w\in\mathbb R^d}\lVert X^Tw-y\rVert_2^2$, where $X\in\mathbb R^{d\times n}$ and $y\in\mathbb R^n$. Construct a new dataset $D_{new}$ by duplicating all points in D and adding 10 new points that lie exactly on the line $y=x^Tw^*$. Then, the solution $w^*_{new}$ of the corresponding optimization problem is also $w^*$.</p>
+<p>(a) TRUE</p>
+<p>(b) FALSE</p>
+<p><strong>Solution:</strong></p>
+<p>Let old SSE be $L(w)$. New points have labels $\widetilde y_j=\widetilde x_j^Tw^*$, so new objective:</p>
+<p>$$L_{new}(w)=2L(w)+\sum_{j=1}^{10}(\widetilde x_j^Tw-\widetilde x_j^Tw^*)^2.$$</p>
+<p>At $w=w^*$, added term zero. For any other w, old loss cannot be less than $L(w^*)$, and added squared terms nonnegative:</p>
+<p>$$L_{new}(w)\ge2L(w^*)=L_{new}(w^*).$$</p>
+<p>$$\boxed{\text{(a) TRUE: }w^*\text{ remains a minimizer}}.$$</p>
+<p>If old/new solutions are not unique, “a minimizer remains” is the precise conclusion; a solver's selected vector may depend on its selection rule. Duplicating only some points, or adding off-line points, need not preserve fit.</p>
+<hr />
+<h2 id="topic-15">3. Geometry: Predictions are a projection in label space</h2>
+<h3 id="topic-16">3.1 Two different spaces — don't mix them</h3>
+<p>For X of shape d × n:</p>
+<table>
+<thead>
+<tr>
+<th>Object</th>
+<th>Dimension</th>
+<th>Span</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Data point $x_i$ (column of X)</td>
+<td>$\mathbb R^d$</td>
+<td>Data span $\operatorname{col}(X)$</td>
+</tr>
+<tr>
+<td>Feature vector $f_j$ (row of X, viewed as column)</td>
+<td>$\mathbb R^n$</td>
+<td>Feature span $\operatorname{row}(X)=\operatorname{col}(X^T)$</td>
+</tr>
+<tr>
+<td>Weights w</td>
+<td>$\mathbb R^d$</td>
+<td>Parameter space</td>
+</tr>
+<tr>
+<td>Labels y and predictions $X^Tw$</td>
+<td>$\mathbb R^n$</td>
+<td>Label/observation space</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Short definition:</strong> Orthogonal projection is the closest point in a subspace to a given vector.</p>
+<p><strong>Real life:</strong> Shadow on a flat surface: the shadow lies on the surface; leftover perpendicular part cannot be represented by moving along that surface.</p>
+<p>Prediction vector is a linear combination of feature vectors:</p>
+<p>$$X^Tw=\sum_{j=1}^d w_j f_j.$$</p>
+<p>Least squares chooses the closest such vector to y:</p>
+<p>$$\boxed{\hat y=X^Tw^*=P_{\operatorname{row}(X)}y}.$$</p>
+<p>Residual $r=y-\hat y$ is orthogonal to every feature:</p>
+<p>$$\boxed{Xr=0},\qquad\boxed{\hat y^Tr=0}.$$</p>
+<p><img src="assets/week5/projection.png" loading="lazy" alt="Least squares as orthogonal projection" /></p>
+<h3 id="topic-17">3.2 When is training error zero?</h3>
+<p>$$\boxed{\text{Zero SSE}\iff y\in\operatorname{row}(X)\iff\exists w:X^Tw=y}.$$</p>
+<p>If features span all $\mathbb R^n$ (rank n), every label vector can be fitted. If n&gt;d, generic arbitrary labels need not be representable, though particular labels may fit exactly.</p>
+<h3 id="topic-18">Q31 — Check whether labels belong to feature span</h3>
+<p><strong>Source:</strong> 2026 Aug 14 Quiz 2, Q31.</p>
+<p><strong>Question:</strong></p>
+<p>A dataset has n = 3 data points and d = 2 features. The two feature vectors are</p>
+<p>$$f_1=[1,0,1]^T,\qquad f_2=[0,1,1]^T.$$</p>
+<p>For which label vector y is the linear model $f(x)=w^Tx$ guaranteed to achieve exactly zero training error?</p>
+<p>(a) $y=[1,2,3]^T$</p>
+<p>(b) $y=[1,2,4]^T$</p>
+<p>(c) $y=[2,1,4]^T$</p>
+<p>(d) $y=[0,0,1]^T$</p>
+<p><strong>Solution:</strong> Any attainable prediction is</p>
+<p>$$w_1f_1+w_2f_2=[w_1,w_2,w_1+w_2]^T.$$</p>
+<p>Thus condition $y_3=y_1+y_2$ must hold.</p>
+<ul>
+<li>(a): $3=1+2$, yes; weights $(1,2)$.</li>
+<li>(b): $4\ne1+2$.</li>
+<li>(c): $4\ne2+1$.</li>
+<li>(d): $1\ne0+0$.</li>
+</ul>
+<p>$$\boxed{\text{(a)}}.$$</p>
+<h3 id="topic-19">Q6 — Zero error and invertibility assumptions</h3>
+<p><strong>Source:</strong> 2024 Apr 28 ET, Q6.</p>
+<p><strong>Question:</strong></p>
+<p>Let X be a data matrix of the shape (d, n) and y be the associated label vector of shape (n, 1). Assume that a linear regression model with loss as the sum of squared error is trained on the data {X, y}. In which of the following cases, the loss on the training data will necessarily be zero? Assume that the solution of the model is obtained by the normal equation that is $w^*=(XX^T)^{-1}Xy$. (MSQ)</p>
+<p>(a) If y lies in the space spanned of row vectors of X.</p>
+<p>(b) If y lies in the space spanned of row vectors of $X^T$.</p>
+<p>(c) If all the data points satisfy the equality $x_1+x_2+\cdots+x_d=0$, where $x_i$ is the ith feature and y = 0 for all the data points.</p>
+<p>(d) If all the data points satisfy the equality $x_1^3+x_2^3+\cdots+x_d^3=0$, where $x_i$ is the ith feature and y = 0 for all the data points.</p>
+<p><strong>Solution:</strong></p>
+<p><strong>(a):</strong> Correct zero-error criterion: y in feature/row span → exact fit.</p>
+<p><strong>(b):</strong> Rows of $X^T$ are data-point vectors in $\mathbb R^d$, whereas y lies in $\mathbb R^n$. This is the wrong space, and generally dimensionally incompatible.</p>
+<p><strong>(c):</strong> Linear relation across features gives a nonzero vector $\mathbf1$ with $X^T\mathbf1=0$, so $XX^T$ singular. The displayed inverse formula cannot be used. Least squares itself still has zero error at w=0 because all labels zero.</p>
+<p><strong>(d):</strong> Cubic relation does <strong>not</strong> generally imply a linear rank deficiency. If $XX^T$ is invertible as assumed, y=0 gives $w^*=0$ and SSE 0. For example, d=3 data columns $(1,-1,0),(1,0,-1),(1,1,-\sqrt[3]2)$ satisfy the cubic condition and are linearly independent.</p>
+<p><strong>Answer-key issue:</strong> Paper lists <strong>(a) only</strong>, but it overlooks that (d), whenever compatible with the inverse assumption, also gives zero loss. Mathematically, among cases with the stated inverse defined, <strong>(a) and (d)</strong> suffice. If using pseudoinverse/ordinary least squares without the inverse restriction, (c) also has zero error. Don't memorize that zero labels somehow prevent an exact zero prediction.</p>
+<h3 id="topic-20">Q5 — Optimal weight orthogonal to the data span</h3>
+<p><strong>Source:</strong> 2024 Mar 24 Quiz 2, Q5.</p>
+<p><strong>Question:</strong></p>
+<p>Let X be the data matrix of shape (d, n) and y be the corresponding label vector. A linear regression model of the form $\hat y_i=w^Tx_i$ is fit using the squared error on the same dataset. If the solution $w^*$ to the optimization problem is orthogonal to the subspace spanned of the data point (columns of matrix X), what will be the squared error?</p>
+<p>(a) 0</p>
+<p>(b) 1</p>
+<p>(c) $\lVert y\rVert^2$</p>
+<p>(d) Insufficient information to answer</p>
+<p><strong>Solution:</strong></p>
+<ol>
+<li>Orthogonality to every data point means $x_i^Tw^*=0$ for all i.</li>
+<li>Entire prediction vector $X^Tw^*=0$.</li>
+<li>SSE $=\lVert0-y\rVert_2^2$.</li>
+</ol>
+<p>$$\boxed{\lVert y\rVert_2^2\quad\text{(c)}}.$$</p>
+<p>Weight lives in $\mathbb R^d$; zero predictions are in $\mathbb R^n$.</p>
+<h3 id="topic-21">Q32 — Labels orthogonal to every feature</h3>
+<p><strong>Source:</strong> 2026 Aug 14 Quiz 2, Q32.</p>
+<p><strong>Question:</strong></p>
+<p>Suppose the label vector $y\ne0$ is orthogonal to every feature vector, i.e.</p>
+<p>$$f_j^Ty=0\quad\text{for all }j=1,\ldots,d.$$</p>
+<p>$w^*$ is the optimal weight obtained after minimizing the objective function of linear regression. Which statement is correct?</p>
+<p>(a) $X^Tw^*=y$ and the training error is 0.</p>
+<p>(b) $X^Tw^*=0$ and the squared training error equals $\lVert y\rVert_2^2$.</p>
+<p>(c) $X^Tw^*=0$ and the squared training error equals 0.</p>
+<p>(d) The normal equations have no solution.</p>
+<p><strong>Solution:</strong> y is perpendicular to the whole feature subspace, so its projection onto that subspace is zero. Hence fitted labels zero and SSE $\lVert y\rVert^2&gt;0$.</p>
+<p>$$\boxed{\text{(b)}}.$$</p>
+<p>Normal equations still have solutions; w=0 works. Q5 gives an orthogonality condition on weights, while Q32 gives one on labels; both lead to zero predictions.</p>
+<h3 id="topic-22">3.3 Minimum-norm weights can be written in the data span</h3>
+<p>Decompose $w=w_\parallel+w_\perp$, where $w_\parallel\in\operatorname{col}(X)$ and $X^Tw_\perp=0$. Perpendicular part doesn't affect training predictions, but increases norm when nonzero. Therefore minimum-norm optimum can be chosen as:</p>
+<p>$$\boxed{w_{\min}=X\alpha}.$$</p>
+<p><strong>Counterexample to “every optimum must lie in data span”:</strong> One point $x=(1,0)^T$, label 1. Every $w=(1,c)^T$ fits perfectly. Only c=0 lies in the one-dimensional data span and has minimum norm.</p>
+<h3 id="topic-23">Q23 — Projection and span statements</h3>
+<p><strong>Source:</strong> 2025 Aug 03 Quiz 2, Q23.</p>
+<p><strong>Question:</strong></p>
+<p>Let $w^*\in\mathbb R^d$ be the solution of the optimization problem $\min_{w\in\mathbb R^d}\lVert X^Tw-y\rVert_2^2$, where $X\in\mathbb R^{d\times n}$ and $y\in\mathbb R^n$. Then, which of the following statements is/are true? (MSQ)</p>
+<p>(a) $X^Tw^*$ is the projection of the labels onto the subspace spanned by the features.</p>
+<p>(b) $X^Tw^*$ is the projection of the labels onto the subspace spanned by the data points.</p>
+<p>(c) $w^*$ lies in the span of data points.</p>
+<p>(d) $w^*$ lies in the span of features.</p>
+<p><strong>Solution:</strong></p>
+<ul>
+<li>(a) True: Fitted label vector is projection onto feature span in $\mathbb R^n$.</li>
+<li>(b) Wrong space: Data points span a subspace of $\mathbb R^d$.</li>
+<li>(c) True for the canonical minimum-norm/pseudoinverse solution; also trivially true when X has full row rank and data span is all $\mathbb R^d$.</li>
+<li>(d) Again mixes parameter and label spaces.</li>
+</ul>
+<p>$$\boxed{\text{Paper&#x27;s intended answer: (a), (c)}}.$$</p>
+<p>Without the minimum-norm/full-rank convention, (c) is not guaranteed for <strong>every</strong> minimizer; the counterexample just above explains the limitation. (a) remains true for all least-squares minimizers.</p>
+<h3 id="topic-24">Q33 — Fitted vector is orthogonal to the residual</h3>
+<p><strong>Source:</strong> 2026 Sep 13 ET, Q33.</p>
+<p><strong>Question:</strong></p>
+<p>Let $w^*$ be the solution to the ordinary least-squares linear regression problem</p>
+<p>$$\min_w\lVert y-Xw\rVert^2.$$</p>
+<p>Which of the following is always satisfied at $w^*$? Note that here X is your feature matrix and y is the label vector.</p>
+<p>(a) $(Xw^*)^T(y-Xw^*)=0$</p>
+<p>(b) $(Xw^*)^T(Xw^*)=0$</p>
+<p>(c) $y^T(y-Xw^*)=0$</p>
+<p>(d) $y-Xw^*=0$</p>
+<p><strong>Solution:</strong> This question uses rows as observations, so normal equations are $X^T(y-Xw^*)=0$.</p>
+<p>Multiply on left by $(w^*)^T$:</p>
+<p>$$(w^*)^TX^T(y-Xw^*)=(Xw^*)^T(y-Xw^*)=0.$$</p>
+<p>$$\boxed{\text{(a)}}.$$</p>
+<p>(b) would require all fitted labels zero; (d) requires exact fit, neither is necessary. For (c), writing $y=\hat y+r$ gives $y^Tr=\lVert r\rVert^2$, not zero unless residual zero.</p>
+<h3 id="topic-25">3.4 Intercept implies zero sum of residuals</h3>
+<p>If model includes an unconstrained intercept, the all-ones vector is a feature. Residual orthogonality then gives:</p>
+<p>$$\boxed{\sum_i(y_i-\hat y_i)=0},\qquad\boxed{\overline{\hat y}=\bar y}.$$</p>
+<p>This property needs an intercept fitted by ordinary unweighted least squares; no-intercept models need not satisfy it.</p>
+<h3 id="topic-26">Q24 — Can an optimal intercept model overpredict every sample?</h3>
+<p><strong>Source:</strong> 2026 Apr 06 Quiz 2, Q24.</p>
+<p><strong>Question:</strong></p>
+<p>Consider a linear regression model applied to a dataset in which each data-point is described by two features. The first feature is always 1. The ith data-point’s feature-label pair is represented as $((1,x_i),y_i)$. Let $(w_0^*,w_1^*)\in\mathbb R^2$ be the optimal weight vector that minimizes the sum of squared errors. Consider two scenarios:</p>
+<p>$S_1:w_0^*+w_1^*x_i&gt;y_i$, for each data-point $((1,x_i),y_i)$.</p>
+<p>$S_2:w_0^*+w_1^*x_i&lt;y_i$, for each data-point $((1,x_i),y_i)$.</p>
+<p>Which of the following is true?</p>
+<p>(a) $S_1$ is possible, but $S_2$ is impossible.</p>
+<p>(b) $S_1$ is impossible, but $S_2$ is possible.</p>
+<p>(c) One of $S_1$ or $S_2$ is possible.</p>
+<p>(d) Both $S_1$ and $S_2$ are impossible.</p>
+<p><strong>Solution:</strong></p>
+<p>At optimum, intercept derivative is zero:</p>
+<p>$$\frac{\partial L}{\partial w_0}=2\sum_i(w_0+w_1x_i-y_i)=0.$$</p>
+<p>If all predictions strictly exceed labels, every summand positive → sum cannot be zero. If all strictly below, every summand negative → same contradiction.</p>
+<p>$$\boxed{\text{(d)}}.$$</p>
+<p>Intuition: If all overpredicted, intercept thoda decrease karke every squared residual reduce kar sakte hain, so previous weights optimum nahi the.</p>
+<hr />
+<h2 id="topic-27">4. Gradient descent and stochastic gradient descent</h2>
+<h3 id="topic-28">4.1 Gradient: Loss kis direction mein fastest increase hoti hai?</h3>
+<p><strong>Short definition:</strong> Gradient parameter space mein local steepest-increase direction deta hai. Loss reduce karne ke liye negative gradient direction mein move karte hain.</p>
+<p><strong>Real life:</strong> Hill se downhill jaana: slope uphill point karta hai, so opposite move karo. Bahut large step downhill valley cross karke higher point par pahucha sakta hai.</p>
+<p>For SSE:</p>
+<p>$$L(w)=\lVert X^Tw-y\rVert^2,\qquad\boxed{\nabla L(w)=2XX^Tw-2Xy=2X(X^Tw-y)}.$$</p>
+<p>Update:</p>
+<p>$$\boxed{w^{(t+1)}=w^{(t)}-\eta\nabla L(w^{(t)})},\qquad\eta&gt;0.$$</p>
+<p>Residual calculation all old weights se hoti hai; new coordinate ko use karke same step ke baaki gradients recompute nahi karte.</p>
+<table>
+<thead>
+<tr>
+<th>Objective</th>
+<th>Gradient</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SSE</td>
+<td>$2X(X^Tw-y)$</td>
+</tr>
+<tr>
+<td>Half-SSE</td>
+<td>$X(X^Tw-y)$</td>
+</tr>
+<tr>
+<td>MSE = SSE/n</td>
+<td>$(2/n)X(X^Tw-y)$</td>
+</tr>
+<tr>
+<td>Half-MSE</td>
+<td>$(1/n)X(X^Tw-y)$</td>
+</tr>
+</tbody>
+</table>
+<h3 id="topic-29">Q10 — Single-sample gradient and the missing factor 2</h3>
+<p><strong>Source:</strong> 2024 Sep 01 ET, Q10.</p>
+<p><strong>Question:</strong></p>
+<p>Consider a linear regression problem. Which of the following is the gradient of the SSE function with respect to $w\in\mathbb R^d$, the weight vector, for a single data-point $x\in\mathbb R^d$? y is the true label and $\hat y$ is the predicted label. Note that SSE is the sum of squared errors.</p>
+<p>(a) $(\hat y-y)x$</p>
+<p>(b) $(w^Tx)w$</p>
+<p>(c) $\hat yx$</p>
+<p>(d) $xy$</p>
+<p><strong>Solution:</strong></p>
+<ol>
+<li>Single-sample error $e=w^Tx-y$.</li>
+<li>Raw squared loss $L=e^2$ gives $\nabla_wL=2e\nabla_we=2(w^Tx-y)x$.</li>
+<li>Half-squared loss $L=e^2/2$ instead gives $(\hat y-y)x$.</li>
+</ol>
+<p>$$\boxed{\text{Intended option (a), using half-SSE convention}}.$$</p>
+<p>Literal unscaled SSE gradient has factor <strong>2</strong>, absent from every option. Direction is the same, but numerical GD step with fixed learning rate differs. Q15/Q18 explicitly use unscaled SSE, so retain factor 2 there.</p>
+<h3 id="topic-30">Q15 — One full-batch gradient step</h3>
+<p><strong>Source:</strong> 2024 Dec 22 ET, Q15.</p>
+<p><strong>Question:</strong></p>
+<p>Perform one round of the gradient descent algorithm for the linear regression on the below data</p>
+<p>$$X=\begin{bmatrix}1&amp;-2&amp;0\\2&amp;5&amp;1\end{bmatrix},\qquad y=\begin{bmatrix}1\\6\\1\end{bmatrix}$$</p>
+<p>with the initial weight vector $w_0=[1,0.5]^T$ and learning rate $\eta=0.05$. Find the updated weight vector $w_1$ after one iteration of gradient descent.
+Note: The objective function is given by $f(w)=\lVert X^Tw-y\rVert^2$.</p>
+<p>(a) $w_1=[0.2,3.1]^T$</p>
+<p>(b) $w_1=[0.2,0.5]^T$</p>
+<p>(c) $w_1=[1,0.5]^T$</p>
+<p>(d) $w_1=[-0.2,3.1]^T$</p>
+<p><strong>Solution:</strong></p>
+<p><strong>Step 1: Current predictions.</strong></p>
+<p>$$X^Tw_0=\begin{bmatrix}1&amp;2\\-2&amp;5\\0&amp;1\end{bmatrix}\begin{bmatrix}1\\0.5\end{bmatrix}=\begin{bmatrix}2\\0.5\\0.5\end{bmatrix}.$$</p>
+<p><strong>Step 2: Prediction-minus-target errors.</strong></p>
+<p>$$e=X^Tw_0-y=[1,-5.5,-0.5]^T.$$</p>
+<p><strong>Step 3: Gradient.</strong></p>
+<p>$$Xe=\begin{bmatrix}1(1)+(-2)(-5.5)+0(-0.5)\\2(1)+5(-5.5)+1(-0.5)\end{bmatrix}=\begin{bmatrix}12\\-26\end{bmatrix}.$$</p>
+<p>$$\nabla f(w_0)=2Xe=[24,-52]^T.$$</p>
+<p><strong>Step 4: Subtract learning-rate-scaled gradient.</strong></p>
+<p>$$w_1=\begin{bmatrix}1\\0.5\end{bmatrix}-0.05\begin{bmatrix}24\\-52\end{bmatrix}=\boxed{\begin{bmatrix}-0.2\\3.1\end{bmatrix}\quad\text{(d)}}.$$</p>
+<p>A requested update need not decrease loss if learning rate too large. Here SSE goes from 31.5 to 127.42: step calculation is correct, but this learning rate overshoots. Don't change the prescribed learning rate to force a decrease.</p>
+<h3 id="topic-31">Q18 — Scalar gradient update and prediction</h3>
+<p><strong>Source:</strong> 2025 Mar 16 Quiz 2, Q18.</p>
+<p><strong>Question:</strong></p>
+<p>Comprehension: Consider a linear regression model $y_i=w^Tx_i$ with an initial weight $w=[3]$.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:right">$x_1$</th>
+<th style="text-align:right">y</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right">1</td>
+<td style="text-align:right">4</td>
+</tr>
+<tr>
+<td style="text-align:right">2</td>
+<td style="text-align:right">7</td>
+</tr>
+<tr>
+<td style="text-align:right">3</td>
+<td style="text-align:right">10</td>
+</tr>
+<tr>
+<td style="text-align:right">4</td>
+<td style="text-align:right">13</td>
+</tr>
+</tbody>
+</table>
+<p>Based on the above data, answer the given subquestions.</p>
+<p>(i) Using the squared loss function and a learning rate of $\eta=0.2$, compute the updated weight after one iteration of gradient descent for the given dataset:
+Use $\nabla f(w)=2(XX^T)w-2Xy$.</p>
+<p>(ii) If we stop the algorithm at the weight calculated in the previous question, what will be the predicted value for the data point, $x_1=5$?</p>
+<p><strong>Solution:</strong></p>
+<p><strong>(i) Step 1:</strong> $\sum x_i^2=1+4+9+16=30$.</p>
+<p><strong>Step 2:</strong> $\sum x_iy_i=4+14+30+52=100$.</p>
+<p><strong>Step 3:</strong> Gradient at w=3:</p>
+<p>$$\nabla f(3)=2(30)(3)-2(100)=180-200=-20.$$</p>
+<p><strong>Step 4:</strong></p>
+<p>$$\boxed{w_{new}=3-0.2(-20)=7}.$$</p>
+<p><strong>(ii):</strong> No intercept in fitted model, so:</p>
+<p>$$\boxed{\hat y(5)=7(5)=35}.$$</p>
+<p><strong>Important:</strong> This is one iterate, not optimal slope. Optimum is $100/30=10/3$. Given $\eta=0.2$ is too large for convergent full-batch SSE updates here (sufficient range $0&lt;\eta&lt;1/30$). Training SSE increases from 4 to 404; nevertheless requested one-step answer remains 7.</p>
+<h3 id="topic-32">Q9 — Negative-gradient direction and new norm</h3>
+<p><strong>Source:</strong> 2024 Aug 04 Quiz 2, Q9.</p>
+<p><strong>Question:</strong></p>
+<p>Comprehension: Consider a linear regression problem that has two features with a training dataset of 10,000 points. The blue point in the image below is the weight vector, $w^{(t)}$, at some iteration of gradient descent. $w_1,w_2,w_3$ are unit vectors. Specifically, $w_1$ is a unit vector in the direction of the gradient at this point.</p>
+<p><img src="assets/week5/q9_given_directions.png" loading="lazy" alt="Q9 supplied unit directions" /></p>
+<p>Based on the above data, answer the given subquestions.</p>
+<p>(i) If the next iteration of gradient descent is expressed as $w^{(t+1)}=w^{(t)}+\eta w_k$ with $\eta&gt;0$, what would be the value of k?</p>
+<p>(ii) If $w^{(t)}=[0.4,0.1]^T$ and $\eta=1/\sqrt{10}$, find $\lVert w^{(t+1)}\rVert$, where we use the usual L2 norm.</p>
+<p><strong>Solution:</strong></p>
+<p><strong>(i):</strong> Diagram gives $w_1=(3,1)^T/\sqrt{10}$, $w_2=(-3,-1)^T/\sqrt{10}=-w_1$, $w_3=(-1,3)^T/\sqrt{10}$.</p>
+<p>Since written update uses <strong>plus</strong> $\eta w_k$, choose downhill direction $w_2$.</p>
+<p>$$\boxed{k=2}.$$</p>
+<p><strong>(ii):</strong></p>
+<p>$$\eta w_2=\frac1{\sqrt{10}}\frac1{\sqrt{10}}[-3,-1]^T=[-0.3,-0.1]^T.$$</p>
+<p>$$w^{(t+1)}=[0.4,0.1]^T+[-0.3,-0.1]^T=[0.1,0]^T.$$</p>
+<p>$$\boxed{\lVert w^{(t+1)}\rVert_2=\sqrt{0.1^2+0^2}=0.1}.$$</p>
+<p>Here step length is explicitly along a <strong>unit</strong> direction. Standard GD uses full gradient magnitude; don't insert an unspecified gradient norm into this question.</p>
+<h3 id="topic-33">4.2 Learning-rate conditions and efficiency</h3>
+<p>For SSE Hessian $H=2XX^T$, let $a_{max}&gt;0$ be largest eigenvalue of $XX^T$. A sufficient fixed-step condition for convergence along identifiable directions is:</p>
+<p>$$\boxed{0&lt;\eta&lt;1/a_{max}}.$$</p>
+<p>For half-SSE, bound becomes $0&lt;\eta&lt;2/a_{max}$. Large steps can oscillate or diverge even on a convex quadratic.</p>
+<p><img src="assets/week5/learning_rate.png" loading="lazy" alt="Small versus excessive learning rate" /></p>
+<p>Normal-equation dense solve/inversion has roughly $O(d^3)$ solve cost after forming $XX^T$ (formation roughly $O(nd^2)$). Direct full-gradient evaluation $2X(X^Tw-y)$ costs roughly $O(nd)$ per iteration. Different data sizes favour different methods; normal equations are not always the most numerically stable solver compared with QR/SVD.</p>
+<h3 id="topic-34">Q30 — SSE versus MSE changes trajectory, not minimizers</h3>
+<p><strong>Source:</strong> 2026 Aug 14 Quiz 2, Q30.</p>
+<p><strong>Question:</strong></p>
+<p>A student P minimizes the sum of squared errors (SSE) loss</p>
+<p>$$L(w)=\frac12\sum_{i=1}^n(w^Tx_i-y_i)^2,$$</p>
+<p>while another student Q minimizes the mean squared error (MSE) loss</p>
+<p>$$L&#x27;(w)=\frac1{2n}\sum_{i=1}^n(w^Tx_i-y_i)^2.$$</p>
+<p>Both students use gradient descent with the same learning rate $\eta$ and the same initial parameter vector $w_0$. Which one of the following statements is correct?</p>
+<p>(a) They converge to different minimizers, because the losses differ.</p>
+<p>(b) They converge to the same minimizer, but Q’s steps are n times smaller; Q would need learning rate $n\eta$ to reproduce P’s trajectory.</p>
+<p>(c) They converge to the same minimizer, and their iterates coincide at every step.</p>
+<p>(d) They converge to the same minimizer, but Q’s steps are n times larger.</p>
+<p><strong>Solution:</strong></p>
+<ol>
+<li>$L&#x27;=L/n$ → same minimizer set.</li>
+<li>At the <strong>same w</strong>, $\nabla L&#x27;=\nabla L/n$. Thus Q's update vector with same $\eta$ is 1/n as large.</li>
+<li>Using $\eta_Q=n\eta_P$ gives $\eta_Q\nabla L&#x27;=\eta_P\nabla L$, so identical trajectories from same starting point.</li>
+</ol>
+<p>$$\boxed{\text{(b), assuming learning rates lead to convergence}}.$$</p>
+<p>At different iterates their update lengths need not remain in an exact 1/n ratio because gradients evaluated at different locations. Same minimizers don't guarantee arbitrary step sizes converge.</p>
+<h3 id="topic-35">4.3 SGD and mini-batches</h3>
+<p><strong>Short definition:</strong> Stochastic gradient descent uses one randomly sampled point's gradient per update; mini-batch gradient uses a small group. Full-batch GD uses all n observations.</p>
+<p>For half-mean squared loss, uniform single-sample gradient $(w^Tx_i-y_i)x_i$ is an unbiased estimate of the full mean gradient. For an objective defined as a sum, appropriate scaling by n is needed if estimating the sum gradient exactly.</p>
+<p><strong>Real life:</strong> Full batch checks every record before each correction; SGD makes frequent cheap corrections from a few examples. Each correction noisier, but more updates may fit into same computation budget.</p>
+<ul>
+<li>Full GD usually smoother trajectory.</li>
+<li>SGD cheaper update, noisy direction; constant learning rate can keep fluctuating near optimum.</li>
+<li>Suitable diminishing learning rates and regularity assumptions can yield convergence; unconditional guarantee nahi.</li>
+<li>Averaging iterates can reduce stochastic fluctuation in appropriate settings.</li>
+<li>Iterations, epochs and wall-clock time different: n single-sample updates are roughly one pass/epoch.</li>
+</ul>
+<h3 id="topic-36">Q1 — GD versus SGD convergence claims</h3>
+<p><strong>Source:</strong> May 2025 Quiz 1, Q1.</p>
+<p><strong>Question:</strong></p>
+<p>For a linear regression problem, which among the following are true? Select all that apply. (MSQ)</p>
+<p>(a) Gradient descent will converge to a global minimum.</p>
+<p>(b) Gradient descent will converge to a local minimum (which is not a global minimum).</p>
+<p>(c) Stochastic gradient descent is guaranteed to converge to a global minimum.</p>
+<p>(d) Gradient descent will take lesser number of iterations to converge to a local minimum than stochastic gradient descent.</p>
+<p><strong>Solution:</strong></p>
+<ul>
+<li>(a) True <strong>with a suitable learning-rate/convergence setup</strong> because squared loss convex hai; Q18 demonstrates why arbitrary step size invalidates unconditional claim.</li>
+<li>(b) False: Convex least squares has no non-global local minima.</li>
+<li>(c) Not guaranteed without assumptions on sampling and learning-rate schedule; fixed-step SGD can fluctuate.</li>
+<li>(d) No universal iteration-count ordering. Full gradients can need fewer updates to a specified accuracy in some problems, but cost per update larger hai; comparisons depend on data, schedule and stopping rule.</li>
+</ul>
+<p><strong>Paper key: (a), (d).</strong> Intended intuition is smoother full gradients versus noisy SGD. Technically, (a) needs convergence conditions and (d) is not a general theorem. A “local minimum” reached here is also global, since the objective is convex.</p>
+<hr />
+<h2 id="topic-37">5. Leave-one-out validation: Fit without the point being tested</h2>
+<h3 id="topic-38">5.1 Definition and intercept-fit formulas</h3>
+<p><strong>Short definition:</strong> LOOCV holds out each point once, trains on remaining n−1 points, and measures prediction error on held-out point.</p>
+<p>$$\boxed{\operatorname{CV}_{LOO}=\frac1n\sum_{i=1}^n(y_i-\hat f_{-i}(x_i))^2}.$$</p>
+<p><strong>Real life:</strong> Ek answered question hide karo; baaki examples se answer predict karo. Hidden target ko fitting mein use kiya toh fair validation nahi.</p>
+<p>For simple regression with intercept, use <strong>training-fold-only</strong> means:</p>
+<p>$$\boxed{w_1=\frac{\sum(x_i-\bar x)(y_i-\bar y)}{\sum(x_i-\bar x)^2},\qquad w_0=\bar y-w_1\bar x}.$$</p>
+<p>Without intercept use $\sum xy/\sum x^2$ instead. Same data but different models → different folds/predictions.</p>
+<h3 id="topic-39">Q3 — Hold out the third sample</h3>
+<p><strong>Source:</strong> 2024 Mar 24 Quiz 2, Q3.</p>
+<p><strong>Question:</strong></p>
+<p>Comprehension: Consider a dataset with the following data points and the target variable:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:right">Sample No</th>
+<th style="text-align:right">x</th>
+<th style="text-align:right">y</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right">1</td>
+<td style="text-align:right">3</td>
+<td style="text-align:right">8</td>
+</tr>
+<tr>
+<td style="text-align:right">2</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">3</td>
+</tr>
+<tr>
+<td style="text-align:right">3</td>
+<td style="text-align:right">5</td>
+<td style="text-align:right">12</td>
+</tr>
+<tr>
+<td style="text-align:right">4</td>
+<td style="text-align:right">6</td>
+<td style="text-align:right">13</td>
+</tr>
+</tbody>
+</table>
+<p>The linear regression model is given by $y=w_0+w_1x$. Assume that the Leave-One-Out Cross-Validation technique is applied. Based on the above data, answer the given subquestions.</p>
+<p>(i) Enter the value of $w_1$ obtained when the 3rd sample is used as the validation data point.</p>
+<p>(ii) What will be the predicted value for the left-out data point?</p>
+<p>(a) 12</p>
+<p>(b) 13</p>
+<p>(c) 12.3</p>
+<p>(d) 11.3</p>
+<p>(e) None of these</p>
+<p><strong>Solution:</strong></p>
+<p><strong>Step 1:</strong> Remove $(5,12)$. Train on $(3,8),(0,3),(6,13)$.</p>
+<p><strong>Step 2:</strong> Training means $\bar x=3$, $\bar y=8$.</p>
+<p><strong>Step 3:</strong></p>
+<p>$$\sum(x-\bar x)(y-\bar y)=0(0)+(-3)(-5)+3(5)=30,$$</p>
+<p>$$\sum(x-\bar x)^2=0+9+9=18.$$</p>
+<p>$$\boxed{w_1=30/18=5/3\approx1.667}.$$</p>
+<p><strong>Step 4:</strong> $w_0=8-(5/3)(3)=3$.</p>
+<p><strong>Step 5:</strong> Held-out prediction $3+(5/3)(5)=34/3\approx11.333$.</p>
+<p>$$\boxed{\text{(ii) (d) }11.3}.$$</p>
+<p><img src="assets/week5/q3_loocv.png" loading="lazy" alt="Q3 leave-one-out training fit and held-out prediction" /></p>
+<h3 id="topic-40">Q13 — Norm of weights from an intercept-model fold</h3>
+<p><strong>Source:</strong> 2024 Dec 01 Quiz 2, Q13.</p>
+<p><strong>Question:</strong></p>
+<p>Consider the following dataset:</p>
+<p>$$D=\{(1,2),(2,2),(0,1)\}.$$</p>
+<p>Assume that Leave one out cross validation is applied on this dataset and the model used is $y=w_0+w_1x$. Suppose $w=[w_0,w_1]^T$ be the weight obtained when (2, 2) is used in the validation set. Then calculate $\lVert w\rVert_2^2$.</p>
+<p><strong>Solution:</strong></p>
+<ol>
+<li>Hold out $(2,2)$; train on $(1,2),(0,1)$.</li>
+<li>At x=0, fitted intercept $w_0=1$.</li>
+<li>At x=1, $w_0+w_1=2$ → $w_1=1$.</li>
+<li>Requested squared norm, not norm:</li>
+</ol>
+<p>$$\boxed{\lVert w\rVert_2^2=1^2+1^2=2}.$$</p>
+<h3 id="topic-41">Q14 — Full LOOCV for a no-intercept model</h3>
+<p><strong>Source:</strong> 2024 Dec 22 ET, Q14.</p>
+<p><strong>Question:</strong></p>
+<p>Given a training set $A_n=\{(x_1,y_1),\ldots,(x_n,y_n)\}$, let $A_n^{-i}$ denote the set obtained by removing the label of the i-th training example. Leave one out cross validation (LOOCV) is performed as follows: for each $(x_i,y_i)$ in the training set, we train the model on the remaining n − 1 points of $A_n^{-i}$ and test the prediction on $(x_i,y_i)$. The error is defined as</p>
+<p>$$\operatorname{error}_L(A_n)=\frac1n\sum_{i=1}^n(y_i-\hat f_{-i}(x_i))^2,$$</p>
+<p>where $\hat f_{-i}(x_i)$ denote the predicted value of $y_i$ using the model trained on $A_n^{-i}$. Now, for the dataset:</p>
+<p>$$D=\{(1,2),(2,2),(0,1)\},$$</p>
+<p>fit the model $\hat f=\beta x_i$ and find $\operatorname{error}_L(A_3)$.</p>
+<p><strong>Solution:</strong> Dataset same as Q13, but model now <strong>without intercept</strong>. Reusing Q13's line would be wrong.</p>
+<p>For each fold $\beta=\sum_{train}xy/\sum_{train}x^2$.</p>
+<table>
+<thead>
+<tr>
+<th>Held out</th>
+<th>Training points</th>
+<th>$\beta$</th>
+<th style="text-align:right">Held-out prediction</th>
+<th style="text-align:right">Squared error</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$(1,2)$</td>
+<td>$(2,2),(0,1)$</td>
+<td>$(4+0)/(4+0)=1$</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">$(2-1)^2=1$</td>
+</tr>
+<tr>
+<td>$(2,2)$</td>
+<td>$(1,2),(0,1)$</td>
+<td>$(2+0)/(1+0)=2$</td>
+<td style="text-align:right">4</td>
+<td style="text-align:right">$(2-4)^2=4$</td>
+</tr>
+<tr>
+<td>$(0,1)$</td>
+<td>$(1,2),(2,2)$</td>
+<td>$(2+4)/(1+4)=6/5$</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">$(1-0)^2=1$</td>
+</tr>
+</tbody>
+</table>
+<p>Average all three held-out squared errors:</p>
+<p>$$\boxed{\operatorname{error}_L(A_3)=\frac{1+4+1}{3}=2}.$$</p>
+<p><img src="assets/week5/intercept_vs_origin.png" loading="lazy" alt="Same training fold with and without an intercept" /></p>
+<p>Related dataset appears in Q13, but requested model and quantity differ, so both calculations are necessary.</p>
+<hr />
+<h2 id="topic-42">6. Probabilistic view: Squared loss kahan se aati hai?</h2>
+<h3 id="topic-43">6.1 Gaussian noise gives least squares</h3>
+<p><strong>Short definition:</strong> Regression target ko predicted mean plus random noise maan sakte hain:</p>
+<p>$$y_i=w^Tx_i+\epsilon_i,\qquad\epsilon_i\overset{iid}{\sim}N(0,\sigma^2).$$</p>
+<p><strong>Real life:</strong> Sensor readings true linear trend ke around measurement fluctuations show karte hain. Mean function trend hai, variance uncertainty ki scale.</p>
+<p>For independent observations with fixed $\sigma^2&gt;0$:</p>
+<p>$$p(y\mid X,w)=\prod_i\frac1{\sqrt{2\pi\sigma^2}}\exp\left[-\frac{(y_i-w^Tx_i)^2}{2\sigma^2}\right].$$</p>
+<p>$$\boxed{\ell(w)=-\frac n2\ln(2\pi\sigma^2)-\frac1{2\sigma^2}\sum_i(y_i-w^Tx_i)^2}.$$</p>
+<p>First term independent of w; positive scale on SSE doesn't change minimizer. Hence Gaussian-noise MLE equals OLS.</p>
+<h3 id="topic-44">Q22 — Gaussian conditional likelihood versus SSE</h3>
+<p><strong>Source:</strong> 2025 Aug 03 Quiz 2, Q22.</p>
+<p><strong>Question:</strong></p>
+<p>Consider the linear regression model $y=w^Tx+\epsilon$. Assuming $\epsilon\sim N(0,\sigma^2)$, maximizing the conditional log-likelihood of w is equivalent to minimizing the sum of squared errors $\lVert y-X^Tw\rVert_2^2$.</p>
+<p>(a) TRUE</p>
+<p>(b) FALSE</p>
+<p><strong>Solution:</strong> Log-likelihood is constant minus SSE divided by positive $2\sigma^2$. Maximizing it means minimizing SSE.</p>
+<p>$$\boxed{\text{(a) TRUE}}.$$</p>
+<p>Assumes independent equal-variance Gaussian noise. Unequal known variances lead to weighted least squares instead.</p>
+<h3 id="topic-45">Q28 — Noise variance changes, observations fixed</h3>
+<p><strong>Source:</strong> 2026 Aug 14 Quiz 2, Q28.</p>
+<p><strong>Question:</strong></p>
+<p>Under the probabilistic view of linear regression, assume $y_i\sim N(w^Tx_i,\sigma^2)$, where the observations are independent. Suppose the true noise variance is $4\sigma^2$ instead of $\sigma^2$, while the dataset and the observed labels remain unchanged. What happens to the maximum likelihood estimator $\hat w_{ML}=(XX^T)^{-1}Xy$?</p>
+<p>(a) It is unchanged.</p>
+<p>(b) It is scaled by 4.</p>
+<p>(c) It is scaled by 1/4.</p>
+<p>(d) It cannot be determined without knowing $\sigma^2$.</p>
+<p><strong>Solution:</strong></p>
+<ol>
+<li>Negative log-likelihood's w-dependent term changes from SSE/$2\sigma^2$ to SSE/$8\sigma^2$.</li>
+<li>Both minimize same SSE for unchanged X and y.</li>
+<li>Normal-equation estimate has no noise-variance term.</li>
+</ol>
+<p>$$\boxed{\text{(a) Unchanged}}.$$</p>
+<p>Sampling uncertainty over newly generated datasets would increase, but the numerical estimate from this <strong>fixed observed dataset</strong> stays same. Gaussian-prior MAP/ridge may depend on noise variance; this question is unregularized MLE.</p>
+<h3 id="topic-46">6.2 Read slope, intercept and residual scale from a plot</h3>
+<p>Slope is vertical change / horizontal change. Intercept $\beta_0=\hat y-\beta_1x$ is prediction at x=0, not necessarily visible if plot starts at x=130. Noise standard deviation measures vertical scatter around fitted line, not total target magnitude.</p>
+<h3 id="topic-47">Q29 — Temperature and thickness regression</h3>
+<p><strong>Source:</strong> 2026 Aug 14 Quiz 2, Q29.</p>
+<p><strong>Question:</strong></p>
+<p>On a machine that folds plastic film, the operating temperature can be varied between 130°C and 185°C. To study the relationship between temperature and fold thickness, n = 12 observations of temperature and the corresponding fold thickness were collected. The scatter plot along with the fitted simple linear regression line is shown below:</p>
+<p><img src="assets/week5/q29_given_scatter.png" loading="lazy" alt="Q29 supplied temperature and thickness plot" /></p>
+<p>Determine, by inspecting the figure, which of the following sets of parameter estimates for the simple linear regression model is most appropriate.</p>
+<p>Note: The regression model is $\operatorname{Thickness}(y)=\beta_0+\beta_1(\operatorname{Temperature})+\epsilon$, where $\epsilon\sim N(0,\sigma^2)$. Here, $\hat\beta_0$ is the estimated intercept, $\hat\beta_1$ is the estimated slope, and $\hat\sigma$ is the estimated standard deviation of the error term.</p>
+<p>(a) $\hat\beta_0=0,\quad\hat\beta_1=-0.9,\quad\hat\sigma=360$</p>
+<p>(b) $\hat\beta_0=0,\quad\hat\beta_1=0.9,\quad\hat\sigma=3.6$</p>
+<p>(c) $\hat\beta_0=252,\quad\hat\beta_1=-0.9,\quad\hat\sigma=3.6$</p>
+<p>(d) $\hat\beta_0=-252,\quad\hat\beta_1=-0.9,\quad\hat\sigma=360$</p>
+<p>(e) $\hat\beta_0=252,\quad\hat\beta_1=-0.9,\quad\hat\sigma=360$</p>
+<p><strong>Solution:</strong></p>
+<p><strong>Step 1: Slope sign.</strong> Temperature rises, thickness falls → negative slope, eliminating (b).</p>
+<p><strong>Step 2: Approximate magnitude.</strong> Near $(130,135)$ and $(180,90)$, slope roughly $(90-135)/(180-130)=-45/50=-0.9$.</p>
+<p><strong>Step 3: Intercept.</strong> $\beta_0\approx135-(-0.9)(130)=135+117=252$.</p>
+<p><strong>Step 4: Noise scale.</strong> Points lie close to line; scatter of a few units is plausible, 360 units clearly not. Figure alone doesn't yield an exact standard-deviation estimate, but separates the choices.</p>
+<p>$$\boxed{\text{(c)}}.$$</p>
+<h3 id="topic-48">6.3 Laplace noise means absolute residual loss, not LASSO</h3>
+<p>For iid $\epsilon_i\sim\operatorname{Laplace}(0,b)$:</p>
+<p>$$p(\epsilon_i)=\frac1{2b}e^{-|\epsilon_i|/b}.$$</p>
+<p>Negative log-likelihood, ignoring constants:</p>
+<p>$$\boxed{\frac1b\sum_i|y_i-x_i^T\theta|}.$$</p>
+<p><strong>Meaning:</strong> Absolute residual grows linearly, whereas squared residual grows quadratically. Large response outliers often have less influence under least absolute deviations (LAD).</p>
+<p><strong>Critical difference:</strong></p>
+<ul>
+<li>Laplace <strong>noise</strong> → absolute <strong>residual</strong> loss $\sum|y_i-x_i^T\theta|$.</li>
+<li>Laplace <strong>prior on coefficients</strong> with Gaussian noise → LASSO penalty $\lambda\sum|\theta_j|$ in MAP.</li>
+</ul>
+<p>Residuals and coefficients different objects hain. LAD is not automatically immune to extreme predictor/high-leverage outliers.</p>
+<p><img src="assets/week5/gaussian_laplace_loss.png" loading="lazy" alt="Gaussian versus Laplace residual penalties" /></p>
+<h3 id="topic-49">Q26 — Outliers under Gaussian and Laplace noise</h3>
+<p><strong>Source:</strong> 2026 Apr 06 Quiz 2, Q26.</p>
+<p><strong>Question:</strong></p>
+<p>A researcher is modeling a dataset using linear regression of the form $y=X\theta+\epsilon$. They are considering two different probabilistic assumptions for the independent and identically distributed (i.i.d.) noise term $\epsilon$:</p>
+<ul>
+<li>Assumption A: The noise follows a Gaussian distribution, $\epsilon\sim N(0,\sigma^2)$.</li>
+<li>Assumption B: The noise follows a Laplace distribution, $\epsilon\sim\operatorname{Laplace}(0,b)$.</li>
+</ul>
+<p>The training dataset is known to contain several extreme outliers resulting from sensor malfunctions. Which of the following statements correctly describes the behavior of the Maximum Likelihood Estimation (MLE) for the parameter vector $\theta$? (MSQ)</p>
+<p>(a) Under Assumption A, the MLE is equivalent to minimizing Mean Squared Error (MSE), which is highly sensitive to outliers because the penalty grows quadratically.</p>
+<p>(b) Under Assumption B, the MLE is equivalent to L1 regularization, which is more robust to outliers because the penalty for large residuals grows linearly.</p>
+<p>(c) Both Assumption A and Assumption B lead to the same optimal parameter vector $\hat\theta$ regardless of the presence of outliers.</p>
+<p>(d) All the given options are correct.</p>
+<p><strong>Solution:</strong></p>
+<ul>
+<li>(a) Correct: Gaussian MLE minimizes squared residuals.</li>
+<li>(b) Correct intuition about <strong>linear growth of residual loss</strong>, but wrong term “L1 regularization.” Actual MLE minimizes L1 residual loss/LAD, not coefficient regularization.</li>
+<li>(c) False: Squared and absolute residual objectives can prefer different estimates.</li>
+<li>(d) False.</li>
+</ul>
+<p><strong>Paper key: (a), (b). Strictly worded, only (a) is fully correct.</strong> Read (b) as “L1 residual minimization” to recover its intended meaning. No prior/weight penalty is specified here.</p>
+<p><strong>Counterexample:</strong> Intercept-only labels $(0,0,100)$: least squares picks mean $100/3$, LAD picks median 0. Same data, different optimal predictions.</p>
+<h3 id="topic-50">6.4 A log-transformed mean: Reparameterize first</h3>
+<p>A mean involving $\log w$ can become a simple intercept problem after setting $a=\log w$. Since $w&gt;0$, a ranges over all real numbers. Estimate a, then return $w=e^a$.</p>
+<h3 id="topic-51">Q20 — Gaussian mean log(wx)</h3>
+<p><strong>Source:</strong> 2025 Aug 03 Quiz 2, Q20.</p>
+<p><strong>Question:</strong></p>
+<p>Consider n data points, with each feature $x_i\in\mathbb R^+$ and label $y_i\in\mathbb R$. Suppose $y_i\mid x_i\sim N(\log(wx_i),1)$, then find the ML estimate $\hat w_{MLE}$ of w, where w &gt; 0.</p>
+<p>(a) $\hat w_{MLE}=\exp\left(\frac1n\sum_{i=1}^n(y_i-\log x_i)\right)$</p>
+<p>(b) $\hat w_{MLE}=\exp\left(\frac1n\sum_{i=1}^n(x_iy_i-x_i\log x_i)\right)$</p>
+<p>(c) $\hat w_{MLE}=\frac1n\sum_{i=1}^n(y_i-\log x_i)$</p>
+<p>(d) $\hat w_{MLE}=\exp\left(\frac1n\sum_{i=1}^n(x_iy_i-\log x_i)\right)$</p>
+<p><strong>Solution:</strong></p>
+<p><strong>Step 1:</strong> Gaussian MLE minimizes $\sum_i[y_i-\log(wx_i)]^2$.</p>
+<p><strong>Step 2:</strong> $\log(wx_i)=\log w+\log x_i$. Let $a=\log w$, $z_i=y_i-\log x_i$. Objective becomes $\sum_i(z_i-a)^2$.</p>
+<p><strong>Step 3:</strong> Best constant a is mean of z:</p>
+<p>$$\hat a=\frac1n\sum_i(y_i-\log x_i).$$</p>
+<p><strong>Step 4:</strong> Undo reparameterization:</p>
+<p>$$\boxed{\hat w=\exp\left[\frac1n\sum_i(y_i-\log x_i)\right]\quad\text{(a)}}.$$</p>
+<p>Option (c) is estimated <strong>log w</strong>, not w. No $x_i$ factors needed because a is an intercept for transformed observations, not a slope multiplying x.</p>
+<h3 id="topic-52">Q34 — Gaussian mean log(w/x)</h3>
+<p><strong>Source:</strong> 2026 Sep 13 ET, Q34.</p>
+<p><strong>Question:</strong></p>
+<p>Suppose we model data as $y_i\sim N(\log(w/x_i),1)$ with a single unknown parameter w &gt; 0 and known variance 1 (each $x_i&gt;0$). You perform maximum-likelihood estimation of w. The MLE of w must satisfy which of the following equations? Note that x is a feature and y is a label.</p>
+<p>(a) $\sum_i y_i=\sum_i\log(w/x_i)$</p>
+<p>(b) $\sum_i x_i y_i=\sum_i x_i\log(w/x_i)$</p>
+<p>(c) $\sum_i y_i/x_i=\sum_i\log(w/x_i)$</p>
+<p>(d) $\sum_i y_i=\sum_i w/x_i$</p>
+<p><strong>Solution:</strong> Similar to Q20, but division changes the sign of $\log x_i$.</p>
+<p><strong>Step 1:</strong> $\log(w/x_i)=a-\log x_i$ with $a=\log w$.</p>
+<p><strong>Step 2:</strong> Objective $\sum_i[(y_i+\log x_i)-a]^2$ gives</p>
+<p>$$n\hat a=\sum_i(y_i+\log x_i).$$</p>
+<p><strong>Step 3:</strong> Rearrange:</p>
+<p>$$\sum_i y_i=n\log\hat w-\sum_i\log x_i=\sum_i\log(\hat w/x_i).$$</p>
+<p>$$\boxed{\text{(a)}}.$$</p>
+<p>Equivalent explicit estimate $\hat w=\exp[\frac1n\sum_i(y_i+\log x_i)]$. Multiplication in Q20 used minus log x; division here uses plus log x in the transformed target.</p>
+<hr />
+<h2 id="topic-53">7. Kernel regression: Nonlinear relation, inner-product computation</h2>
+<h3 id="topic-54">7.1 Feature maps and kernels</h3>
+<p><strong>Short definition:</strong> Feature map $\phi(x)$ input ko richer coordinates mein represent karta hai. Kernel $k(x,z)=\phi(x)^T\phi(z)$ transformed inner product directly calculate karta hai.</p>
+<p><strong>Real life:</strong> Area alone price ko linearly explain na kare, but area squared/interactions useful ho sakte hain. Explicitly all nonlinear features build karna expensive ho toh kernel similarities use kar sakte hain.</p>
+<p>Polynomial kernel:</p>
+<p>$$\boxed{k(x,z)=(1+x^Tz)^p}.$$</p>
+<p>For one-dimensional degree two, $\phi(x)=[1,\sqrt2x,x^2]^T$ gives $\phi(x)^T\phi(z)=(1+xz)^2$. Feature scaling matters; $[1,x,x^2]$ would give a different dot product.</p>
+<p>RBF/Gaussian kernel:</p>
+<p>$$\boxed{k(x,z)=\exp\left[-\frac{\lVert x-z\rVert^2}{2s^2}\right]},\quad s&gt;0.$$</p>
+<p>Nearby points have high RBF similarity. A valid real kernel yields symmetric positive-semidefinite Gram matrices. Kernel values are not necessarily probabilities; polynomial values can exceed 1.</p>
+<p><strong>Linear where?</strong> Predictor remains linear in transformed features, but can be nonlinear in original x. Kernel alone does not optimize loss or guarantee lower variance/generalization.</p>
+<h3 id="topic-55">Q16 — Role of a polynomial kernel</h3>
+<p><strong>Source:</strong> 2025 Mar 16 Quiz 2, Q16.</p>
+<p><strong>Question:</strong></p>
+<p>Polynomial kernel in kernel regression model is expressed as:</p>
+<p>$$K(x,x&#x27;)=(x^Tx&#x27;+1)^d.$$</p>
+<p>What role does $K(x,x&#x27;)$ play in kernel regression? (MSQ)</p>
+<p>(a) It ensures that the regression model remains linear.</p>
+<p>(b) It computes the similarity between data points in a transformed feature space.</p>
+<p>(c) It allows the model to capture non-linear relationships by mapping data to a higher-dimensional space.</p>
+<p>(d) It helps in reducing the variance of the model.</p>
+<p>(e) It minimizes the loss function in regression problems.</p>
+<p><strong>Solution:</strong> (b) is transformed inner product; (c) describes nonlinear modeling ability. (a) is misleading if it means linear in original inputs. (d) no automatic variance reduction; (e) kernel is a similarity function, optimizer minimizes loss.</p>
+<p>$$\boxed{\text{(b), (c)}}.$$</p>
+<p>The exponent d here denotes polynomial degree as written in the question; don't automatically equate it to input dimension.</p>
+<h3 id="topic-56">7.2 Dual coefficients and prediction formula</h3>
+<p>In transformed space, choose minimum-norm optimum in training-data span:</p>
+<p>$$w=\Phi\alpha,\qquad\Phi=[\phi(x_1)\ \cdots\ \phi(x_n)].$$</p>
+<p>Gram matrix:</p>
+<p>$$\boxed{K=\Phi^T\Phi,\qquad K_{ij}=k(x_i,x_j)}.$$</p>
+<p>Training predictions $K\alpha$; test prediction:</p>
+<p>$$\boxed{\hat y(x_*)=\sum_{i=1}^n\alpha_i k(x_i,x_*)}.$$</p>
+<p>If K invertible, unregularized interpolation coefficients $\alpha=K^{-1}y$. If singular, $K^\dagger y$ gives canonical least-squares coefficients and predictions $KK^\dagger y$. Invertibility cannot be assumed for every kernel/data set. Kernel ridge uses $(K+\lambda I)^{-1}y$ under standard penalty conventions, covered more in Week 6.</p>
+<p>$\alpha_i$ can be negative or greater than 1; they are coefficients, not normalized probabilities.</p>
+<p><img src="assets/week5/kernel_workflow.png" loading="lazy" alt="Kernel regression workflow" /></p>
+<h3 id="topic-57">Q27 — Prediction from kernel coefficients</h3>
+<p><strong>Source:</strong> 2026 Apr 06 Quiz 2, Q27.</p>
+<p><strong>Question:</strong></p>
+<p>Let the linear regression model’s solution be written as $w^*=X\alpha$, where $\alpha=[\alpha_1,\ldots,\alpha_n]^T\in\mathbb R^n$. Let $k:\mathbb R^d\times\mathbb R^d\to\mathbb R$ be a valid kernel function. What will be the prediction for an unseen data point $x_{test}$?</p>
+<p>(a) $\sum_{i=1}^n k(x_i,x_{test})$</p>
+<p>(b) $\sum_{i=1}^n\alpha_i$</p>
+<p>(c) $\sum_{i=1}^n\alpha_i k(x_i,x_{test})$</p>
+<p>(d) $\sum_{i=1}^n\alpha_i^2 k(x_i,x_{test})$</p>
+<p><strong>Solution:</strong></p>
+<p>Linear prediction $w^Tx_*=(X\alpha)^Tx_*=\sum_i\alpha_i x_i^Tx_*$. Kernelized version replaces inner products by k, retaining coefficients unchanged.</p>
+<p>$$\boxed{\text{(c)}}.$$</p>
+<p>No squaring of $\alpha_i$ and no dropping weights. For a non-linear kernel, this is the corresponding feature-space model $w=\Phi\alpha$; it is not generally the same raw-space function $X\alpha$ under an arbitrary replacement.</p>
+<h3 id="topic-58">Q4 — Polynomial-kernel prediction at the origin</h3>
+<p><strong>Source:</strong> 2024 Mar 24 Quiz 2, Q4.</p>
+<p><strong>Question:</strong></p>
+<p>Kernel regression with a polynomial kernel of degree three is applied on a data set {X, y}. Let the weight vector be given by</p>
+<p>$$w=\phi(X)[2.3,-1.0,0.4,-0.7]^T.$$</p>
+<p>Here $\phi(X)$ is the transformed data matrix whose ith column is $\phi(x_i)$. What will be the prediction for the data point $[0,0,0,0]^T$?</p>
+<p><strong>Solution:</strong> Use course's inhomogeneous kernel $k(x,z)=(1+x^Tz)^3$.</p>
+<ol>
+<li>Every training point has dot product 0 with query origin.</li>
+<li>Every kernel value $(1+0)^3=1$.</li>
+<li>Prediction equals coefficient sum:</li>
+</ol>
+<p>$$\boxed{\hat y=2.3-1.0+0.4-0.7=1}.$$</p>
+<p><strong>Assumption matters:</strong> A homogeneous polynomial kernel $(x^Tz)^3$ instead gives zero. The question says degree but omits offset; its answer assumes the standard +1 kernel used in these notes.</p>
+<h3 id="topic-59">Q8 — Solve one unknown kernel coefficient</h3>
+<p><strong>Source:</strong> 2024 Aug 04 Quiz 2, Q8.</p>
+<p><strong>Question:</strong></p>
+<p>Consider the following dataset for a kernel regression problem with a polynomial kernel of degree two along with the coefficient vector $\alpha$:</p>
+<p>$$X=\begin{bmatrix}1&amp;0&amp;-1&amp;0\\0&amp;1&amp;0&amp;-1\end{bmatrix},\qquad y=\begin{bmatrix}1\\-1\\2\\-2\end{bmatrix},\qquad\alpha=\begin{bmatrix}\alpha_1\\-0.625\\\alpha_3\\\alpha_4\end{bmatrix}.$$</p>
+<p>If the prediction for the data-point $[1,1]^T$ is 0, find the value of $\alpha_1$.</p>
+<p><strong>Solution:</strong> Use $k(x,z)=(1+x^Tz)^2$, consistent with paper's answer.</p>
+<p><strong>Step 1:</strong> X columns are $(1,0),(0,1),(-1,0),(0,-1)$.</p>
+<p><strong>Step 2:</strong> Query dot products respectively $1,1,-1,-1$.</p>
+<p><strong>Step 3:</strong> Kernel values $(1+1)^2,(1+1)^2,(1-1)^2,(1-1)^2$ → $4,4,0,0$.</p>
+<p><strong>Step 4:</strong> Prediction equation:</p>
+<p>$$0=4\alpha_1+4(-0.625)+0\alpha_3+0\alpha_4.$$</p>
+<p>$$4\alpha_1=2.5\Rightarrow\boxed{\alpha_1=0.625}.$$</p>
+<p>Unknown $\alpha_3,\alpha_4$ irrelevant for this query because their kernel values zero. Labels need not be used to solve the supplied prediction constraint.</p>
+<h3 id="topic-60">Q11 — Build the kernel matrix, solve coefficients, predict</h3>
+<p><strong>Source:</strong> 2024 Dec 01 Quiz 2, Q11.</p>
+<p><strong>Question:</strong></p>
+<p>Comprehension: Kernel regression with a polynomial kernel is applied on the following dataset with two features:</p>
+<p>$$X=\begin{bmatrix}1&amp;0&amp;0\\0&amp;1&amp;0\end{bmatrix},\qquad y=[2,1,2]^T.$$</p>
+<p>Weight vector can be written as $w=\phi(X)\alpha$, where $\phi$ is the transformation mapping corresponding to the kernel $k(x_i,x_j)=(1+x_i^Tx_j)^2$. The vector $\alpha$ is given by $(K)^{-1}y$, where K is the kernel matrix.</p>
+<p>Based on the above data, answer the given subquestions.</p>
+<p>(i) Compute K.</p>
+<p>(a) $\begin{bmatrix}1&amp;1&amp;1\\1&amp;4&amp;1\\4&amp;1&amp;1\end{bmatrix}$</p>
+<p>(b) $\begin{bmatrix}1&amp;4&amp;1\\1&amp;1&amp;1\\4&amp;1&amp;1\end{bmatrix}$</p>
+<p>(c) $\begin{bmatrix}4&amp;4&amp;1\\1&amp;1&amp;1\\4&amp;1&amp;1\end{bmatrix}$</p>
+<p>(d) $\begin{bmatrix}4&amp;1&amp;1\\1&amp;4&amp;1\\1&amp;1&amp;1\end{bmatrix}$</p>
+<p>(ii) What will be the prediction for the data point $[1,-1]^T$? Enter the answer correct to two decimal places.</p>
+<p><strong>Solution — (i): Pairwise kernel values</strong></p>
+<p>Points are $x_1=(1,0),x_2=(0,1),x_3=(0,0)$.</p>
+<ul>
+<li>$x_1^Tx_1=x_2^Tx_2=1$ → diagonal entries $K_{11}=K_{22}=4$.</li>
+<li>$x_3^Tx_3=0$ → $K_{33}=1$.</li>
+<li>Every distinct pair dot product zero → all off-diagonals 1.</li>
+</ul>
+<p>$$\boxed{K=\begin{bmatrix}4&amp;1&amp;1\\1&amp;4&amp;1\\1&amp;1&amp;1\end{bmatrix}\quad\text{(d)}}.$$</p>
+<p><img src="assets/week5/q11_kernel_matrix.png" loading="lazy" alt="Q11 kernel matrix" /></p>
+<p><strong>Solution — (ii), Step 1: Solve $K\alpha=y$.</strong></p>
+<p>$$4\alpha_1+\alpha_2+\alpha_3=2,$$</p>
+<p>$$\alpha_1+4\alpha_2+\alpha_3=1,$$</p>
+<p>$$\alpha_1+\alpha_2+\alpha_3=2.$$</p>
+<p>Subtract third equation from first: $3\alpha_1=0$ → $\alpha_1=0$.</p>
+<p>Subtract third from second: $3\alpha_2=-1$ → $\alpha_2=-1/3$.</p>
+<p>Third then gives $\alpha_3=7/3$.</p>
+<p><strong>Step 2: Test kernel vector.</strong> For $z=(1,-1)$, dot products are $1,-1,0$, so kernel vector $[4,0,1]^T$.</p>
+<p><strong>Step 3:</strong></p>
+<p>$$\hat y=0(4)+(-1/3)(0)+(7/3)(1)=\frac73.$$</p>
+<p>$$\boxed{\hat y=2.33}.$$</p>
+<p>Check: K is symmetric and invertible (determinant 9); supplied inverse expression valid here.</p>
+<h3 id="topic-61">Q17 — Direct prediction with given coefficients</h3>
+<p><strong>Source:</strong> 2025 Mar 16 Quiz 2, Q17.</p>
+<p><strong>Question:</strong></p>
+<p>Consider a kernel regression problem on the following dataset with two features:</p>
+<p>$$\{(x_1,y_1),(x_2,y_2),(x_3,y_3)\},$$</p>
+<p>where:</p>
+<p>$$x_1=[1,2]^T,\ y_1=3,\qquad x_2=[2,3]^T,\ y_2=5,\qquad x_3=[3,4]^T,\ y_3=7.$$</p>
+<p>The kernel function is given as:</p>
+<p>$$K(x,x&#x27;)=(1+x^Tx&#x27;)^2$$</p>
+<p>and the optimal coefficients $\alpha_i$ are given as:</p>
+<p>$$\alpha=[0.5,1.0,1.5]^T.$$</p>
+<p>Then, what will be the predicted value for the data point $[2,2]^T$?</p>
+<p><strong>Solution:</strong> Given coefficients use karo; prediction doesn't require refitting them.</p>
+<table>
+<thead>
+<tr>
+<th>Training point</th>
+<th style="text-align:right">Dot product with (2,2)</th>
+<th style="text-align:right">Kernel value</th>
+<th style="text-align:right">$\alpha_i k_i$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$(1,2)$</td>
+<td style="text-align:right">$2+4=6$</td>
+<td style="text-align:right">$7^2=49$</td>
+<td style="text-align:right">24.5</td>
+</tr>
+<tr>
+<td>$(2,3)$</td>
+<td style="text-align:right">$4+6=10$</td>
+<td style="text-align:right">$11^2=121$</td>
+<td style="text-align:right">121</td>
+</tr>
+<tr>
+<td>$(3,4)$</td>
+<td style="text-align:right">$6+8=14$</td>
+<td style="text-align:right">$15^2=225$</td>
+<td style="text-align:right">337.5</td>
+</tr>
+</tbody>
+</table>
+<p>$$\boxed{\hat y=24.5+121+337.5=483}.$$</p>
+<p><strong>Consistency note:</strong> These supplied coefficients are not the unregularized least-squares fit to the listed small labels: for example first training prediction would be $0.5(36)+1(81)+1.5(144)=315\ne3$. Treat the given $\alpha$ as instructed for this numerical prediction; “optimal” in the wording is inconsistent with the usual unregularized training setup.</p>
+<h3 id="topic-62">Q19 — Three-feature degree-two kernel prediction</h3>
+<p><strong>Source:</strong> 2025 Apr 13 ET, Q19.</p>
+<p><strong>Question:</strong></p>
+<p>A kernel regression model with a polynomial kernel of degree 2 is trained on the following dataset with three features:</p>
+<p>$$X=\begin{bmatrix}1&amp;4&amp;7&amp;2&amp;6\\2&amp;5&amp;8&amp;1&amp;5\\3&amp;6&amp;9&amp;3&amp;4\end{bmatrix}.$$</p>
+<p>Let the optimal weight vector $w^*$ be given by:</p>
+<p>$$w^*=\phi(X)[1,1.2,0,0.7,-0.5]^T,$$</p>
+<p>where $\phi$ is the transformation mapping corresponding to the kernel $K(x,x&#x27;)=(x^Tx&#x27;+1)^2$. Compute the predicted value $y_{pred}$ for a new data point $x&#x27;=[1,1,1]^T$. Enter the answer correct to one decimal place.</p>
+<p><strong>Solution:</strong></p>
+<p><strong>Step 1:</strong> Query all ones hai, so each column dot product is its coordinate sum.</p>
+<table>
+<thead>
+<tr>
+<th>Column / training point</th>
+<th style="text-align:right">Dot product</th>
+<th style="text-align:right">Kernel $(1+\text{dot})^2$</th>
+<th style="text-align:right">Coefficient</th>
+<th style="text-align:right">Contribution</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$(1,2,3)$</td>
+<td style="text-align:right">6</td>
+<td style="text-align:right">49</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">49</td>
+</tr>
+<tr>
+<td>$(4,5,6)$</td>
+<td style="text-align:right">15</td>
+<td style="text-align:right">256</td>
+<td style="text-align:right">1.2</td>
+<td style="text-align:right">307.2</td>
+</tr>
+<tr>
+<td>$(7,8,9)$</td>
+<td style="text-align:right">24</td>
+<td style="text-align:right">625</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td>$(2,1,3)$</td>
+<td style="text-align:right">6</td>
+<td style="text-align:right">49</td>
+<td style="text-align:right">0.7</td>
+<td style="text-align:right">34.3</td>
+</tr>
+<tr>
+<td>$(6,5,4)$</td>
+<td style="text-align:right">15</td>
+<td style="text-align:right">256</td>
+<td style="text-align:right">−0.5</td>
+<td style="text-align:right">−128</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Step 2:</strong> Add weighted contributions:</p>
+<p>$$\boxed{y_{pred}=49+307.2+0+34.3-128=262.5}.$$</p>
+<p>Same prediction method as Q17; additional features don't change the formula. Negative coefficients subtract contributions; zero coefficient point contributes zero even if its kernel value is large.</p>
+<hr />
+<h2 id="topic-63">8. Quick revision</h2>
+<h3 id="topic-64">8.1 Formula sheet</h3>
+<table>
+<thead>
+<tr>
+<th>Quantity</th>
+<th>Formula / condition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Column-sample convention</td>
+<td>$X\in\mathbb R^{d\times n}$, $\hat y=X^Tw$</td>
+</tr>
+<tr>
+<td>SSE / MSE</td>
+<td>$\sum_i(\hat y_i-y_i)^2$ / SSE divided by n</td>
+</tr>
+<tr>
+<td>SSE gradient</td>
+<td>$2X(X^Tw-y)$</td>
+</tr>
+<tr>
+<td>Normal equation</td>
+<td>$XX^Tw=Xy$</td>
+</tr>
+<tr>
+<td>Full-row-rank optimum</td>
+<td>$(XX^T)^{-1}Xy$</td>
+</tr>
+<tr>
+<td>Minimum-norm optimum</td>
+<td>$(XX^T)^\dagger Xy$</td>
+</tr>
+<tr>
+<td>Scalar slope, no intercept</td>
+<td>$\sum xy/\sum x^2$</td>
+</tr>
+<tr>
+<td>Slope with intercept</td>
+<td>$\sum(x-\bar x)(y-\bar y)/\sum(x-\bar x)^2$</td>
+</tr>
+<tr>
+<td>Intercept</td>
+<td>$\bar y-w_1\bar x$</td>
+</tr>
+<tr>
+<td>Zero training SSE</td>
+<td>$y\in\operatorname{row}(X)$</td>
+</tr>
+<tr>
+<td>Residual orthogonality</td>
+<td>$X(y-X^Tw^*)=0$</td>
+</tr>
+<tr>
+<td>GD update</td>
+<td>$w_{new}=w-\eta\nabla L(w)$</td>
+</tr>
+<tr>
+<td>LOOCV error</td>
+<td>$\frac1n\sum_i(y_i-\hat f_{-i}(x_i))^2$</td>
+</tr>
+<tr>
+<td>Gaussian-noise MLE</td>
+<td>Minimize squared residuals</td>
+</tr>
+<tr>
+<td>Laplace-noise MLE</td>
+<td>Minimize absolute residuals (LAD)</td>
+</tr>
+<tr>
+<td>Mean log(wx), Gaussian variance 1</td>
+<td>$\hat w=\exp[\operatorname{mean}(y_i-\log x_i)]$</td>
+</tr>
+<tr>
+<td>Mean log(w/x), Gaussian variance 1</td>
+<td>$\hat w=\exp[\operatorname{mean}(y_i+\log x_i)]$</td>
+</tr>
+<tr>
+<td>Polynomial kernel</td>
+<td>$(1+x^Tz)^p$</td>
+</tr>
+<tr>
+<td>RBF kernel</td>
+<td>$\exp[-\lVert x-z\rVert^2/(2s^2)]$</td>
+</tr>
+<tr>
+<td>Gram matrix</td>
+<td>$K_{ij}=k(x_i,x_j)$</td>
+</tr>
+<tr>
+<td>Invertible unregularized kernel fit</td>
+<td>$\alpha=K^{-1}y$</td>
+</tr>
+<tr>
+<td>Kernel prediction</td>
+<td>$\sum_i\alpha_i k(x_i,x_*)$</td>
+</tr>
+</tbody>
+</table>
+<h3 id="topic-65">8.2 Common mistakes</h3>
+<table>
+<thead>
+<tr>
+<th>Mistake</th>
+<th>Correct idea</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>All regression lines include intercept</td>
+<td>Read model; $wx$ and $w_0+w_1x$ differ</td>
+</tr>
+<tr>
+<td>Convex means unique optimum</td>
+<td>Full row rank gives uniqueness; otherwise null-space freedom</td>
+</tr>
+<tr>
+<td>Every least-squares problem has inverse formula</td>
+<td>Pseudoinverse/linear-system methods handle singular designs</td>
+</tr>
+<tr>
+<td>Data span and feature span are same space</td>
+<td>Data span in $\mathbb R^d$; feature span in $\mathbb R^n$</td>
+</tr>
+<tr>
+<td>Labels must always be fitted exactly</td>
+<td>Only labels inside feature span can have zero SSE</td>
+</tr>
+<tr>
+<td>Every optimal weight lies in data span</td>
+<td>Minimum-norm optimum can be chosen there; arbitrary minimizer may include null component</td>
+</tr>
+<tr>
+<td>SSE gradient is always error × x</td>
+<td>That is half-SSE; raw SSE needs factor 2</td>
+</tr>
+<tr>
+<td>A correct GD update always decreases loss</td>
+<td>Excessive learning rate can overshoot; Q15/Q18 show this</td>
+</tr>
+<tr>
+<td>Fewer iterations automatically means faster algorithm</td>
+<td>Batch sizes/per-update costs differ</td>
+</tr>
+<tr>
+<td>Reuse full-data means in LOOCV</td>
+<td>Recompute using training fold only</td>
+</tr>
+<tr>
+<td>Same dataset means same solution</td>
+<td>Intercept/model/kernel differences matter</td>
+</tr>
+<tr>
+<td>Noise variance scales fixed-data OLS weights</td>
+<td>Common positive variance scale doesn't change MLE minimizer</td>
+</tr>
+<tr>
+<td>Laplace noise gives LASSO</td>
+<td>It gives absolute residual loss; Laplace coefficient prior yields L1 penalty in MAP</td>
+</tr>
+<tr>
+<td>Polynomial degree alone specifies kernel</td>
+<td>Offset/homogeneous convention matters, especially at origin</td>
+</tr>
+<tr>
+<td>Kernel coefficients are probabilities</td>
+<td>They can be negative and need not sum to 1</td>
+</tr>
+<tr>
+<td>Build kernel using rows when columns are samples</td>
+<td>Kernel entry uses data-point columns in this convention</td>
+</tr>
+<tr>
+<td>Sum similarities without coefficients</td>
+<td>Prediction requires weighted sum $\sum\alpha_i k_i$</td>
+</tr>
+</tbody>
+</table>
+<h3 id="topic-66">8.3 Solving checklist</h3>
+<ol>
+<li>Read model: intercept? feature dimensions? Gaussian mean linear or logarithmic?</li>
+<li>Identify X orientation and requested quantity: slope, norm, squared norm, loss or prediction.</li>
+<li>For fitting, use normal equations/scalar formulas; verify residuals on all samples.</li>
+<li>For geometry, locate vectors in $\mathbb R^d$ versus $\mathbb R^n$ before using spans.</li>
+<li>For GD, read exact loss scaling, compute old predictions/errors, then update once.</li>
+<li>For LOOCV, remove held-out observation before fitting; average errors only when all folds requested.</li>
+<li>For likelihood, drop only parameter-independent constants and check parameter domain.</li>
+<li>For kernels, compute dot products → apply kernel → multiply coefficients → sum.</li>
+<li>Use exact fractions/intermediate precision; round final requested answer.</li>
+</ol>
+</article><nav class="next-prev" aria-label="Previous and next weeks"><a href="week4.html">← Week 4</a><a href="week6.html">Week 6 →</a></nav></main>
+<aside class="contents"><details open><summary>On this page</summary><nav aria-label="Topic index"><a class="level-h2" href="#topic-1">Topic index</a><a class="level-h2" href="#topic-2">1. Supervised learning and regression</a><a class="level-h3" href="#topic-3">1.1 Features, labels and generalization</a><a class="level-h3" href="#topic-4">1.2 Linear model, slope and intercept</a><a class="level-h3" href="#topic-5">1.3 Residuals and squared-error loss</a><a class="level-h3" href="#topic-6">Q25 — Guaranteed zero training error</a><a class="level-h2" href="#topic-7">2. Least squares: Weight vector kaise fit karein?</a><a class="level-h3" href="#topic-8">2.1 Matrix orientation and normal equations</a><a class="level-h3" href="#topic-9">2.2 One feature, no intercept</a><a class="level-h3" href="#topic-10">Q7 — Scalar optimal slope</a><a class="level-h3" href="#topic-11">Q2 — Fit a two-feature linear relationship and training MSE</a><a class="level-h3" href="#topic-12">2.3 Scaling properties</a><a class="level-h3" href="#topic-13">Q12 — Doubling labels or inputs</a><a class="level-h3" href="#topic-14">Q21 — Duplicate observations and add points exactly on the fitted model</a><a class="level-h2" href="#topic-15">3. Geometry: Predictions are a projection in label space</a><a class="level-h3" href="#topic-16">3.1 Two different spaces — don&#x27;t mix them</a><a class="level-h3" href="#topic-17">3.2 When is training error zero?</a><a class="level-h3" href="#topic-18">Q31 — Check whether labels belong to feature span</a><a class="level-h3" href="#topic-19">Q6 — Zero error and invertibility assumptions</a><a class="level-h3" href="#topic-20">Q5 — Optimal weight orthogonal to the data span</a><a class="level-h3" href="#topic-21">Q32 — Labels orthogonal to every feature</a><a class="level-h3" href="#topic-22">3.3 Minimum-norm weights can be written in the data span</a><a class="level-h3" href="#topic-23">Q23 — Projection and span statements</a><a class="level-h3" href="#topic-24">Q33 — Fitted vector is orthogonal to the residual</a><a class="level-h3" href="#topic-25">3.4 Intercept implies zero sum of residuals</a><a class="level-h3" href="#topic-26">Q24 — Can an optimal intercept model overpredict every sample?</a><a class="level-h2" href="#topic-27">4. Gradient descent and stochastic gradient descent</a><a class="level-h3" href="#topic-28">4.1 Gradient: Loss kis direction mein fastest increase hoti hai?</a><a class="level-h3" href="#topic-29">Q10 — Single-sample gradient and the missing factor 2</a><a class="level-h3" href="#topic-30">Q15 — One full-batch gradient step</a><a class="level-h3" href="#topic-31">Q18 — Scalar gradient update and prediction</a><a class="level-h3" href="#topic-32">Q9 — Negative-gradient direction and new norm</a><a class="level-h3" href="#topic-33">4.2 Learning-rate conditions and efficiency</a><a class="level-h3" href="#topic-34">Q30 — SSE versus MSE changes trajectory, not minimizers</a><a class="level-h3" href="#topic-35">4.3 SGD and mini-batches</a><a class="level-h3" href="#topic-36">Q1 — GD versus SGD convergence claims</a><a class="level-h2" href="#topic-37">5. Leave-one-out validation: Fit without the point being tested</a><a class="level-h3" href="#topic-38">5.1 Definition and intercept-fit formulas</a><a class="level-h3" href="#topic-39">Q3 — Hold out the third sample</a><a class="level-h3" href="#topic-40">Q13 — Norm of weights from an intercept-model fold</a><a class="level-h3" href="#topic-41">Q14 — Full LOOCV for a no-intercept model</a><a class="level-h2" href="#topic-42">6. Probabilistic view: Squared loss kahan se aati hai?</a><a class="level-h3" href="#topic-43">6.1 Gaussian noise gives least squares</a><a class="level-h3" href="#topic-44">Q22 — Gaussian conditional likelihood versus SSE</a><a class="level-h3" href="#topic-45">Q28 — Noise variance changes, observations fixed</a><a class="level-h3" href="#topic-46">6.2 Read slope, intercept and residual scale from a plot</a><a class="level-h3" href="#topic-47">Q29 — Temperature and thickness regression</a><a class="level-h3" href="#topic-48">6.3 Laplace noise means absolute residual loss, not LASSO</a><a class="level-h3" href="#topic-49">Q26 — Outliers under Gaussian and Laplace noise</a><a class="level-h3" href="#topic-50">6.4 A log-transformed mean: Reparameterize first</a><a class="level-h3" href="#topic-51">Q20 — Gaussian mean log(wx)</a><a class="level-h3" href="#topic-52">Q34 — Gaussian mean log(w/x)</a><a class="level-h2" href="#topic-53">7. Kernel regression: Nonlinear relation, inner-product computation</a><a class="level-h3" href="#topic-54">7.1 Feature maps and kernels</a><a class="level-h3" href="#topic-55">Q16 — Role of a polynomial kernel</a><a class="level-h3" href="#topic-56">7.2 Dual coefficients and prediction formula</a><a class="level-h3" href="#topic-57">Q27 — Prediction from kernel coefficients</a><a class="level-h3" href="#topic-58">Q4 — Polynomial-kernel prediction at the origin</a><a class="level-h3" href="#topic-59">Q8 — Solve one unknown kernel coefficient</a><a class="level-h3" href="#topic-60">Q11 — Build the kernel matrix, solve coefficients, predict</a><a class="level-h3" href="#topic-61">Q17 — Direct prediction with given coefficients</a><a class="level-h3" href="#topic-62">Q19 — Three-feature degree-two kernel prediction</a><a class="level-h2" href="#topic-63">8. Quick revision</a><a class="level-h3" href="#topic-64">8.1 Formula sheet</a><a class="level-h3" href="#topic-65">8.2 Common mistakes</a><a class="level-h3" href="#topic-66">8.3 Solving checklist</a></nav></details></aside></div>
+<footer>MLT Notes <span>Learn one concept at a time.</span></footer>
+</body></html>

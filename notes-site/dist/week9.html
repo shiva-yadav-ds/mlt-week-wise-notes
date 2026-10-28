@@ -1,0 +1,1403 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Week 9 · Perceptron and Logistic Regression | MLT Notes</title>
+<script src="theme.js"></script>
+<link rel="stylesheet" href="style.css">
+<script>window.MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']],processEscapes:true},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']},svg:{fontCache:'global'}};</script>
+<script defer src="vendor/tex-svg.js"></script></head>
+<body><a class="skip" href="#notes">Skip to notes</a>
+<header><a class="brand" href="index.html"><span class="brand-mark">m</span> MLT <span class="brand-muted">/ study notes</span></a><label class="theme-control">Theme <select id="theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label></header>
+<div class="layout"><aside class="weeks"><details open><summary>Course weeks <span>12</span></summary><nav aria-label="Course weeks"><a class="week-link " href="index.html" ><span class="week-number">01</span><span>Principal Component Analysis</span></a><a class="week-link " href="week2.html" ><span class="week-number">02</span><span>Kernel PCA</span></a><a class="week-link " href="week3.html" ><span class="week-number">03</span><span>K-Means Clustering</span></a><a class="week-link " href="week4.html" ><span class="week-number">04</span><span>Estimation, GMM and EM Algorithm</span></a><a class="week-link " href="week5.html" ><span class="week-number">05</span><span>Linear and Kernel Regression</span></a><a class="week-link " href="week6.html" ><span class="week-number">06</span><span>Regularisation and Cross-Validation</span></a><a class="week-link " href="week7.html" ><span class="week-number">07</span><span>KNN and Decision Tree</span></a><a class="week-link " href="week8.html" ><span class="week-number">08</span><span>Naive Bayes</span></a><a class="week-link selected" href="week9.html" aria-current=page><span class="week-number">09</span><span>Perceptron and Logistic Regression</span></a><a class="week-link " href="week10.html" ><span class="week-number">10</span><span>Support Vector Machine</span></a><a class="week-link " href="week11.html" ><span class="week-number">11</span><span>Soft-Margin SVM and Ensemble Methods</span></a><a class="week-link " href="week12.html" ><span class="week-number">12</span><span>Loss Functions and Artificial Neural Networks</span></a></nav></details></aside>
+<main id="notes"><div class="eyebrow">MACHINE LEARNING TECHNIQUES <span>/ WEEK 09</span></div><article><h1 id="topic-0">MLT Week 9: Perceptron and Logistic Regression Notes</h1>
+<p><strong>Flow:</strong> Linear score aur boundary → perceptron updates → convergence aur margin → sigmoid probability → threshold decisions → loss aur learning → regularization/kernel → classifier comparison.</p>
+<h2 id="topic-1">Topic index</h2>
+<table>
+<thead>
+<tr>
+<th>Topic</th>
+<th>Subtopics</th>
+<th>Questions</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1. Linear classification</td>
+<td>Score, bias, zero-one loss, geometry, separability</td>
+<td>Q1, Q15, Q20, Q2</td>
+</tr>
+<tr>
+<td>2. Perceptron learning</td>
+<td>Update rule, boundary cases, complete iterations</td>
+<td>Q9, Q10, Q12</td>
+</tr>
+<tr>
+<td>3. Convergence and margin</td>
+<td>Radius, mistake bound, order, scaling</td>
+<td>Q5, Q4, Q18, Q21, Q13, Q23</td>
+</tr>
+<tr>
+<td>4. Logistic regression</td>
+<td>Sigmoid, properties, score recovery, geometry</td>
+<td>Q24, Q6, Q3</td>
+</tr>
+<tr>
+<td>5. Threshold decisions</td>
+<td>Recall trade-off, log-odds, inverse prediction</td>
+<td>Q8, Q11, Q22, Q25, Q14</td>
+</tr>
+<tr>
+<td>6. Learning logistic regression</td>
+<td>Likelihood, cross-entropy, gradient updates</td>
+<td>Q17, Q16</td>
+</tr>
+<tr>
+<td>7. Regularization and kernels</td>
+<td>L2 penalty, span representation, SVM connection</td>
+<td>Q7</td>
+</tr>
+<tr>
+<td>8. Classifier comparison</td>
+<td>One-step training, linear boundaries</td>
+<td>Q19, Q26</td>
+</tr>
+<tr>
+<td>9. Revision</td>
+<td>Formula sheet, common mistakes, solving checklist</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="topic-2">1. Linear classification: Ek score se class kaise decide hoti hai?</h2>
+<h3 id="topic-3">1.1 Week 8 se connection</h3>
+<p>Naive Bayes mein class-wise feature distributions seekhkar posterior nikal rahe the. Ab seedha input se <strong>decision score</strong> ya <strong>class probability</strong> seekhenge.</p>
+<p><strong>Short definition:</strong> Discriminative classifier classes ke beech distinction seekhta hai, bina $P(X\mid Y)$ ko separately model kiye.</p>
+<p><strong>Real life:</strong> Email ke features ko weights do: suspicious words ka positive contribution, trusted-sender feature ka negative contribution. Total score se spam/non-spam decide karo.</p>
+<p>Perceptron directly boundary seekhta hai. Logistic regression $P(Y=1\mid x)$ model karta hai. Dono standard form mein linear score use karte hain.</p>
+<h3 id="topic-4">1.2 Linear score, weight aur bias</h3>
+<p>$$\boxed{z=w^Tx+b=\sum_{j=1}^{d}w_jx_j+b}.$$</p>
+<table>
+<thead>
+<tr>
+<th>Symbol</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$x\in\mathbb R^d$</td>
+<td>Ek sample ke $d$ features</td>
+</tr>
+<tr>
+<td>$w\in\mathbb R^d$</td>
+<td>Feature weights</td>
+</tr>
+<tr>
+<td>$b$</td>
+<td>Bias/intercept: boundary ko shift karta hai</td>
+</tr>
+<tr>
+<td>$z$</td>
+<td>Real-valued score; probability nahi</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Boundary:</strong> $w^Tx+b=0$. Two dimensions mein line, higher dimensions mein hyperplane.</p>
+<ul>
+<li>$b=0$ → boundary origin se pass karti hai.</li>
+<li>$b\ne0$ → boundary generally shifted hoti hai.</li>
+<li>$w$ boundary ke <strong>perpendicular</strong> hota hai, boundary ke along nahi.</li>
+</ul>
+<p><strong>Example:</strong> $w=(2,-1)$, $b=-3$, $x=(3,1)$ → $z=6-1-3=2$.</p>
+<p>Bias ko dummy feature se absorb kar sakte hain: $\tilde x=(x,1)$, $\tilde w=(w,b)$, then $\tilde w^T\tilde x=w^Tx+b$.</p>
+<p><strong>Exam rule:</strong> Agar sirf $w^Tx$ diya ho aur bias mention na ho, question mein apni taraf se bias add nahi karna.</p>
+<h3 id="topic-5">1.3 Labels aur score zero ka convention</h3>
+<p>Perceptron mein usually $y\in\{-1,+1\}$; logistic regression training mein usually $y\in\{0,1\}$.</p>
+<p>Common prediction rule:</p>
+<p>$$\hat y=\begin{cases}+1,&amp;z\ge0,\\-1,&amp;z&lt;0.\end{cases}$$</p>
+<p>For $0/1$ labels, negative side ka label 0 ho jaata hai. <strong>Exactly $z=0$ par convention matter karta hai.</strong> Question strict <code>&gt;</code> de ya <code>≥</code> de, wahi follow karo.</p>
+<p><strong>Positive-margin separation:</strong> $y_i(w^Tx_i+b)&gt;0$ for every sample. Isme koi sample boundary par nahi hota, so tie rule ki zaroorat nahi.</p>
+<h3 id="topic-6">1.4 Zero-one loss</h3>
+<p><strong>Definition:</strong> Correct prediction par 0 penalty, wrong prediction par 1.</p>
+<p>$$\ell_{01}(\hat y,y)=\mathbf1(\hat y\ne y),\qquad \boxed{L_{01}=\frac1N\sum_{i=1}^{N}\mathbf1(\hat y_i\ne y_i)}.$$</p>
+<p><strong>Real life:</strong> 10 emails mein 2 wrong labels → average error $2/10=0.2$.</p>
+<p>Zero loss ka matlab <strong>har point correct</strong>, sirf majority correct nahi. Sum loss aur average loss ka zero condition same hai.</p>
+<h3 id="topic-7">1.5 Q1 — Opposite directions par opposite labels</h3>
+<p><strong>Source:</strong> 2024 Mar 24 Quiz 2, Q1.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>The training dataset for a binary classification problem is as follows:</p>
+<p>$$\{(u,1),(-2u,0),(3u,1),(-4u,0)\}$$</p>
+<p>where $u\in\mathbb R^d$ is a constant, and the labels belong to 0, 1. Let $w$ be the weight vector of a linear classifier. What condition should the weight vector satisfy for the zero-one loss to be zero on this dataset?</p>
+<p>(a) $w^Tu&lt;0$</p>
+<p>(b) $w^Tu&gt;0$</p>
+<p>(c) $w^Tu=0$</p>
+<p>(d) We can never find a $w$ for which the zero-one loss becomes zero on this dataset.</p>
+</blockquote>
+<p><strong>Step 1 — Common scalar banao:</strong> Let $a=w^Tu$. Four vector dot products ab $a,-2a,3a,-4a$ hain.</p>
+<p><strong>Step 2 — Required signs:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Input</th>
+<th style="text-align:right">True label</th>
+<th style="text-align:right">Score</th>
+<th>Required side</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$u$</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">$a$</td>
+<td>Positive</td>
+</tr>
+<tr>
+<td>$-2u$</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">$-2a$</td>
+<td>Negative</td>
+</tr>
+<tr>
+<td>$3u$</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">$3a$</td>
+<td>Positive</td>
+</tr>
+<tr>
+<td>$-4u$</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">$-4a$</td>
+<td>Negative</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Step 3:</strong> $a&gt;0$ ho toh saari conditions simultaneously satisfy hoti hain.</p>
+<p><strong>Step 4:</strong> $a=0$ par all scores same; different labels ko ek fixed tie rule se distinguish nahi kar sakte.</p>
+<p><strong>Answer: (b), $\boxed{w^Tu&gt;0}$.</strong></p>
+<p><strong>Small edge case:</strong> Intended question nonzero $u$ ke liye hai. Agar $u=0$, saare inputs same zero vector ho jaate hain with conflicting labels; zero loss possible nahi.</p>
+<h3 id="topic-8">1.6 Q15 — Same direction, alternating labels</h3>
+<p><strong>Source:</strong> 2025 Dec 18 ET, Q15. Q1 jaisa format, <strong>lekin signs change hone se answer change</strong> hota hai.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>Consider the following training dataset for a binary classification problem:</p>
+<p>$$D=\{(u,1),(2u,0),(3u,1),(4u,0)\},$$</p>
+<p>where $u\in\mathbb R^d$ is a fixed nonzero constant and labels belong to $\{0,1\}$. Let $w$ be the weight vector of a linear classifier. What condition should the weight vector satisfy for the 0-1 loss to be zero on this dataset?</p>
+<p>(a) $w^Tu&lt;0$</p>
+<p>(b) $w^Tu&gt;0$</p>
+<p>(c) $w^Tu=0$</p>
+<p>(d) No such weight vector $w$ exists.</p>
+</blockquote>
+<p><strong>Step 1:</strong> Again $a=w^Tu$. Scores $a,2a,3a,4a$.</p>
+<p><strong>Step 2:</strong> $a&gt;0$ → all positive; labels 0 wale points wrong.</p>
+<p><strong>Step 3:</strong> $a&lt;0$ → all negative; labels 1 wale points wrong.</p>
+<p><strong>Step 4:</strong> $a=0$ → all tied; fixed tie rule still conflicting labels satisfy nahi karega.</p>
+<p><strong>Answer: (d).</strong> Through-origin classifier se zero loss impossible.</p>
+<p><strong>Extra intuition:</strong> Bias add bhi karo toh line along this ray ek threshold dega. Sequence $1,0,1,0$ mein multiple class switches hain; ek threshold enough nahi.</p>
+<p><img src="assets/week9/02_ray_datasets.png" loading="lazy" alt="Q1 separates opposite rays; Q15 has alternating labels along the same ray" /></p>
+<p><strong>Graph padho:</strong> Upper plot mein left vs right split kaam karta hai. Lower plot mein labels same direction par alternate kar rahe hain.</p>
+<h3 id="topic-9">1.7 Q20 — Candidate weights ko directly test karo</h3>
+<p><strong>Source:</strong> 2026 May 06 ET, Q20.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>(MSQ) Consider a dataset in $\mathbb R^2$ defined as:</p>
+<p>$$D=\{([1,1]^T,+1),([2,1]^T,+1),([1,-1]^T,-1),([2,-1]^T,-1)\}.$$</p>
+<p>Which of the following weight vectors $w\in\mathbb R^2$ can correctly separate the two classes using a linear decision boundary? (Select all that apply.)</p>
+<p>(a) $w=[0,1]^T$</p>
+<p>(b) $w=[1,0]^T$</p>
+<p>(c) $w=[1,5]^T$</p>
+<p>(d) $w=[-1,1]^T$</p>
+</blockquote>
+<p><strong>Step 1:</strong> First two scores positive aur last two negative chahiye; compute $w^Tx$.</p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th style="text-align:right">$(1,1)$</th>
+<th style="text-align:right">$(2,1)$</th>
+<th style="text-align:right">$(1,-1)$</th>
+<th style="text-align:right">$(2,-1)$</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>(a) $(0,1)$</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">-1</td>
+<td style="text-align:right">-1</td>
+<td>All correct</td>
+</tr>
+<tr>
+<td>(b) $(1,0)$</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">2</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">2</td>
+<td>Negative class wrong</td>
+</tr>
+<tr>
+<td>(c) $(1,5)$</td>
+<td style="text-align:right">6</td>
+<td style="text-align:right">7</td>
+<td style="text-align:right">-4</td>
+<td style="text-align:right">-3</td>
+<td>All correct</td>
+</tr>
+<tr>
+<td>(d) $(-1,1)$</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">-1</td>
+<td style="text-align:right">-2</td>
+<td style="text-align:right">-3</td>
+<td>$(2,1)$ definitely wrong</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Step 2:</strong> (a) aur (c) satisfy required signs.</p>
+<p><strong>Answer: (a), (c).</strong></p>
+<p><strong>Property:</strong> Ek dataset ke multiple valid separators ho sakte hain. Correct separator necessarily unique ya maximum-margin separator nahi hota.</p>
+<h3 id="topic-10">1.8 Dot product ki geometry</h3>
+<p>$$\boxed{w^Tx=\|w\|\|x\|\cos\phi},$$</p>
+<p>where $\phi$ angle between $w$ and $x$ hai.</p>
+<ul>
+<li>Acute angle → positive score.</li>
+<li>$90^\circ$ → zero score.</li>
+<li>Obtuse angle → negative score.</li>
+</ul>
+<p><strong>Projection rule:</strong> Score compare karna ho toh points ki projection <strong>$w$ ki direction par</strong> compare karo. Sirf horizontal coordinate ya origin se distance enough nahi.</p>
+<p><strong>Counterexample:</strong> $w=(1,0)$, $x=(0,100)$ → score 0, despite huge distance. $x&#x27;=(1,0)$ → score 1, despite small distance.</p>
+<p>For a nonzero $w$, signed distance to boundary $w^Tx+b=0$:</p>
+<p>$$\boxed{\frac{w^Tx+b}{\|w\|}}.$$</p>
+<h3 id="topic-11">1.9 Q2 — Figure se dot-product ordering</h3>
+<p><strong>Source:</strong> 2024 Mar 24 Quiz 2, Q2.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>(MSQ) Consider the following data-points in a binary classification problem. $w$ is the weight vector corresponding to a linear classifier. The labels are $+1$ and $-1$.</p>
+</blockquote>
+<p><img src="assets/week9/08_q2_given_figure.png" loading="lazy" alt="Figure supplied with Q2, showing five data points and a weight arrow" /></p>
+<blockquote>
+<p>Which of the following statements are true?</p>
+<p>(a) $0&lt;w^Tx_1&lt;w^Tx_2&lt;w^Tx_3$</p>
+<p>(b) $w^Tx_4=0$</p>
+<p>(c) $0&lt;w^Tx_2&lt;w^Tx_1&lt;w^Tx_3$</p>
+<p>(d) $w^Tx_5&lt;0$</p>
+<p>(e) $w^Tx_3&lt;0$</p>
+</blockquote>
+<p><strong>Step 1 — Intended method:</strong> Har point ko $w$ ki direction par project karo. Positive direction mein aage jaane se score badhta hai.</p>
+<p><strong>Step 2 — Intended ordering:</strong> Key ke intended geometry mein $x_1,x_2,x_3$ positive side par increasing projection rakhte hain:</p>
+<p>$$0&lt;w^Tx_1&lt;w^Tx_2&lt;w^Tx_3.$$</p>
+<p>So (a) true, (c) false, (e) false.</p>
+<p><strong>Step 3:</strong> Intended $x_4$ zero-score boundary par → (b) true. $x_5$ negative projection → (d) true.</p>
+<p><strong>Expected answer in paper: (a), (b), (d).</strong></p>
+<p><strong>Figure caveat:</strong> Printed sketch mein $x_4$ drawn line par nahi dikh raha aur $w$ arrow bhi line ka exact normal nahi lagta. Exact coordinates nahi diye, isliye sketch ko scale par measure karke key establish nahi kar sakte. <strong>$w^Tx_4=0$ tabhi true hai jab $x_4\perp w$ ho.</strong> Key ki intended geometry neeche consistent illustration se samjho; yeh question ke numerical coordinates nahi hain.</p>
+<p><img src="assets/week9/01_projection.png" loading="lazy" alt="Consistent illustrative projection geometry for the intended Q2 answer" /></p>
+<p>Illustration mein $w=(2,1)$ aur scores $1,4,7,0,-4$ hain. Projection ka actual rule samajhne ke liye yeh example hai; printed figure se invented coordinates infer nahi kiye gaye.</p>
+<hr />
+<h2 id="topic-12">2. Perceptron: Galti dekhkar weights update karna</h2>
+<h3 id="topic-13">2.1 Short definition aur intuition</h3>
+<p><strong>Definition:</strong> Perceptron ek linear binary classifier hai jo wrong/zero-margin training points par weights update karta hai.</p>
+<p><strong>Real life:</strong> Teacher answer check karke sirf galti par correction de. Positive example ko negative samjha toh uski direction ka support badhao; negative example ko positive samjha toh support ghatao.</p>
+<p>Learning rate $\eta&gt;0$ ke saath:</p>
+<p>$$\boxed{w_{\mathrm{new}}=w+\eta yx}.$$</p>
+<p>Bias train ho raha ho toh:</p>
+<p>$$b_{\mathrm{new}}=b+\eta y.$$</p>
+<p>Is paper ke numerical perceptron questions mein default $\eta=1$, no separate bias, unless stated otherwise.</p>
+<p><strong>Why use an iterative algorithm?</strong> Arbitrary datasets par linear classifiers ka exact zero-one training loss minimize karna generally NP-hard problem hai. Perceptron har dataset ka best-error classifier solve karne ka promise nahi karta; separable case mein finite updates se zero-error separator milne ki guarantee use karta hai.</p>
+<h3 id="topic-14">2.2 Update kab lagana hai? Do conventions clear rakho</h3>
+<p><strong>Zero-margin update convention:</strong> $y(w^Tx)\le0$ par update. Boundary sample ko positive margin tak push karta hai.</p>
+<p><strong>Prediction-error convention:</strong> Pehle label predict karo using stated tie rule, phir only wrong label par update. Agar zero ko $+1$ predict karte ho, positive boundary point par update nahi, negative boundary point par update hota hai.</p>
+<p>Q10/Q12 ki main working mein <strong>$y(w^Tx)\le0$</strong> convention use karenge. Q19 mein explicit label rule hai, uske hisaab se prediction-error update explain kiya hai. Jab intermediate trace differ ho sakti hai, wahi par bataya hai.</p>
+<p><strong>Non-boundary points par dono rules agree karte hain.</strong> Final label at zero phir bhi specified prediction convention se hi decide hota hai.</p>
+<h3 id="topic-15">2.3 Algorithm ka full flow</h3>
+<ol>
+<li>$w=0$ se start karo.</li>
+<li>Given order mein next $(x_i,y_i)$ lo.</li>
+<li><strong>Current</strong> weights se score $z_i=w^Tx_i$ nikalo.</li>
+<li>Update condition true ho toh $w\leftarrow w+y_ix_i$.</li>
+<li>Next sample ko updated weights se evaluate karo.</li>
+<li>Dataset par passes repeat karo until ek <strong>complete pass without required updates</strong> mile.</li>
+</ol>
+<p><strong>Epoch/pass:</strong> Har sample ko ek baar visit karna. <strong>Update:</strong> Weight change hona. Dono same nahi.</p>
+<p><strong>Stop trap:</strong> Ek point correct hone se convergence nahi. All training points check karne hain.</p>
+<h3 id="topic-16">2.4 Update direction ka meaning</h3>
+<p>For $y=+1$, $w\leftarrow w+x$ → same point ka score $\|x\|^2$ se increase hota hai.</p>
+<p>For $y=-1$, $w\leftarrow w-x$ → score $\|x\|^2$ se decrease hota hai.</p>
+<p>General signed-score change:</p>
+<p>$$\boxed{y(w_{\mathrm{new}}^Tx)=y(w^Tx)+\eta\|x\|^2}.$$</p>
+<p><strong>Property:</strong> Update chosen point ko correct direction mein move karta hai, but ek update se necessarily correct nahi banata.</p>
+<p><strong>Counterexample:</strong> 1D $w=-100$, $x=1$, $y=+1$, $\eta=1$. Update ke baad $w=-99$; score improve hua, still negative. Doosre points ki classification bhi update se change ho sakti hai.</p>
+<h3 id="topic-17">2.5 Q9 — Two consecutive updates</h3>
+<p><strong>Source:</strong> 2024 Dec 22 ET, Q9.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>While training a perceptron model, the weight vector at some iteration $t$ is $w^t$. The next two data points picked up by the perceptron algorithm in the course of its execution are $(x_1,y_1)$ and $(x_2,y_2)$, where $y$ is the true label:</p>
+<p>$$w^t=\begin{bmatrix}0\\1\\2\end{bmatrix},\quad x_1=\begin{bmatrix}1\\-1\\0\end{bmatrix},\quad y_1=1,\quad x_2=\begin{bmatrix}-1\\1\\1\end{bmatrix},\quad y_2=-1.$$</p>
+<p>What are the values of $w^{t+1}$ and $w^{t+2}$?</p>
+<p>(a) $w^{t+1}=[1,0,2]^T$, $w^{t+2}=[2,-1,1]^T$</p>
+<p>(b) $w^{t+1}=[1,0,2]^T$, $w^{t+2}=[1,0,1]^T$</p>
+<p>(c) $w^{t+1}=[0,1,2]^T$, $w^{t+2}=[1,1,3]^T$</p>
+<p>(d) $w^{t+1}=[0,1,2]^T$, $w^{t+2}=[1,1,-1]^T$</p>
+</blockquote>
+<p><strong>Step 1 — First score:</strong></p>
+<p>$$(w^t)^Tx_1=0(1)+1(-1)+2(0)=-1.$$</p>
+<p>True label $+1$, so wrong.</p>
+<p><strong>Step 2 — First update:</strong></p>
+<p>$$w^{t+1}=(0,1,2)+(+1)(1,-1,0)=\boxed{(1,0,2)}.$$</p>
+<p><strong>Step 3 — Second score with new weights:</strong></p>
+<p>$$(w^{t+1})^Tx_2=1(-1)+0(1)+2(1)=1.$$</p>
+<p>True label $-1$, so wrong again.</p>
+<p><strong>Step 4 — Second update:</strong></p>
+<p>$$w^{t+2}=(1,0,2)+(-1)(-1,1,1)=(1,0,2)+(1,-1,-1)=\boxed{(2,-1,1)}.$$</p>
+<p><strong>Answer: (a).</strong></p>
+<p><strong>Trap:</strong> Negative label par $x_2$ subtract hota hai. $-1\times-1=+1$ first coordinate mein zaroor track karo.</p>
+<h3 id="topic-18">2.6 Q10 — Complete cyclic run and a boundary test point</h3>
+<p><strong>Source:</strong> 2025 Apr 13 ET, Q10.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>(MSQ) Consider the following data set with three data points:</p>
+<p>$$D=\{([1,1]^T,+1),([1,-1]^T,-1),([-1,0]^T,-1)\}.$$</p>
+<p>The perceptron algorithm is applied to the dataset with an initial weight vector $w^0=[0\ 0]^T$. While looking for mistakes, cycle through the data points from left to right. Which of the following statements are true?</p>
+<p>(a) The algorithm will converge with $w=[1\ 1]^T$.</p>
+<p>(b) The algorithm will converge with $w=[1\ 2]^T$.</p>
+<p>(c) The algorithm will converge with $w=[0\ 2]^T$.</p>
+<p>(d) The algorithm will converge with $w=[0\ 1]^T$.</p>
+<p>(e) The model will predict the label as $+1$, for the new data point $[2\ -1]^T$.</p>
+<p>(f) The model will predict the label as $-1$, for the new data point $[2\ -1]^T$.</p>
+</blockquote>
+<p><strong>Step 1:</strong> Use $y(w^Tx)\le0$ update rule; initialize $w=(0,0)$.</p>
+<p><strong>Step 2 — First pass:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Visit</th>
+<th>Point, label</th>
+<th>Weight before</th>
+<th style="text-align:right">Score $w^Tx$</th>
+<th style="text-align:right">Signed score $y w^Tx$</th>
+<th>Action / new weight</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>$(1,1),+1$</td>
+<td>$(0,0)$</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">0</td>
+<td>Update: $(0,0)+(1,1)=(1,1)$</td>
+</tr>
+<tr>
+<td>2</td>
+<td>$(1,-1),-1$</td>
+<td>$(1,1)$</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">0</td>
+<td>Update: $(1,1)-(1,-1)=(0,2)$</td>
+</tr>
+<tr>
+<td>3</td>
+<td>$(-1,0),-1$</td>
+<td>$(0,2)$</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">0</td>
+<td>Update: $(0,2)-(-1,0)=(1,2)$</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Step 3 — Verify full next pass:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Point</th>
+<th style="text-align:right">Score with $(1,2)$</th>
+<th style="text-align:right">True label</th>
+<th style="text-align:right">Signed score</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$(1,1)$</td>
+<td style="text-align:right">3</td>
+<td style="text-align:right">+1</td>
+<td style="text-align:right">3</td>
+</tr>
+<tr>
+<td>$(1,-1)$</td>
+<td style="text-align:right">-1</td>
+<td style="text-align:right">-1</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td>$(-1,0)$</td>
+<td style="text-align:right">-1</td>
+<td style="text-align:right">-1</td>
+<td style="text-align:right">1</td>
+</tr>
+</tbody>
+</table>
+<p>All signed scores positive → no further updates. <strong>Converged $w=(1,2)$</strong>, so (b).</p>
+<p><img src="assets/week9/03_perceptron_updates.png" loading="lazy" alt="Three perceptron update boundaries for Q10" /></p>
+<p><strong>Graph connection:</strong> First two boundaries still have training points on the line. Third boundary puts all training points strictly on their correct sides.</p>
+<p><strong>Step 4 — Test point:</strong></p>
+<p>$$w^T(2,-1)=1(2)+2(-1)=0.$$</p>
+<p>With tie rule $\hat y=+1$ for score $\ge0$, label $+1$ → (e).</p>
+<p><strong>Answer: (b), (e), using the positive-at-zero prediction convention assumed by the key.</strong> Without a zero-score prediction convention, test label is not determined by the score alone.</p>
+<p><strong>If using only prediction errors during training:</strong> Positive-at-zero convention gives update-weight sequence $(-1,1)\to(0,1)\to(1,1)\to(0,2)\to(1,2)$. Final separator remains same here, but update count changes. Isliye update rule pehle fix karna important hai.</p>
+<h3 id="topic-19">2.7 Q12 — Two updates enough hain?</h3>
+<p><strong>Source:</strong> 2025 Aug 31 ET, Q12.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>Consider the following dataset:</p>
+<p>$$D=\{([-2,1]^T,+1),([-1,1]^T,+1),([-1,-1]^T,-1),([2,1]^T,-1)\}.$$</p>
+<p>The perceptron algorithm is applied on this data set with the weight vector initialized to $[0\ 0]^T$. Will the algorithm converge after the second round of update of the weight vector? While looking for mistakes, cycle through the data points from left to right.</p>
+<p>(a) Yes</p>
+<p>(b) No</p>
+</blockquote>
+<p><strong>Step 1 — First point:</strong> At zero weights, signed score 0, so first update:</p>
+<p>$$w^{(1)}=(0,0)+(+1)(-2,1)=(-2,1).$$</p>
+<p><strong>Step 2 — Second point:</strong></p>
+<p>$$(-2,1)^T(-1,1)=3&gt;0.$$</p>
+<p>True label $+1$; no update. <strong>Second sample visit is not the second update.</strong></p>
+<p><strong>Step 3 — Third point:</strong></p>
+<p>$$(-2,1)^T(-1,-1)=2-1=1.$$</p>
+<p>True label $-1$, wrong → second update:</p>
+<p>$$w^{(2)}=(-2,1)-(-1,-1)=(-1,2).$$</p>
+<p><strong>Step 4 — Fourth point at these weights:</strong></p>
+<p>$$(-1,2)^T(2,1)=-2+2=0.$$</p>
+<p>True label $-1$. Under zero-margin update rule it needs another update; under positive-at-zero prediction it is also wrong. Hence <strong>not converged after two updates</strong>.</p>
+<p><strong>Answer: (b), No.</strong></p>
+<p><strong>Boundary convention note:</strong> If training updates only prediction errors with positive-at-zero ties, its first two update weights are $(1,1)$ and $(-1,0)$. The third point is then wrong, so answer still <strong>No</strong>.</p>
+<hr />
+<h2 id="topic-20">3. Perceptron kab converge karega? Margin aur mistake bound</h2>
+<h3 id="topic-21">3.1 Linear separability</h3>
+<p><strong>Definition:</strong> Aisa linear boundary exist kare jo all training points ko correct side par rakhe.</p>
+<p>Through-origin strict separation:</p>
+<p>$$\exists w^*:\quad y_i(w^{*T}x_i)&gt;0\quad\forall i.$$</p>
+<p><strong>Real life:</strong> Agar ek weighted rule se pass/fail samples perfectly separate ho jaate hain, perceptron us tarah ka rule find kar sakta hai. Labels mein contradictory examples/noise ho toh perfect separation may not exist.</p>
+<p><strong>Counterexample:</strong> Same input $x$ ke saath labels $+1$ aur $-1$ dono hon, koi deterministic classifier us input par dono labels correctly predict nahi kar sakta.</p>
+<p><strong>Another example:</strong> XOR points $(0,0),(1,1)$ one class aur $(0,1),(1,0)$ other class ek straight line se separate nahi hote, even with bias. Nonlinear features/kernel se representation badalne par situation change ho sakti hai.</p>
+<h3 id="topic-22">3.2 Margin $\gamma$ aur radius $R$</h3>
+<p>Normalize separator so $\|w^*\|=1$. Then:</p>
+<p>$$\boxed{\gamma=\min_i y_i(w^{*T}x_i)&gt;0},\qquad \boxed{R=\max_i\|x_i\|}.$$</p>
+<p><strong>Margin:</strong> Closest point bhi boundary se kitna safely correct side par hai.</p>
+<p><strong>Radius:</strong> Inputs origin se maximum kitne door hain.</p>
+<p>Non-unit $v$ diya ho toh geometric margin:</p>
+<p>$$\gamma=\min_i\frac{y_i(v^Tx_i)}{\|v\|}.$$</p>
+<p><strong>Trap:</strong> $v$ ko 100 se multiply karne par raw scores 100 times ho jaate hain, but boundary aur geometric distances same. Isi liye normalization important hai.</p>
+<h3 id="topic-23">3.3 Convergence theorem: Use karne wala result</h3>
+<p>For finite linearly separable data, bounded radius, $w^{(0)}=0$, standard perceptron updates:</p>
+<p>$$\boxed{M\le\left(\frac{R}{\gamma}\right)^2}.$$</p>
+<p>$M$ update/mistake bound hai, dataset passes ki count nahi. Zero-margin update variant mein zero-margin updates bhi is count mein included hain.</p>
+<ul>
+<li>Margin larger → easier separation → smaller bound, other conditions fixed.</li>
+<li>Radius larger at fixed margin → bound larger.</li>
+<li>Bound upper limit hai, exact number of actual mistakes nahi.</li>
+<li>Nonseparable dataset par finite convergence guarantee nahi; algorithm cycle kar sakta hai.</li>
+<li>Perceptron <strong>some separator</strong> find karta hai, necessarily maximum-margin separator nahi.</li>
+</ul>
+<p><img src="assets/week9/04_margin_bound.png" loading="lazy" alt="Geometric margin and how the mistake bound depends on it" /></p>
+<p><strong>Bias caution:</strong> Agar augmented features $(x,1)$ se bias train kar rahe ho, theorem apply karte waqt augmented-space radius/margin use karo. Raw $x$ ka radius directly plug karna generally valid nahi.</p>
+<h3 id="topic-24">3.4 Q5 — Given inequalities se separator identify karo</h3>
+<p><strong>Source:</strong> 2024 Sep 01 ET, Q5.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>(MSQ) Consider a training dataset of 100 points for a binary classification problem with the following structure:</p>
+<ul>
+<li>The features are in $\mathbb R^2$ and the labels are in $\{-1,1\}$.</li>
+<li>For every data-point $((x_1,x_2),y)$ in the training dataset, $x_1x_2&gt;0$ and $x_1y&gt;0$.</li>
+</ul>
+<p>Which of the following statements are true?</p>
+<p>(a) The dataset is linearly separable with a positive margin.</p>
+<p>(b) The perceptron algorithm will terminate after a finite number of iterations when trained on this dataset.</p>
+<p>(c) The dataset is linearly separable, but the margin may be zero.</p>
+<p>(d) The dataset is not linearly separable.</p>
+</blockquote>
+<p><strong>Step 1:</strong> $x_1y&gt;0$ means label aur first coordinate ka sign same hai:</p>
+<ul>
+<li>$y=+1$ → $x_1&gt;0$.</li>
+<li>$y=-1$ → $x_1&lt;0$.</li>
+</ul>
+<p><strong>Step 2:</strong> Choose $w=(1,0)$, boundary $x_1=0$.</p>
+<p>$$y(w^Tx)=yx_1&gt;0\quad\text{for every sample}.$$</p>
+<p><strong>Step 3:</strong> Only 100 points hain. In 100 strictly positive values ka minimum strictly positive hoga:</p>
+<p>$$\gamma=\min_i y_ix_{i1}&gt;0.$$</p>
+<p>Thus (a) true. $x_1x_2&gt;0$ additionally same-sign coordinates batata hai; separator find karne ke liye $x_1y&gt;0$ already enough tha.</p>
+<p><strong>Step 4:</strong> Finite dataset has finite radius; positive margin gives finite perceptron convergence → (b) true.</p>
+<p><strong>Answer: (a), (b).</strong> (c) false for this finite strict-separation dataset; (d) false.</p>
+<p><strong>Property:</strong> Margin very small ho sakta hai, lekin given finite data mein strictly positive values ka minimum exactly zero nahi.</p>
+<h3 id="topic-25">3.5 Q4 — Numerical mistake bound</h3>
+<p><strong>Source:</strong> 2024 Apr 28 ET, Q4.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>Consider a linearly separable binary classification dataset with 1000 data points and 100 features. Assume that there exists a $w$ such that $\|w\|=1$, $y_i(w^Tx_i)\ge0.5\ \forall i$. Also assume that $\|x\|_2\le2\ \forall i$. What is the maximum number of mistakes that the Perceptron algorithm can make on this dataset?</p>
+</blockquote>
+<p><strong>Step 1:</strong> Unit separator already specified. Margin lower bound $\gamma=0.5$; radius upper bound $R=2$.</p>
+<p><strong>Step 2:</strong></p>
+<p>$$M\le\frac{R^2}{\gamma^2}=\frac{2^2}{0.5^2}=\frac4{0.25}=\boxed{16}.$$</p>
+<p><strong>Step 3:</strong> Thus guaranteed upper bound 16 mistakes/updates. Actual run fewer kar sakta hai; exactly 16 hona zaroori nahi.</p>
+<p><strong>Trap:</strong> 1000 samples aur 100 features ko formula mein multiply nahi karna. Given $R,\gamma$ bound determine karte hain.</p>
+<h3 id="topic-26">3.6 Q18 — More samples/features means more mistakes?</h3>
+<p><strong>Source:</strong> 2025 Dec 18 ET, Q18.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>Consider two datasets $D^{(1)}$ and $D^{(2)}$ where:</p>
+<p>$$D^{(1)}=\{(x_1^{(1)},y_1^{(1)}),\ldots,(x_n^{(1)},y_n^{(1)})\},\quad D^{(2)}=\{(x_1^{(2)},y_1^{(2)}),\ldots,(x_m^{(2)},y_m^{(2)})\}$$</p>
+<p>such that $x_i^{(1)}\in\mathbb R^{d_1}$ and $x_i^{(2)}\in\mathbb R^{d_2}$, where $d_1&gt;d_2$ and $n&gt;m$. The maximum number of mistakes made by the perceptron algorithm is higher on dataset $D^{(1)}$ than on dataset $D^{(2)}$.</p>
+<p>(a) True</p>
+<p>(b) False</p>
+</blockquote>
+<p><strong>Step 1:</strong> Bound depends on $R/\gamma$, not directly dimension/sample count. Those geometric values are not given.</p>
+<p><strong>Step 2 — Counterexample:</strong> Let $D^{(2)}=\{(1,+1),(-2,-1)\}$ in 1D. Unit separator $w^*=1$ gives $R=2,\gamma=1$, bound 4.</p>
+<p>Construct $D^{(1)}$ in 2D with three distinct points: $(1,0)$ labelled $+1$, $(-1,0)$ labelled $-1$, and $(1.5,0)$ labelled $+1$. Unit separator $(1,0)$ gives $R=1.5,\gamma=1$, bound $1.5^2=2.25$ (hence integer update count at most 2).</p>
+<p>More observations and more features hone ke bawajood bound <strong>smaller</strong> hai. Counts alone claimed strict ordering establish nahi karte.</p>
+<p><strong>Answer: (b), False.</strong> Nonseparability would create another issue: then no finite standard bound is guaranteed at all.</p>
+<h3 id="topic-27">3.7 Q21 — Convergence does not mean one unique answer</h3>
+<p><strong>Source:</strong> 2026 May 06 ET, Q21.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>(MSQ) Consider a binary classification dataset in $\mathbb R^4$ that is linearly separable. Suppose there exist two distinct weight vectors $w_1$ and $w_2$ that both correctly classify all training points with a positive margin. The Perceptron algorithm is applied to this dataset. Which of the following statements are correct? (Select all that apply.)</p>
+<p>(a) The Perceptron algorithm is guaranteed to converge to $w_1$.</p>
+<p>(b) The final weight vector obtained by the Perceptron algorithm depends on the initialization and the order in which the data points are presented.</p>
+<p>(c) The Perceptron algorithm is guaranteed to converge to some separating hyperplane in a finite number of updates.</p>
+<p>(d) The Perceptron algorithm always converges to the maximum margin separator among all possible separating hyperplanes.</p>
+</blockquote>
+<p><strong>Step 1:</strong> Perceptron ka target specified vector $w_1$ nahi → (a) false.</p>
+<p><strong>Step 2:</strong> Different starts/orders can trigger different update paths → (b) true. “Depends” ka matlab change <strong>ho sakta hai</strong>, har possible order different result dega yeh nahi.</p>
+<p><strong>Step 3:</strong> Positive-margin separability finite convergence ensure karti hai → (c) true.</p>
+<p><strong>Step 4:</strong> Update rule mein maximum margin optimize karne ka criterion nahi → (d) false.</p>
+<p><strong>Answer: (b), (c).</strong></p>
+<h3 id="topic-28">3.8 Uniform scaling: Coordinates badle, boundary ka kya?</h3>
+<p>Every sample $x_i\to cx_i$, same positive constant $c$:</p>
+<p>$$R&#x27;=cR,\qquad\gamma&#x27;=c\gamma,\qquad \boxed{\frac{R&#x27;^2}{\gamma&#x27;^2}=\frac{R^2}{\gamma^2}}.$$</p>
+<p>For zero initialization, same learning rate, same point order and tie/update convention:</p>
+<p>$$\boxed{w&#x27;_t=cw_t}.$$</p>
+<p>Why useful? Corresponding training scores become $w_t&#x27;^T(cx_i)=c^2w_t^Tx_i$; sign/tie decisions same. Update vectors are also $c$ times. Boundaries $w^Tx=0$ and $(cw)^Tx=0$ same hain.</p>
+<p><strong>Important distinction:</strong> Same classifier/boundary does <strong>not</strong> mean identical numerical weight vector.</p>
+<p><strong>Counterexample to overgeneralization:</strong> Only feature 1 ko scale karna, feature 2 ko nahi, uniform scaling nahi. Radius/margin ratio and training path change ho sakte hain. Nonzero initialization/different order par above matched-run conclusion directly apply nahi karna.</p>
+<h3 id="topic-29">3.9 Q13 — All points doubled</h3>
+<p><strong>Source:</strong> 2025 Aug 31 ET, Q13.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>(MSQ) Consider a dataset $D_1=\{(x_1,y_1),(x_2,y_2),\ldots,(x_n,y_n)\}$, where $x_i\in\mathbb R^d$ and is linearly separable by a hyperplane passing through the origin. Construct another dataset $D_2=\{(2x_1,y_1),(2x_2,y_2),\ldots,(2x_n,y_n)\}$ from $D_1$. If we run the perceptron algorithm on both the dataset, and the algorithm converges for the points in $D_1$, then which of the following will hold true?</p>
+<p>(a) Perceptron algorithm will converge for $D_2$.</p>
+<p>(b) The perceptron algorithm will give the same classifier when run on $D_1$ and $D_2$.</p>
+<p>(c) The mistake bound for $D_2$ will be greater than that of $D_1$.</p>
+</blockquote>
+<p><strong>Step 1:</strong> $y_iw^{*T}(2x_i)=2y_iw^{*T}x_i&gt;0$. Separability maintained → (a) true.</p>
+<p><strong>Step 2:</strong> Under matched runs described in 3.8, weights double, boundary same → (b) true in intended setting.</p>
+<p><strong>Step 3:</strong> $R&#x27;=2R$, $\gamma&#x27;=2\gamma$ → bound unchanged, so (c) false.</p>
+<p><strong>Expected answer: (a), (b).</strong> Question leaves initialization/order implicit; “same classifier” requires matched runs, not arbitrary independently shuffled runs. Q23 makes these conditions explicit.</p>
+<h3 id="topic-30">3.10 Q23 — Same scaling concept, explicit run conditions</h3>
+<p><strong>Source:</strong> 2026 Sep 13 ET, Q23. Same type as Q13; use section 3.8 results directly.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>(MSQ) Let $S=(x_1,y_1),\ldots,(x_n,y_n)$ be $n$ points in $\mathbb R^d$ that are linearly separable by a hyperplane through the origin. Construct $S&#x27;=(cx_1,y_1),\ldots,(cx_n,y_n)$ where $c&gt;1$ is a constant. The perceptron algorithm (initialised at $w=0$, learning rate 1) is run on both $S$ and $S&#x27;$, using the same ordering of points in both runs. Which of the following statements are true?</p>
+<p>(a) The mistake bound of the perceptron on $S&#x27;$ is strictly larger than its mistake bound on $S$.</p>
+<p>(b) $S&#x27;$ may fail to be linearly separable.</p>
+<p>(c) The perceptron is guaranteed to converge on $S&#x27;$.</p>
+<p>(d) The perceptron produces exactly the same decision boundary on $S$ and on $S&#x27;$.</p>
+</blockquote>
+<p><strong>Step 1:</strong> Radius and margin both multiply by $c$; ratio unchanged → (a) false.</p>
+<p><strong>Step 2:</strong> Positive scaling preserves signs/separability → (b) false, (c) true.</p>
+<p><strong>Step 3:</strong> Zero start + same order gives $w&#x27;=cw$; positive multiple same boundary → (d) true.</p>
+<p><strong>Answer: (c), (d).</strong> Changed options ke answers separately evaluated; scaling calculation repeat nahi ki.</p>
+<hr />
+<h2 id="topic-31">4. Logistic regression: Hard label se probability tak</h2>
+<h3 id="topic-32">4.1 Perceptron se next step kyun?</h3>
+<p>Perceptron score ka sign deta hai; confidence probability nahi. Scores $0.01$ aur $10$ both positive labels de sakte hain, lekin evidence strength different ho sakti hai.</p>
+<p><strong>Definition:</strong> Logistic regression linear score ko sigmoid se class probability mein map karta hai.</p>
+<p>$$z=w^Tx+b,\qquad \boxed{p=P(Y=1\mid x)=\sigma(z)=\frac1{1+e^{-z}}}.$$</p>
+<p><strong>Real life:</strong> “Customer purchase karega” ke saath estimated probability 0.7 chahiye, taaki business threshold choose kar sake.</p>
+<p>Naam regression hai, standard use yahan <strong>classification</strong> hai. Direct $P(Y\mid X)$ model karta hai, so discriminative.</p>
+<h3 id="topic-33">4.2 Sigmoid ki important properties</h3>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Meaning / quick example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$0&lt;\sigma(z)&lt;1$ for finite $z$</td>
+<td>Valid probability range; finite score par exactly 0/1 nahi</td>
+</tr>
+<tr>
+<td>$\sigma(0)=0.5$</td>
+<td>Zero score means equal model probabilities</td>
+</tr>
+<tr>
+<td>$\sigma(-z)=1-\sigma(z)$</td>
+<td>Opposite scores have complementary probabilities</td>
+</tr>
+<tr>
+<td>$\sigma&#x27;(z)=\sigma(z)(1-\sigma(z))&gt;0$</td>
+<td>Strictly increasing</td>
+</tr>
+<tr>
+<td>Maximum slope $1/4$ at $z=0$</td>
+<td>Centre ke paas score changes ka largest effect</td>
+</tr>
+<tr>
+<td>$z\to+\infty$ gives $\sigma(z)\to1$</td>
+<td>Very positive score → class 1 likely</td>
+</tr>
+<tr>
+<td>$z\to-\infty$ gives $\sigma(z)\to0$</td>
+<td>Very negative score → class 0 likely</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Curvature:</strong> Sigmoid convex on negative scores, concave on positive scores; inflection at 0. Entire real line par convex nahi.</p>
+<p>Useful values:</p>
+<table>
+<thead>
+<tr>
+<th>$z$</th>
+<th style="text-align:right">-2</th>
+<th style="text-align:right">-1</th>
+<th style="text-align:right">0</th>
+<th style="text-align:right">1</th>
+<th style="text-align:right">2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$\sigma(z)$</td>
+<td style="text-align:right">0.1192</td>
+<td style="text-align:right">0.2689</td>
+<td style="text-align:right">0.5</td>
+<td style="text-align:right">0.7311</td>
+<td style="text-align:right">0.8808</td>
+</tr>
+</tbody>
+</table>
+<p><img src="assets/week9/05_sigmoid.png" loading="lazy" alt="Sigmoid curve and the score positions corresponding to probability thresholds" /></p>
+<h3 id="topic-34">4.3 Q24 — Sigmoid properties</h3>
+<p><strong>Source:</strong> 2026 Sep 13 ET, Q24.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>(MSQ) Let</p>
+<p>$$g(z)=\frac1{1+e^{-z}}$$</p>
+<p>be the sigmoid (logistic) function. Select all statements below that are true for every $z\in\mathbb R$.</p>
+<p>(a) $g(-z)=1-g(z)$.</p>
+<p>(b) $g$ is a non-decreasing function but not strictly increasing.</p>
+<p>(c) $g$ is a strictly increasing function.</p>
+<p>(d) $g$ is convex on all of $\mathbb R$.</p>
+</blockquote>
+<p><strong>Step 1:</strong> Complement identity holds → (a) true.</p>
+<p><strong>Step 2:</strong> $g&#x27;(z)=g(z)(1-g(z))&gt;0$ for every finite $z$. Therefore strictly increasing → (c) true and (b) false. Flat-looking tails exactly flat nahi hain.</p>
+<p><strong>Step 3 — Counterexample to global convexity:</strong> $g(1)\approx0.7311$, but $[g(0)+g(2)]/2\approx(0.5+0.8808)/2=0.6904$. Convex function ke liye midpoint value average se <strong>at most</strong> hona chahiye; yahan opposite hai.</p>
+<p><strong>Answer: (a), (c).</strong></p>
+<h3 id="topic-35">4.4 Probability se score: Log-odds</h3>
+<p><strong>Definition:</strong> Odds $=p/(1-p)$; log-odds uska natural logarithm.</p>
+<p>$$\boxed{z=\log\frac{p}{1-p}}\qquad(0&lt;p&lt;1).$$</p>
+<p><strong>Example:</strong> $p=0.8$ → odds 4 → score $\log4\approx1.3863$. Probability 0.8 aur score 0.8 same quantity nahi.</p>
+<p>Unless question another base specifies, logistic formulas mein $\log$ means natural log $\ln$.</p>
+<h3 id="topic-36">4.5 Q6 — Probability given, compatible weights choose karo</h3>
+<p><strong>Source:</strong> 2024 Sep 01 ET, Q6.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>(MSQ) Consider a logistic regression model trained for a binary classification problem with features in $\mathbb R^2$ and labels in $\{1,0\}$. The probability that the test point $[1\ 1]^T$ belongs to class 1 is equal to $\dfrac1{1+e^2}$. Which of the following could be the weight vector of the logistic regression classifier? Select all possible answers.</p>
+<p>(a) $[-1\ -1]^T$</p>
+<p>(b) $[1\ -3]^T$</p>
+<p>(c) $[1\ 1]^T$</p>
+<p>(d) $[3\ -1]^T$</p>
+</blockquote>
+<p><strong>Step 1:</strong> Compare $1/(1+e^{-z})$ with $1/(1+e^2)$. We need $-z=2$, so $z=-2$.</p>
+<p><strong>Step 2:</strong> No bias given; $z=w^T(1,1)=w_1+w_2$.</p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th style="text-align:right">$w_1+w_2$</th>
+<th>Matches -2?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>(a)</td>
+<td style="text-align:right">-2</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>(b)</td>
+<td style="text-align:right">-2</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>(c)</td>
+<td style="text-align:right">2</td>
+<td>No</td>
+</tr>
+<tr>
+<td>(d)</td>
+<td style="text-align:right">2</td>
+<td>No</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Answer: (a), (b).</strong></p>
+<p><strong>Property:</strong> Ek point ki probability generally weight vector uniquely determine nahi karti. Yahan all weights satisfying $w_1+w_2=-2$ same probability give karte hain at this point.</p>
+<h3 id="topic-37">4.6 Q3 — Dono points class 1: Weight angle ka range</h3>
+<p><strong>Source:</strong> 2024 Apr 28 ET, Q3.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>Consider a logistic regression model for a binary classification problem with two features $x_1$ and $x_2$. The feature vector is $[x_1\ x_2]^T$ and labels lie in $\{0,1\}$. The threshold for inference is 0.5. The dummy feature and the weight corresponding to it can be ignored for this problem. Let $x_1$ be the horizontal axis and $x_2$ be the vertical axis. You are given two feature vectors:</p>
+<p>$$\mathbf x_1=\begin{bmatrix}1\\\sqrt3\end{bmatrix},\qquad\mathbf x_2=\begin{bmatrix}-1\\\sqrt3\end{bmatrix}.$$</p>
+<p>The weight vector makes an angle of $\theta$ with the positive $x_1$ axis (horizontal). Each $\theta$ corresponds to a different classifier. For what range of values of $\theta$ are both $\mathbf x_1$ and $\mathbf x_2$ predicted to belong to class-1?</p>
+<p>Hints:</p>
+<ul>
+<li>To draw the weight vector $w=[w_1\ w_2]^T$, plot the point $(w_1,w_2)$ and draw an arrow starting at the origin to this point.</li>
+<li>$\tan(60^\circ)=\sqrt3$.</li>
+</ul>
+<p>(a) $30^\circ&lt;\theta&lt;150^\circ$</p>
+<p>(b) $0^\circ&lt;\theta&lt;60^\circ$</p>
+<p>(c) $60^\circ&lt;\theta&lt;180^\circ$</p>
+<p>(d) $0^\circ&lt;\theta&lt;180^\circ$</p>
+<p>(e) $0&lt;\theta&lt;360^\circ$</p>
+</blockquote>
+<p><strong>Step 1 — Threshold ko score mein convert karo:</strong> Strictly $p&gt;0.5$ means $w^Tx&gt;0$.</p>
+<p><strong>Step 2 — Point directions:</strong> $\mathbf x_1$ first quadrant, angle $60^\circ$. $\mathbf x_2$ second quadrant, angle $120^\circ$.</p>
+<p><strong>Step 3 — First point positive:</strong> Angle with $w$ acute chahiye:</p>
+<p>$$-90^\circ&lt;\theta-60^\circ&lt;90^\circ\quad\Rightarrow\quad-30^\circ&lt;\theta&lt;150^\circ.$$</p>
+<p>Angles modulo $360^\circ$ understood; second constraint ke saath common interval next step mein milega.</p>
+<p><strong>Step 4 — Second point positive:</strong></p>
+<p>$$-90^\circ&lt;\theta-120^\circ&lt;90^\circ\quad\Rightarrow\quad30^\circ&lt;\theta&lt;210^\circ.$$</p>
+<p><strong>Step 5 — Intersection:</strong></p>
+<p>$$\boxed{30^\circ&lt;\theta&lt;150^\circ}.$$</p>
+<p><strong>Answer: (a).</strong></p>
+<p><img src="assets/week9/06_angle_range.png" loading="lazy" alt="Angles of the two feature vectors and common admissible weight directions" /></p>
+<p><strong>Endpoint note:</strong> At $30^\circ$ or $150^\circ$, one point gets score 0 and probability 0.5. If inference explicitly used $p\ge0.5$, endpoints would be included. Open intervals in options/key use strict positive-side interpretation.</p>
+<hr />
+<h2 id="topic-38">5. Probability threshold: Same model, different decisions</h2>
+<h3 id="topic-39">5.1 Threshold $\tau$ kya karta hai?</h3>
+<p><strong>Definition:</strong> Predicted probability ko label mein convert karne ka cutoff.</p>
+<p>$$\hat y=\begin{cases}1,&amp;p\ge\tau,\\0,&amp;p&lt;\tau.\end{cases}$$</p>
+<p><strong>Real life:</strong> Fraud detector mein suspicious cases miss nahi karne, toh cutoff lower rakh sakte hain. High-confidence positive decisions only chahiye, toh cutoff raise kar sakte hain.</p>
+<p>For $0&lt;\tau&lt;1$:</p>
+<p>$$\boxed{p\ge\tau\iff w^Tx+b\ge\log\frac\tau{1-\tau}}.$$</p>
+<p><strong>Connection:</strong> Probability cutoff ko log-odds se score cutoff mein convert karo. At $\tau=0.5$, score cutoff 0. At higher $\tau$, positive score required.</p>
+<h3 id="topic-40">5.2 Threshold change ki properties</h3>
+<p>Fixed model and fixed test set par:</p>
+<ul>
+<li>Threshold decrease → positive predictions same or more; false negatives cannot increase, false positives may increase.</li>
+<li>Threshold increase → positive predictions same or fewer; false positives cannot increase, false negatives may increase.</li>
+<li>Lower threshold generally recall ko favour karta hai, but accuracy improve hone ki guarantee nahi.</li>
+<li>Threshold change <strong>weights retrain nahi</strong> karta; decision cutoff change karta hai.</li>
+</ul>
+<p>Definitions: <strong>False negative (FN)</strong> = actual positive ko negative bolna. <strong>False positive (FP)</strong> = actual negative ko positive bolna. Recall $=TP/(TP+FN)$, when denominator positive.</p>
+<p><strong>Counterexample:</strong> Real negative point ki predicted positive probability 0.4 hai. Threshold 0.5 par correct negative; threshold 0.3 par false positive. Lower threshold har point ko better classify nahi karta.</p>
+<h3 id="topic-41">5.3 Q8 — Phishing emails miss nahi karne</h3>
+<p><strong>Source:</strong> 2024 Dec 22 ET, Q8.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>Consider a logistic regression model trained to detect spam emails. Emails containing harmful phishing links are labeled as spam (1), while regular emails are labeled as not spam (0).</p>
+<p>A good spam detector should correctly identify almost all emails with phishing links. Even a single phishing email incorrectly classified as not spam could expose users to significant risks. However, the detector may classify some regular emails as spam. This trade-off is acceptable to ensure safety.</p>
+<p>To ensure user safety, if the threshold is set to a low value to prioritize the detection of phishing emails, type 1. If the threshold is set to a high value to minimize false positives (misclassifying regular emails as spam), type 0.</p>
+</blockquote>
+<p><strong>Step 1:</strong> Actual phishing positive hai. Usko normal bolna <strong>false negative</strong> hai, aur question usse avoid karna chahta hai.</p>
+<p><strong>Step 2:</strong> Lower threshold par more emails spam flag honge; low-confidence phishing candidates bhi catch ho sakte hain.</p>
+<p><strong>Step 3:</strong> Extra regular emails flag hona acceptable given hai.</p>
+<p><strong>Answer: $\boxed{1}$ — lower threshold.</strong> Yeh “har phishing email definitely catch hoga” ki guarantee nahi; stated trade-off ka direction hai.</p>
+<h3 id="topic-42">5.4 Q11 — Dot product then threshold</h3>
+<p><strong>Source:</strong> 2025 Apr 13 ET, Q11.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>Consider a logistic regression model that has been trained for a binary classification problem on a dataset in $\mathbb R^2$. Given a test data-point as input to the model, it returns 1 as the predicted label if the probability output by the model is greater than 0.55 and 0 otherwise. What will be the predicted label for the test data-point $[1\ 2]^T$? Assume the weight vector is $[7\ 4]^T$.</p>
+</blockquote>
+<p><strong>Step 1 — Score:</strong></p>
+<p>$$z=7(1)+4(2)=15.$$</p>
+<p><strong>Step 2 — Probability:</strong></p>
+<p>$$p=\sigma(15)=\frac1{1+e^{-15}}\approx0.999999694.$$</p>
+<p><strong>Step 3:</strong> $p&gt;0.55$ → <strong>label $\boxed{1}$</strong>.</p>
+<p><strong>Quick check:</strong> Score cutoff $\log(0.55/0.45)\approx0.2007$. Since $15&gt;0.2007$, same answer without evaluating sigmoid precisely.</p>
+<h3 id="topic-43">5.5 Q22 — Count positives at threshold 0.7</h3>
+<p><strong>Source:</strong> 2026 May 06 ET, Q22.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>Consider a binary classification problem using logistic regression. The model predicts the probability of class $+1$ as:</p>
+<p>$$P(y=+1\mid x)=\frac1{1+e^{-w^Tx}}.$$</p>
+<p>A threshold of 0.7 is used for classification. The predicted class label is given by:</p>
+<p>$$P(y\mid x)=\begin{cases}+1,&amp;\text{if }P(y=+1\mid x)\ge0.7,\\-1,&amp;\text{otherwise.}\end{cases}$$</p>
+<p>The values of $w^Tx$ for the following datapoints are: $x_1:-1.2$, $x_2:0.0$, $x_3:2.5$, $x_4:0.4$, $x_5:0.8$. How many datapoints will be classified as class $+1$?</p>
+</blockquote>
+<p><strong>Notation:</strong> Question ka piecewise expression label rule hai; usko $\hat y$ read karo, probability value nahi.</p>
+<p><strong>Step 1:</strong> Score cutoff:</p>
+<p>$$\theta=\log\frac{0.7}{0.3}=\log\frac73\approx0.847298.$$</p>
+<p><strong>Step 2:</strong> Har score ko $0.847298$ se compare karo:</p>
+<table>
+<thead>
+<tr>
+<th>Point</th>
+<th style="text-align:right">Score</th>
+<th style="text-align:right">Approx. probability</th>
+<th style="text-align:right">Predicted label</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$x_1$</td>
+<td style="text-align:right">-1.2</td>
+<td style="text-align:right">0.2315</td>
+<td style="text-align:right">-1</td>
+</tr>
+<tr>
+<td>$x_2$</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">0.5000</td>
+<td style="text-align:right">-1</td>
+</tr>
+<tr>
+<td>$x_3$</td>
+<td style="text-align:right">2.5</td>
+<td style="text-align:right">0.9241</td>
+<td style="text-align:right">+1</td>
+</tr>
+<tr>
+<td>$x_4$</td>
+<td style="text-align:right">0.4</td>
+<td style="text-align:right">0.5987</td>
+<td style="text-align:right">-1</td>
+</tr>
+<tr>
+<td>$x_5$</td>
+<td style="text-align:right">0.8</td>
+<td style="text-align:right">0.6900</td>
+<td style="text-align:right">-1</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Step 3:</strong> Only $x_3$ crosses threshold → <strong>count $\boxed{1}$</strong>.</p>
+<p><strong>Trap:</strong> Positive score ka matlab $p&gt;0.5$, <strong>$p\ge0.7$ nahi</strong>. $x_5$ ka score 0.8 positive hai but probability only 0.6900.</p>
+<h3 id="topic-44">5.6 Q25 — Score threshold for probability 0.75</h3>
+<p><strong>Source:</strong> 2026 Sep 13 ET, Q25. Same conversion as Q22, changed threshold.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>In logistic regression, a point is classified positive only if $P(y=1\mid x)=\sigma(w^Tx)\ge0.75$. What score threshold $\theta$ (with $w^Tx=\theta$ at the boundary of this rule) does this correspond to? (Round to 2 decimal places.)</p>
+</blockquote>
+<p><strong>Step 1:</strong> Use $\theta=\log[\tau/(1-\tau)]$.</p>
+<p><strong>Step 2:</strong></p>
+<p>$$\theta=\log\frac{0.75}{0.25}=\log3\approx1.098612.$$</p>
+<p><strong>Step 3:</strong> Two decimals → $\boxed{1.10}$.</p>
+<p><strong>Property:</strong> Decision boundary here is $w^Tx=\log3$, not $w^Tx=0$. Even if model has no intercept, a non-0.5 threshold shifts the classification boundary.</p>
+<h3 id="topic-45">5.7 Q14 — Required feature value from target probability</h3>
+<p><strong>Source:</strong> 2025 Aug 31 ET, Q14.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>Consider a logistic regression model trained to predict whether a customer will buy a product ($Y=1$) or not ($Y=0$) based on two features: $X_1$: number of website visits per week and $X_2$: time spent on product pages per visit (minutes). The fitted model is:</p>
+<p>$$\hat p=P(y=1\mid x_1,x_2)=\frac1{1+e^{-(0.4x_1+0.1x_2)}}.$$</p>
+<p>For a customer who spends 4 minutes per visit, find how many weekly visits are required to make the predicted probability of purchase equal to 0.7. Enter the answer correct to 2 decimal places.</p>
+</blockquote>
+<p><strong>Step 1 — Target score:</strong> $p=0.7$ means $z=\log(0.7/0.3)\approx0.847298$.</p>
+<p><strong>Step 2 — Known feature substitute:</strong> $x_2=4$:</p>
+<p>$$0.4x_1+0.1(4)=0.847298.$$</p>
+<p><strong>Step 3 — Solve:</strong></p>
+<p>$$0.4x_1=0.447298,\qquad x_1=\frac{0.447298}{0.4}=1.118245.$$</p>
+<p><strong>Answer: $\boxed{1.12}$.</strong></p>
+<p><strong>Interpretation:</strong> Question two-decimal continuous model value maang raha hai. Literal whole visits ke liye exactly 0.7 achieve nahi hota; <strong>at least</strong> 0.7 chahiye toh minimum integer 2 visits. Asked answer 1.12 ko 2 se replace nahi karna.</p>
+<hr />
+<h2 id="topic-46">6. Logistic regression training: Likelihood, loss aur gradient</h2>
+<h3 id="topic-47">6.1 Model good hai ya bad, measure kaise karein?</h3>
+<p><strong>Definition:</strong> Likelihood observed training labels ko model jitna probability assign karta hai, uska product hai.</p>
+<p>For $y_i\in\{0,1\}$ and $p_i=\sigma(w^Tx_i+b)$:</p>
+<p>$$\boxed{\mathcal L(w,b)=\prod_{i=1}^{N}p_i^{y_i}(1-p_i)^{1-y_i}}.$$</p>
+<p><strong>Real life:</strong> Actual customer ne purchase kiya ($y=1$), toh model ka high purchase probability useful hai. Actual purchase nahi hua ($y=0$), toh high non-purchase probability useful hai.</p>
+<ul>
+<li>$y=1$ → observed-label factor $p$.</li>
+<li>$y=0$ → observed-label factor $1-p$.</li>
+</ul>
+<p><strong>Log-likelihood:</strong> Product ko sum banata hai:</p>
+<p>$$\ell(w,b)=\log\mathcal L=\sum_i[y_i\log p_i+(1-y_i)\log(1-p_i)].$$</p>
+<p><strong>MLE:</strong> Maximize log-likelihood. Equivalent: minimize its negative, binary cross-entropy.</p>
+<h3 id="topic-48">6.2 Binary cross-entropy / logistic loss</h3>
+<p>Single sample:</p>
+<p>$$\boxed{L_i=-[y_i\log p_i+(1-y_i)\log(1-p_i)]}.$$</p>
+<table>
+<thead>
+<tr>
+<th>True label</th>
+<th>Loss</th>
+<th>Loss small kab?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$y=1$</td>
+<td>$-\log p$</td>
+<td>$p$ close to 1</td>
+</tr>
+<tr>
+<td>$y=0$</td>
+<td>$-\log(1-p)$</td>
+<td>$p$ close to 0</td>
+</tr>
+</tbody>
+</table>
+<p>Natural-log equivalent score form:</p>
+<p>$$\boxed{L_i=\log(1+e^{z_i})-y_iz_i}.$$</p>
+<p>Agar labels $s_i\in\{-1,+1\}$ use kar rahe ho, equivalent logistic loss:</p>
+<p>$$L_i=\log(1+e^{-s_iz_i}).$$</p>
+<p><strong>Labels mix mat karo:</strong> $0/1$ cross-entropy aur $\pm1$ margin form equivalent encodings hain, but same formula mein wrong labels plug nahi karne.</p>
+<p><strong>Counterexample to zero-one loss intuition:</strong> True $y=1$, probabilities 0.51 aur 0.99 both threshold 0.5 par correct. Zero-one loss both 0. Cross-entropy approximately 0.673 and 0.010; second is much better probabilistically.</p>
+<p><img src="assets/week9/07_loss_and_slope.png" loading="lazy" alt="Cross-entropy for both labels and the derivative of the sigmoid" /></p>
+<p><strong>Graph:</strong> Confident wrong prediction par loss rapidly grows. Sigmoid ka slope centre mein maximum hai; tails mein small.</p>
+<h3 id="topic-49">6.3 Log base matters for numerical loss</h3>
+<p>Usually log-loss natural log use karta hai. Agar question explicitly $\log_{10}$ de:</p>
+<p>$$\boxed{L_{10}=\frac{L_{\ln}}{\ln10}}.$$</p>
+<p>Changing log base positive constant scaling hai; unregularized minimizer same, numerical loss/gradient scale different. Question ke requested base ko follow karo.</p>
+<h3 id="topic-50">6.4 Q17 — Cross-entropy using base 10</h3>
+<p><strong>Source:</strong> 2025 Dec 18 ET, Q17.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>Consider a binary logistic regression model with the sigmoid function</p>
+<p>$$\sigma(z)=\frac1{1+e^{-z}}.$$</p>
+<p>Given a single training sample $(x,y)$ where $x=[1.5\ -0.8]^T$, $y=1$, and current weight vector $w=[0.4\ 0.6]^T$, compute the cross-entropy loss for this sample given by</p>
+<p>$$L(w)=-[y\log_{10}(\hat y)+(1-y)\log_{10}(1-\hat y)],\quad\text{where }\hat y=\sigma(w^Tx).$$</p>
+<p>Write your answer correct to three decimal places.</p>
+</blockquote>
+<p><strong>Step 1 — Dot product:</strong></p>
+<p>$$z=0.4(1.5)+0.6(-0.8)=0.6-0.48=0.12.$$</p>
+<p><strong>Step 2 — Probability:</strong></p>
+<p>$$\hat y=\frac1{1+e^{-0.12}}\approx0.529964.$$</p>
+<p><strong>Step 3 — True label 1:</strong> $(1-y)=0$, so second term disappears:</p>
+<p>$$L=-\log_{10}(0.529964)\approx0.275754.$$</p>
+<p><strong>Step 4 — Three decimals:</strong> $\boxed{0.276}$.</p>
+<p><strong>Check:</strong> Natural-log loss is about 0.634946, which is <strong>not</strong> the requested answer. Sigmoid still uses exponential base $e$; only outer log base is 10.</p>
+<h3 id="topic-51">6.5 Gradient update: Error signal times features</h3>
+<p>For <strong>summed natural-log likelihood</strong>:</p>
+<p>$$\boxed{\nabla_w\ell=\sum_i x_i(y_i-p_i)}.$$</p>
+<p>Gradient ascent to maximize likelihood:</p>
+<p>$$\boxed{w^{t+1}=w^t+\eta\sum_i x_i(y_i-p_i)}.$$</p>
+<p>Equivalent gradient descent on summed cross-entropy:</p>
+<p>$$\nabla_w L=\sum_i x_i(p_i-y_i),\qquad w^{t+1}=w^t-\eta\nabla_wL.$$</p>
+<p><strong>Same update, two viewpoints.</strong> Ascent plus sign and descent minus sign ko mix karke wrong direction mein mat chale jaana.</p>
+<p>Bias gradient: $\partial\ell/\partial b=\sum_i(y_i-p_i)$.</p>
+<p><strong>Mean loss</strong> use ho toh gradient mein $1/N$ factor. <strong>Single-sample/SGD</strong> update ho toh sirf selected sample ka term. Full-batch gradient mein all $p_i$ same current $w^t$ par evaluate karte hain, beech mein sequentially weights change nahi karte.</p>
+<h3 id="topic-52">6.6 What does $y-p$ tell us?</h3>
+<table>
+<thead>
+<tr>
+<th>True label</th>
+<th>Prediction</th>
+<th style="text-align:right">$y-p$</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>$p\approx1$</td>
+<td style="text-align:right">Near 0</td>
+<td>Little correction</td>
+</tr>
+<tr>
+<td>1</td>
+<td>$p\approx0$</td>
+<td style="text-align:right">Near +1</td>
+<td>Add support along $x$</td>
+</tr>
+<tr>
+<td>0</td>
+<td>$p\approx1$</td>
+<td style="text-align:right">Near -1</td>
+<td>Remove support along $x$</td>
+</tr>
+<tr>
+<td>0</td>
+<td>$p\approx0$</td>
+<td style="text-align:right">Near 0</td>
+<td>Little correction</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Perceptron connection:</strong> Perceptron uses discrete $yx$ updates on selected wrong/boundary cases. Logistic regression uses smooth residual $(y-p)x$; even correctly classified samples can contribute.</p>
+<p><strong>Counterexample:</strong> True $y=1$, $p=0.6$ is correct at threshold 0.5, but residual $0.4$ is not zero. Logistic regression can still improve confidence.</p>
+<p>Magnitude also depends on $\|x\|$: $\|x(y-p)\|=|y-p|\|x\|$. Small residual means small coefficient; arbitrary huge features can still produce substantial vector updates.</p>
+<h3 id="topic-53">6.7 Q16 — Which points contribute little?</h3>
+<p><strong>Source:</strong> 2025 Dec 18 ET, Q16.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>(MSQ) Given a training set $\{(x_i,y_i)\}_{i=1}^{n}$, where $x_i\in\mathbb R^d$ and $y_i\in\{0,1\}$, we want to estimate the parameter $w$ for the logistic regression model. Following is the update rule for estimating $w$:</p>
+<p>$$w^{t+1}=w^t+\eta\left[\sum_{i=1}^{n}x_i\left(y_i-\frac1{1+e^{-(w^t)^Tx_i}}\right)\right].$$</p>
+<p>Select the correct options from the following:</p>
+<p>(a) If $y_i=1$, and $\dfrac1{1+e^{-(w^t)^Tx_i}}$ is close to 1, then such points will not contribute much to the update of $w$.</p>
+<p>(b) If $y_i=1$, and $\dfrac1{1+e^{-(w^t)^Tx_i}}$ is close to 0, then such points will not contribute much to the update of $w$.</p>
+<p>(c) If $y_i=0$, and $\dfrac1{1+e^{-(w^t)^Tx_i}}$ is close to 1, then such points will not contribute much to the update of $w$.</p>
+<p>(d) If $y_i=0$, and $\dfrac1{1+e^{-(w^t)^Tx_i}}$ is close to 0, then such points will not contribute much to the update of $w$.</p>
+</blockquote>
+<p><strong>Step 1:</strong> Write $p_i=\sigma((w^t)^Tx_i)$; contribution $x_i(y_i-p_i)$.</p>
+<p><strong>Step 2:</strong> (a) residual $1-1\approx0$ → small contribution for fixed feature vector.</p>
+<p><strong>Step 3:</strong> (b) residual $1-0\approx1$ → not small. (c) residual $0-1\approx-1$ → not small.</p>
+<p><strong>Step 4:</strong> (d) residual $0-0\approx0$ → small contribution.</p>
+<p><strong>Answer: (a), (d).</strong> Feature scale ka qualification section 6.6 mein diya hai; intended comparison residual coefficients ka hai.</p>
+<h3 id="topic-54">6.8 Practice — One gradient step by hand</h3>
+<p><strong>Question:</strong> “For one sample $x=(2,-1)$, $y=1$, start at $w=(0,0)$. Use gradient ascent on the natural-log likelihood with learning rate $\eta=0.1$. Find the updated weight.”</p>
+<p><strong>Step 1:</strong> $z=0$, so $p=0.5$.</p>
+<p><strong>Step 2:</strong> Residual $y-p=0.5$.</p>
+<p><strong>Step 3:</strong> Gradient $x(y-p)=(2,-1)(0.5)=(1,-0.5)$.</p>
+<p><strong>Step 4:</strong> $w_{\mathrm{new}}=(0,0)+0.1(1,-0.5)=\boxed{(0.1,-0.05)}$.</p>
+<p><strong>Step 5 — Direction check:</strong> New score $0.1(2)+(-0.05)(-1)=0.25$, probability about 0.5622. True class 1 ka probability increase hua.</p>
+<hr />
+<h2 id="topic-55">7. Regularization aur kernel connection</h2>
+<h3 id="topic-56">7.1 Logistic regression ke training properties</h3>
+<p><strong>Convex objective:</strong> Fixed features ke saath standard logistic negative log-likelihood convex hai. Convex ka matlab arbitrary learning rate se gradient descent always converge karega, yeh nahi; step size still matters.</p>
+<p><strong>Nonseparable data:</strong> Logistic regression probability fitting kar sakta hai even when a perfect linear separator does not exist. Zero training classification error required nahi.</p>
+<p><strong>Separable data warning:</strong> Unregularized logistic regression strictly separable data par finite MLE attain nahi kar sakta: separator ko scale karte jao, correct-label probabilities 1 ke closer jaati hain, loss approaches 0, weights grow kar sakte hain.</p>
+<p><strong>Simple counterexample:</strong> One sample $x=1,y=1$, loss $\log(1+e^{-w})$. Larger $w$ always lower loss; minimum finite $w$ par nahi aata. Perceptron ka finite-update convergence aur logistic parameter convergence same claim nahi hain.</p>
+<h3 id="topic-57">7.2 L2 regularization</h3>
+<p><strong>Definition:</strong> Large weight magnitudes ko penalty dena.</p>
+<p><strong>Real life:</strong> Model ko training examples ke liye extremely strong weights assign karne se discourage karna, especially noisy/limited data mein.</p>
+<p>Summed objective:</p>
+<p>$$\boxed{J(w)=\sum_i[\log(1+e^{w^Tx_i})-y_iw^Tx_i]+\frac\lambda2\|w\|^2},\quad\lambda\ge0.$$</p>
+<p>Equivalent data-loss expression from slides:</p>
+<p>$$\log(1+e^{-z_i})+(1-y_i)z_i.$$</p>
+<p>Gradient descent:</p>
+<p>$$\boxed{w_{\mathrm{new}}=w+\eta\sum_i x_i(y_i-p_i)-\eta\lambda w}.$$</p>
+<p>The $-\eta\lambda w$ term weights ko shrink karne ka pressure deta hai.</p>
+<p><strong>Properties:</strong> Stronger $\lambda$ generally more regularization, but too strong can underfit. If all weight coordinates penalized and $\lambda&gt;0$, objective strongly convex and a unique finite minimizer exists. Separate unpenalized intercept ho toh qualification needed; intercept ko automatically penalty mein include mat assume karo.</p>
+<p><strong>Counterexample to “more regularization always better”:</strong> Data ko distinguish karne ke liye nonzero weights needed hon; extremely large penalty weights near zero laakar probabilities near 0.5 kar sakti hai, losing useful signal.</p>
+<h3 id="topic-58">7.3 Weights as a combination of training points</h3>
+<p>Starting at $w=0$, perceptron repeatedly adds $y_ix_i$. Therefore:</p>
+<p>$$\boxed{w=\sum_i m_i y_i x_i},$$</p>
+<p>where $m_i$ = number of updates involving sample $i$, a nonnegative integer for unit learning rate. Coefficients $m_i y_i$ are signed integers.</p>
+<p><strong>Qualification:</strong> Learning rate $0.1$ ho toh coefficients $0.1m_iy_i$; integer claim automatically valid nahi. Nonzero initial weight adds an extra $w^{(0)}$ term.</p>
+<p>Logistic gradient steps from zero also stay in training-point span:</p>
+<p>$$w=\sum_i\alpha_i x_i,$$</p>
+<p>but coefficients generally real-valued, because residuals $y_i-p_i$ real hain. L2 shrinkage also preserves that span.</p>
+<h3 id="topic-59">7.4 Kernel version: Inner products replace karo</h3>
+<p><strong>Definition:</strong> Kernel $K(x_i,x)=\phi(x_i)^T\phi(x)$ transformed-feature similarity compute karta hai.</p>
+<p>With span representation:</p>
+<p>$$\boxed{z(x)=\sum_i\alpha_iK(x_i,x)+b}.$$</p>
+<ul>
+<li>Kernel perceptron predicts score sign and updates coefficients on mistakes.</li>
+<li>Kernel logistic regression applies sigmoid to this score and learns real coefficients.</li>
+</ul>
+<p><strong>Connection to Week 2:</strong> Feature mapping $\phi$ explicitly huge vector banaye bina inner products compute kar sakte hain. Model transformed space mein linear, input space mein nonlinear boundary bana sakta hai.</p>
+<p><strong>Property:</strong> “Logistic regression always linear boundary” statement <strong>raw-feature standard model</strong> ke liye hai. Nonlinear features/kernel add karo toh input-space boundary nonlinear ho sakti hai.</p>
+<h3 id="topic-60">7.5 Q7 — Perceptron coefficients and SVM statements</h3>
+<p><strong>Source:</strong> 2024 Sep 01 ET, Q7.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>Consider a linearly separable dataset with a positive margin. The symbol $\alpha_i^*$ in the context of SVMs has its usual meaning. Are the following statements true or false?</p>
+<p>i. The weight vector output by the perceptron algorithm on this dataset can be expressed as a linear combination of the data-points where the coefficients of the linear combination are integers.</p>
+<p>ii. In the case of a hard-margin SVM, if $\alpha_i^*&gt;0$, the point $x_i$ is a support vector.</p>
+<p>iii. If a soft-margin SVM is trained on this dataset, the optimal weight vector it returns will be the same as the one returned by a hard-margin SVM, irrespective of the value of the hyperparameter $C$.</p>
+</blockquote>
+<p><strong>Part (i), Step 1:</strong> Standard zero start and unit learning rate use karo. Every update $yx$ adds coefficient $+1$ or $-1$ to some training vector.</p>
+<p><strong>Step 2:</strong> Final $w=\sum_i m_i y_i x_i$, with integer coefficients → <strong>True</strong>. Conditions from 7.3 apply.</p>
+<p><strong>Part (ii), Step 1 — Needed SVM concept:</strong> Hard-margin SVM maximizes margin with no training violations; $\alpha_i^*$ is the dual multiplier for sample $i$.</p>
+<p><strong>Step 2:</strong> Positive multiplier means sample actively supports the optimum. Complementary slackness gives:</p>
+<p>$$\alpha_i^*&gt;0\quad\Rightarrow\quad y_i(w^{*T}x_i+b^*)=1.$$</p>
+<p>So it is a support vector → <strong>True</strong>. Condition is <strong>$&gt;0$</strong>, not merely $\ge0$.</p>
+<p><strong>Part (iii), Step 1:</strong> Soft-margin SVM trades weight norm against violations:</p>
+<p>$$\frac12\|w\|^2+C\sum_i\xi_i.$$</p>
+<p>Small $C$ can prefer a smaller-norm model with margin violations even if data is separable. Thus “irrespective of $C$” is false.</p>
+<p><strong>Step 2 — Concrete counterexample:</strong> Two 1D samples $(1,+1),(-1,-1)$, no bias. Hard-margin requires $w\ge1$, optimum $w=1$.</p>
+<p>Soft objective for $0\le w\le1$ is $\frac12w^2+2C(1-w)$. At $C=0.1$, its minimum is $w=0.2$, not 1. Objective at 0.2 is $0.02+0.16=0.18$; at 1 it is 0.5. So hard-margin weight cannot be the soft optimum here.</p>
+<p><strong>Answers: (i) True, (ii) True, (iii) False.</strong></p>
+<hr />
+<h2 id="topic-61">8. Perceptron, logistic regression aur SVM: Same boundary kab mil sakti hai?</h2>
+<h3 id="topic-62">8.1 Short comparison</h3>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Perceptron</th>
+<th>Logistic regression</th>
+<th>Hard-margin SVM</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Main target</td>
+<td>Find a separator through updates</td>
+<td>Fit conditional probabilities</td>
+<td>Find maximum-margin separator</td>
+</tr>
+<tr>
+<td>Output before threshold</td>
+<td>Linear score</td>
+<td>Sigmoid probability</td>
+<td>Linear score</td>
+</tr>
+<tr>
+<td>Standard labels during training</td>
+<td>$-1,+1$</td>
+<td>$0,1$</td>
+<td>$-1,+1$</td>
+</tr>
+<tr>
+<td>Perfect separability needed?</td>
+<td>For finite convergence guarantee</td>
+<td>Not required to fit model</td>
+<td>For feasible hard-margin training</td>
+</tr>
+<tr>
+<td>Guaranteed maximum margin?</td>
+<td>No</td>
+<td>Not by an arbitrary finite training run</td>
+<td>Yes, under its optimization setup</td>
+</tr>
+<tr>
+<td>Probability estimates built in?</td>
+<td>No</td>
+<td>Yes</td>
+<td>No</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Important:</strong> “Not guaranteed same” ka matlab “kabhi same nahi” nahi. Symmetric/simple datasets par all three same boundary produce kar sakte hain, as Q19 shows.</p>
+<h3 id="topic-63">8.2 Q19 — Exactly one iteration on two points</h3>
+<p><strong>Source:</strong> 2026 May 06 ET, Q19.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>Consider a dataset with two data-points for a binary classification problem with features in $\mathbb R^2$. $(1,0)$ is a data-point from the positive class while $(-1,0)$ is from the negative class. We now consider three linear classifiers: perceptron, logistic regression and SVM.</p>
+<p>Use gradient ascent to train the logistic regression model with $\eta=1$. For both perceptron and logistic regression, run exactly one iteration of their respective algorithms starting with $w^{(0)}=(0,0)$ in each case. That is, you should stop after you get $w^{(1)}$. Train the SVM in the usual way.</p>
+<p>Use 0 as the negative class label for logistic regression and $-1$ for SVM and perceptron. Use the following rule for determining the predicted labels for the three classifiers:</p>
+<p>If $w^*\in\mathbb R^2$ is the weight vector with the largest margin, which of the following is true?</p>
+<p>SVM and Perceptron:
+$$\hat y=\begin{cases}1,&amp;w^Tx\ge0,\\-1,&amp;w^Tx&lt;0.\end{cases}$$</p>
+<p>Logistic Regression:
+$$\hat y=\begin{cases}1,&amp;w^Tx\ge0,\\0,&amp;w^Tx&lt;0.\end{cases}$$</p>
+<p>(a) All three classifiers output $w^*$</p>
+<p>(b) Only SVM outputs $w^*$</p>
+<p>(c) Only SVM and perceptron output $w^*$</p>
+<p>(d) Only perceptron and logistic regression output $w^*$</p>
+</blockquote>
+<p><strong>Step 1 — Perceptron:</strong> At $w=(0,0)$ both scores zero, and given rule predicts +1. Positive point correct; negative point wrong. First <strong>weight update</strong> on $x=(-1,0),y=-1$:</p>
+<p>$$w^{(1)}=(0,0)+(-1)(-1,0)=\boxed{(1,0)}.$$</p>
+<p><strong>Step 2 — Logistic regression:</strong> Use full-batch <strong>summed</strong> log-likelihood gradient, consistent with course update rule. At zero weights both probabilities $1/2$.</p>
+<p>Positive point contribution:</p>
+<p>$$(1,0)(1-0.5)=(0.5,0).$$</p>
+<p>Negative point uses label 0:</p>
+<p>$$(-1,0)(0-0.5)=(0.5,0).$$</p>
+<p>Total gradient $(1,0)$; $\eta=1$:</p>
+<p>$$w^{(1)}=(0,0)+(1,0)=\boxed{(1,0)}.$$</p>
+<p><strong>Step 3 — SVM:</strong> Canonical hard-margin constraints give $w_1\ge1$ from both points. Minimize $\frac12(w_1^2+w_2^2)$ → $\boxed{w^*=(1,0)}$.</p>
+<p><strong>Step 4 — Geometric check:</strong> Boundary $x_1=0$ lies between symmetric points; each point distance 1, margin maximal. Any tilt reduces that distance.</p>
+<p><strong>Answer: (a).</strong></p>
+<p><strong>Iteration qualification:</strong> Here “one iteration” means first perceptron <strong>update</strong>, not stopping after visiting only the already-correct positive point. Logistic step uses summed batch gradient; mean gradient would give $(0.5,0)$, same boundary but not identical vector. Also geometric maximum-margin vectors are not unique up to positive scaling; canonical SVM normalization fixes $(1,0)$.</p>
+<p><strong>Question se lesson:</strong> Is example ka equality result generalize mat karo. Perceptron or one logistic step is not generally a maximum-margin algorithm.</p>
+<h3 id="topic-64">8.3 Q26 — Linear boundary chahiye, probabilities optional</h3>
+<p><strong>Source:</strong> 2026 Sep 13 ET, Q26.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>Consider a binary classification dataset in which the two classes are perfectly linearly separable. You are considering a Perceptron, Logistic Regression, and a Decision Tree. If the objective is to learn a linear decision boundary and no probability estimates are required, which of the following classifiers are appropriate choices?</p>
+<p>(a) Perceptron only</p>
+<p>(b) Logistic Regression only</p>
+<p>(c) Both Perceptron and Logistic Regression</p>
+<p>(d) Decision Tree only</p>
+</blockquote>
+<p><strong>Step 1:</strong> Perceptron directly linear separator learns; separability ensures suitable convergence setting.</p>
+<p><strong>Step 2:</strong> Logistic regression also gives linear score; fixed threshold gives linear boundary. Probabilities available hona usko unsuitable nahi banata just because required nahi hain.</p>
+<p><strong>Step 3:</strong> Standard decision tree recursive axis-aligned splits banata hai; arbitrary single linear separator learn karne ka natural model yeh nahi. A special axis-aligned boundary ek stump se possible ho sakti hai, but “Decision Tree only” still correct choice nahi.</p>
+<p><strong>Answer: (c).</strong> On separable data, logistic training ko finite iterations/regularization ke saath use karna practical hai; this does not change the model-choice answer.</p>
+<hr />
+<h2 id="topic-65">9. Revision</h2>
+<h3 id="topic-66">9.1 Formula sheet</h3>
+<table>
+<thead>
+<tr>
+<th>Task</th>
+<th>Formula / rule</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Linear score</td>
+<td>$z=w^Tx+b$</td>
+</tr>
+<tr>
+<td>Decision boundary at score 0</td>
+<td>$w^Tx+b=0$</td>
+</tr>
+<tr>
+<td>Positive-margin correct classification</td>
+<td>$y_i(w^Tx_i+b)&gt;0$ for $\pm1$ labels</td>
+</tr>
+<tr>
+<td>Dot-product geometry</td>
+<td>$w^Tx=\|w\|\|x\|\cos\phi$</td>
+</tr>
+<tr>
+<td>Signed distance</td>
+<td>$(w^Tx+b)/\|w\|$</td>
+</tr>
+<tr>
+<td>Zero-one average loss</td>
+<td>Number of wrong labels / $N$</td>
+</tr>
+<tr>
+<td>Perceptron update</td>
+<td>$w\leftarrow w+\eta yx$ when update condition holds</td>
+</tr>
+<tr>
+<td>Bias update</td>
+<td>$b\leftarrow b+\eta y$</td>
+</tr>
+<tr>
+<td>Standard mistake/update bound</td>
+<td>$M\le R^2/\gamma^2$ with unit separator and zero initialization</td>
+</tr>
+<tr>
+<td>Uniform input scaling</td>
+<td>$R&#x27;=cR$, $\gamma&#x27;=c\gamma$; bound unchanged</td>
+</tr>
+<tr>
+<td>Matched perceptron runs under scaling</td>
+<td>$w&#x27;_t=cw_t$; same boundary</td>
+</tr>
+<tr>
+<td>Sigmoid</td>
+<td>$\sigma(z)=1/(1+e^{-z})$</td>
+</tr>
+<tr>
+<td>Sigmoid complement</td>
+<td>$\sigma(-z)=1-\sigma(z)$</td>
+</tr>
+<tr>
+<td>Sigmoid slope</td>
+<td>$\sigma&#x27;(z)=\sigma(z)(1-\sigma(z))$</td>
+</tr>
+<tr>
+<td>Probability-to-score conversion</td>
+<td>$z=\ln[p/(1-p)]$</td>
+</tr>
+<tr>
+<td>Threshold $\tau$</td>
+<td>Score threshold $\ln[\tau/(1-\tau)]$</td>
+</tr>
+<tr>
+<td>One-sample cross-entropy</td>
+<td>$-[y\ln p+(1-y)\ln(1-p)]$</td>
+</tr>
+<tr>
+<td>Equivalent natural-log loss</td>
+<td>$\ln(1+e^z)-yz$</td>
+</tr>
+<tr>
+<td>Sum log-likelihood gradient</td>
+<td>$\sum_i x_i(y_i-p_i)$</td>
+</tr>
+<tr>
+<td>Gradient ascent update</td>
+<td>$w\leftarrow w+\eta\sum_i x_i(y_i-p_i)$</td>
+</tr>
+<tr>
+<td>L2-regularized descent update</td>
+<td>$w\leftarrow w+\eta\sum_i x_i(y_i-p_i)-\eta\lambda w$</td>
+</tr>
+<tr>
+<td>Kernel score</td>
+<td>$\sum_i\alpha_iK(x_i,x)+b$</td>
+</tr>
+</tbody>
+</table>
+<h3 id="topic-67">9.2 Common mistakes aur quick counterexamples</h3>
+<table>
+<thead>
+<tr>
+<th>Mistake</th>
+<th>Correction</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Weight vector ko boundary ke parallel samajhna</td>
+<td>It is perpendicular to the boundary</td>
+</tr>
+<tr>
+<td>Score 0 ka label assume kar lena</td>
+<td>Strict/inclusive tie rule check karo</td>
+</tr>
+<tr>
+<td>One sample visit = one update</td>
+<td>Correct sample par weight change nahi hota</td>
+</tr>
+<tr>
+<td>Perceptron update mein $0/1$ labels directly use karna</td>
+<td>Standard $yx$ rule uses $\pm1$ labels</td>
+</tr>
+<tr>
+<td>Second update old weights se calculate karna</td>
+<td>Sequential perceptron uses latest weights</td>
+</tr>
+<tr>
+<td>Perceptron bound ko actual mistakes count kehna</td>
+<td>It is an upper bound</td>
+</tr>
+<tr>
+<td>More features means larger mistake bound</td>
+<td>$R/\gamma$ compare karo; counts enough nahi</td>
+</tr>
+<tr>
+<td>Scaling $R$ but not $\gamma$</td>
+<td>Uniform input scaling changes both</td>
+</tr>
+<tr>
+<td>Same separator means same weight numbers</td>
+<td>$w$ and $cw$ have same boundary for $c&gt;0$</td>
+</tr>
+<tr>
+<td>Positive logistic score means positive at every threshold</td>
+<td>Only guarantees $p&gt;0.5$</td>
+</tr>
+<tr>
+<td>Lower threshold always improves accuracy</td>
+<td>Recall can rise while false positives also rise</td>
+</tr>
+<tr>
+<td>Sigmoid ko globally convex kehna</td>
+<td>Negative side convex, positive side concave</td>
+</tr>
+<tr>
+<td>Sigmoid regression is linear probability</td>
+<td>Score is linear; probability is sigmoid of score</td>
+</tr>
+<tr>
+<td>Correct label means logistic gradient zero</td>
+<td>$p=0.6,y=1$ still residual 0.4</td>
+</tr>
+<tr>
+<td>Q17 mein natural log use karna</td>
+<td>Explicit $\log_{10}$ gives 0.276</td>
+</tr>
+<tr>
+<td>Batch sum and mean mix karna</td>
+<td>Mean introduces $1/N$ and changes numerical step</td>
+</tr>
+<tr>
+<td>Ascent and descent sign mix karna</td>
+<td>Maximize log-likelihood OR minimize its negative</td>
+</tr>
+<tr>
+<td>One correct pass partially check karna</td>
+<td>Convergence requires entire pass with no required updates</td>
+</tr>
+<tr>
+<td>Perceptron always maximum margin</td>
+<td>Some separator only; Q19 is a special case</td>
+</tr>
+<tr>
+<td>Logistic weights always settle at finite values</td>
+<td>Strictly separable unregularized data may have no finite MLE</td>
+</tr>
+</tbody>
+</table>
+<h3 id="topic-68">9.3 Last-minute solving checklist</h3>
+<ol>
+<li><strong>Labels:</strong> $0/1$ hain ya $-1/+1$?</li>
+<li><strong>Boundary:</strong> Bias hai? Zero score ka rule kya hai?</li>
+<li><strong>Perceptron:</strong> Current score → update condition → new weights → next point → full convergence check.</li>
+<li><strong>Bound:</strong> Unit separator? Correct $R$ and $\gamma$? Bound vs actual count?</li>
+<li><strong>Logistic:</strong> Score → sigmoid or log-odds cutoff → requested label/probability.</li>
+<li><strong>Loss/update:</strong> Log base, learning rate, batch vs sample, sum vs mean.</li>
+<li><strong>Numerics:</strong> Final step par rounding; intermediate precision preserve karo.</li>
+</ol>
+</article><nav class="next-prev" aria-label="Previous and next weeks"><a href="week8.html">← Week 8</a><a href="week10.html">Week 10 →</a></nav></main>
+<aside class="contents"><details open><summary>On this page</summary><nav aria-label="Topic index"><a class="level-h2" href="#topic-1">Topic index</a><a class="level-h2" href="#topic-2">1. Linear classification: Ek score se class kaise decide hoti hai?</a><a class="level-h3" href="#topic-3">1.1 Week 8 se connection</a><a class="level-h3" href="#topic-4">1.2 Linear score, weight aur bias</a><a class="level-h3" href="#topic-5">1.3 Labels aur score zero ka convention</a><a class="level-h3" href="#topic-6">1.4 Zero-one loss</a><a class="level-h3" href="#topic-7">1.5 Q1 — Opposite directions par opposite labels</a><a class="level-h3" href="#topic-8">1.6 Q15 — Same direction, alternating labels</a><a class="level-h3" href="#topic-9">1.7 Q20 — Candidate weights ko directly test karo</a><a class="level-h3" href="#topic-10">1.8 Dot product ki geometry</a><a class="level-h3" href="#topic-11">1.9 Q2 — Figure se dot-product ordering</a><a class="level-h2" href="#topic-12">2. Perceptron: Galti dekhkar weights update karna</a><a class="level-h3" href="#topic-13">2.1 Short definition aur intuition</a><a class="level-h3" href="#topic-14">2.2 Update kab lagana hai? Do conventions clear rakho</a><a class="level-h3" href="#topic-15">2.3 Algorithm ka full flow</a><a class="level-h3" href="#topic-16">2.4 Update direction ka meaning</a><a class="level-h3" href="#topic-17">2.5 Q9 — Two consecutive updates</a><a class="level-h3" href="#topic-18">2.6 Q10 — Complete cyclic run and a boundary test point</a><a class="level-h3" href="#topic-19">2.7 Q12 — Two updates enough hain?</a><a class="level-h2" href="#topic-20">3. Perceptron kab converge karega? Margin aur mistake bound</a><a class="level-h3" href="#topic-21">3.1 Linear separability</a><a class="level-h3" href="#topic-22">3.2 Margin $\gamma$ aur radius $R$</a><a class="level-h3" href="#topic-23">3.3 Convergence theorem: Use karne wala result</a><a class="level-h3" href="#topic-24">3.4 Q5 — Given inequalities se separator identify karo</a><a class="level-h3" href="#topic-25">3.5 Q4 — Numerical mistake bound</a><a class="level-h3" href="#topic-26">3.6 Q18 — More samples/features means more mistakes?</a><a class="level-h3" href="#topic-27">3.7 Q21 — Convergence does not mean one unique answer</a><a class="level-h3" href="#topic-28">3.8 Uniform scaling: Coordinates badle, boundary ka kya?</a><a class="level-h3" href="#topic-29">3.9 Q13 — All points doubled</a><a class="level-h3" href="#topic-30">3.10 Q23 — Same scaling concept, explicit run conditions</a><a class="level-h2" href="#topic-31">4. Logistic regression: Hard label se probability tak</a><a class="level-h3" href="#topic-32">4.1 Perceptron se next step kyun?</a><a class="level-h3" href="#topic-33">4.2 Sigmoid ki important properties</a><a class="level-h3" href="#topic-34">4.3 Q24 — Sigmoid properties</a><a class="level-h3" href="#topic-35">4.4 Probability se score: Log-odds</a><a class="level-h3" href="#topic-36">4.5 Q6 — Probability given, compatible weights choose karo</a><a class="level-h3" href="#topic-37">4.6 Q3 — Dono points class 1: Weight angle ka range</a><a class="level-h2" href="#topic-38">5. Probability threshold: Same model, different decisions</a><a class="level-h3" href="#topic-39">5.1 Threshold $\tau$ kya karta hai?</a><a class="level-h3" href="#topic-40">5.2 Threshold change ki properties</a><a class="level-h3" href="#topic-41">5.3 Q8 — Phishing emails miss nahi karne</a><a class="level-h3" href="#topic-42">5.4 Q11 — Dot product then threshold</a><a class="level-h3" href="#topic-43">5.5 Q22 — Count positives at threshold 0.7</a><a class="level-h3" href="#topic-44">5.6 Q25 — Score threshold for probability 0.75</a><a class="level-h3" href="#topic-45">5.7 Q14 — Required feature value from target probability</a><a class="level-h2" href="#topic-46">6. Logistic regression training: Likelihood, loss aur gradient</a><a class="level-h3" href="#topic-47">6.1 Model good hai ya bad, measure kaise karein?</a><a class="level-h3" href="#topic-48">6.2 Binary cross-entropy / logistic loss</a><a class="level-h3" href="#topic-49">6.3 Log base matters for numerical loss</a><a class="level-h3" href="#topic-50">6.4 Q17 — Cross-entropy using base 10</a><a class="level-h3" href="#topic-51">6.5 Gradient update: Error signal times features</a><a class="level-h3" href="#topic-52">6.6 What does $y-p$ tell us?</a><a class="level-h3" href="#topic-53">6.7 Q16 — Which points contribute little?</a><a class="level-h3" href="#topic-54">6.8 Practice — One gradient step by hand</a><a class="level-h2" href="#topic-55">7. Regularization aur kernel connection</a><a class="level-h3" href="#topic-56">7.1 Logistic regression ke training properties</a><a class="level-h3" href="#topic-57">7.2 L2 regularization</a><a class="level-h3" href="#topic-58">7.3 Weights as a combination of training points</a><a class="level-h3" href="#topic-59">7.4 Kernel version: Inner products replace karo</a><a class="level-h3" href="#topic-60">7.5 Q7 — Perceptron coefficients and SVM statements</a><a class="level-h2" href="#topic-61">8. Perceptron, logistic regression aur SVM: Same boundary kab mil sakti hai?</a><a class="level-h3" href="#topic-62">8.1 Short comparison</a><a class="level-h3" href="#topic-63">8.2 Q19 — Exactly one iteration on two points</a><a class="level-h3" href="#topic-64">8.3 Q26 — Linear boundary chahiye, probabilities optional</a><a class="level-h2" href="#topic-65">9. Revision</a><a class="level-h3" href="#topic-66">9.1 Formula sheet</a><a class="level-h3" href="#topic-67">9.2 Common mistakes aur quick counterexamples</a><a class="level-h3" href="#topic-68">9.3 Last-minute solving checklist</a></nav></details></aside></div>
+<footer>MLT Notes <span>Learn one concept at a time.</span></footer>
+</body></html>

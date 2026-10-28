@@ -1,0 +1,1355 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Week 7 · KNN and Decision Tree | MLT Notes</title>
+<script src="theme.js"></script>
+<link rel="stylesheet" href="style.css">
+<script>window.MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']],processEscapes:true},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']},svg:{fontCache:'global'}};</script>
+<script defer src="vendor/tex-svg.js"></script></head>
+<body><a class="skip" href="#notes">Skip to notes</a>
+<header><a class="brand" href="index.html"><span class="brand-mark">m</span> MLT <span class="brand-muted">/ study notes</span></a><label class="theme-control">Theme <select id="theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label></header>
+<div class="layout"><aside class="weeks"><details open><summary>Course weeks <span>12</span></summary><nav aria-label="Course weeks"><a class="week-link " href="index.html" ><span class="week-number">01</span><span>Principal Component Analysis</span></a><a class="week-link " href="week2.html" ><span class="week-number">02</span><span>Kernel PCA</span></a><a class="week-link " href="week3.html" ><span class="week-number">03</span><span>K-Means Clustering</span></a><a class="week-link " href="week4.html" ><span class="week-number">04</span><span>Estimation, GMM and EM Algorithm</span></a><a class="week-link " href="week5.html" ><span class="week-number">05</span><span>Linear and Kernel Regression</span></a><a class="week-link " href="week6.html" ><span class="week-number">06</span><span>Regularisation and Cross-Validation</span></a><a class="week-link selected" href="week7.html" aria-current=page><span class="week-number">07</span><span>KNN and Decision Tree</span></a><a class="week-link " href="week8.html" ><span class="week-number">08</span><span>Naive Bayes</span></a><a class="week-link " href="week9.html" ><span class="week-number">09</span><span>Perceptron and Logistic Regression</span></a><a class="week-link " href="week10.html" ><span class="week-number">10</span><span>Support Vector Machine</span></a><a class="week-link " href="week11.html" ><span class="week-number">11</span><span>Soft-Margin SVM and Ensemble Methods</span></a><a class="week-link " href="week12.html" ><span class="week-number">12</span><span>Loss Functions and Artificial Neural Networks</span></a></nav></details></aside>
+<main id="notes"><div class="eyebrow">MACHINE LEARNING TECHNIQUES <span>/ WEEK 07</span></div><article><h1 id="topic-0">MLT Week 7: KNN and Decision Tree Notes</h1>
+<p><strong>Flow:</strong> Classification aur error → nearest neighbours → choice of k → cross-validation → decision-tree questions → entropy → information gain → tree boundaries aur depth.</p>
+<h2 id="topic-1">Topic index</h2>
+<table>
+<thead>
+<tr>
+<th>Topic</th>
+<th>Subtopics</th>
+<th>Questions</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1. Classification foundations</td>
+<td>Features, labels, 0–1 loss, linear classification</td>
+<td>—</td>
+</tr>
+<tr>
+<td>2. KNN prediction</td>
+<td>Distance, majority vote, regression average</td>
+<td>Q7, Q15, Q20</td>
+</tr>
+<tr>
+<td>3. Choosing k</td>
+<td>Training error, outliers, bias–variance, prediction cost</td>
+<td>Q1, Q9, Q24, Q23</td>
+</tr>
+<tr>
+<td>4. KNN validation and geometry</td>
+<td>LOOCV, distance ordering, annulus</td>
+<td>Q13, Q18</td>
+</tr>
+<tr>
+<td>5. Decision-tree foundations</td>
+<td>Nodes, splits, depth, overfitting, memorization</td>
+<td>Q4, Q17</td>
+</tr>
+<tr>
+<td>6. Entropy</td>
+<td>Purity, proportions, maximum impurity</td>
+<td>Q10, Q11, Q14, Q22</td>
+</tr>
+<tr>
+<td>7. Information gain</td>
+<td>Weighted child entropy, split comparison, properties</td>
+<td>Q8, Q19, Q12, Q25, Q2</td>
+</tr>
+<tr>
+<td>8. Tree geometry</td>
+<td>Path conditions, probability, thresholds, boxes, XOR</td>
+<td>Q3, Q6, Q16, Q5, Q21</td>
+</tr>
+<tr>
+<td>9. Revision</td>
+<td>Formula sheet, common mistakes, checklist</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="topic-2">1. Classification foundations</h2>
+<h3 id="topic-3">1.1 Features, labels and prediction</h3>
+<p><strong>Short definition:</strong> Classification mein input features se discrete category predict karte hain. Binary classification mein two possible classes hoti hain.</p>
+<p><strong>Real life:</strong> Email ke features se spam/not-spam; patient measurements se positive/negative test category.</p>
+<p>Training data:</p>
+<p>$$D=\{(x_i,y_i)\}_{i=1}^n,\qquad x_i\in\mathbb R^d.$$</p>
+<p>Binary labels $y_i\in\{0,1\}$ ya $\{-1,+1\}$ ho sakte hain. Question ki encoding follow karo. Classifier:</p>
+<p>$$h:\mathbb R^d\to\{0,1\}.$$</p>
+<p><strong>Regression se difference:</strong> Classification label category hai; regression target numerical quantity hai, jaise price. KNN aur decision trees dono tasks handle kar sakte hain.</p>
+<h3 id="topic-4">1.2 Zero–one loss and training error</h3>
+<p>Single prediction wrong ho toh penalty 1, correct ho toh 0:</p>
+<p>$$L_i=\mathbf1[h(x_i)\ne y_i].$$</p>
+<p>$$\boxed{\text{Error rate}=\frac{\#\text{wrong predictions}}{\#\text{evaluated points}}=\frac1n\sum_{i=1}^n\mathbf1[h(x_i)\ne y_i]}.$$</p>
+<p>Example: 8 predictions mein 2 wrong → count 2, error rate $2/8=0.25$, accuracy 0.75. <strong>Count aur fraction interchange mat karna.</strong></p>
+<p>Training error same data par measure hota hai jo model ne use kiya. Validation/test error unseen examples par performance estimate karta hai. Zero training error ka matlab zero test error nahi.</p>
+<h3 id="topic-5">1.3 Linear classifier aur squared-error limitation</h3>
+<p>Linear score $f(x)=w^Tx+b$ ko threshold karke class predict kar sakte hain. Boundary $w^Tx+b=0$ 2D mein line hai. Exact minimum 0–1 training error find karna general linear-classifier setting mein computationally hard ho sakta hai.</p>
+<p>Linear regression se class labels fit karke threshold karna possible hai, but squared error <strong>score ka numerical distance</strong> bhi penalize karti hai, sirf class side nahi.</p>
+<p><strong>Counterexample:</strong> True label 1 ke liye scores 1 aur 10 dono threshold 0.5 se class 1 predict karte hain. Squared errors respectively 0 aur 81 hain. Outliers fitted line/boundary ko pull kar sakte hain.</p>
+<p>Ab do approaches dekhenge jo ek single straight boundary tak restricted nahi: local neighbour voting aur recursive feature questions.</p>
+<hr />
+<h2 id="topic-6">2. K-Nearest Neighbours: Nearby examples se prediction</h2>
+<h3 id="topic-7">2.1 KNN ka idea</h3>
+<p><strong>Short definition:</strong> Test point ke $k$ closest training points find karo; classification mein majority label, regression mein target values ka mean predict karo.</p>
+<p><strong>Real life:</strong> Naye flat ka expected rent nearby similar flats ke rents se estimate karna. “Nearby” location alone nahi; chosen feature-space distance decide karti hai.</p>
+<p>KNN <strong>non-parametric</strong> aur <strong>lazy learning</strong> method hai: fixed coefficient vector fit karne ke bajay training examples retain karta hai. “No conventional model fitting” ka matlab “training data ki zaroorat nahi” nahi hai.</p>
+<h3 id="topic-8">2.2 Distance aur scaling</h3>
+<p>Euclidean distance:</p>
+<p>$$d(x,z)=\sqrt{\sum_{j=1}^d(x_j-z_j)^2}.$$</p>
+<p>Nearest neighbours rank karne ke liye squared distance enough:</p>
+<p>$$\boxed{d^2(x,z)=\sum_j(x_j-z_j)^2}.$$</p>
+<p>Square root increasing function hai, so ordering same rehti hai. Manhattan distance $\sum_j|x_j-z_j|$ different ordering de sakti hai.</p>
+<p><strong>Counterexample:</strong> Origin se $A=(3,0)$ aur $B=(2,2)$: Euclidean mein $B$ nearer ($\sqrt8&lt;3$), Manhattan mein $A$ nearer ($3&lt;4$). Opposite labels hon toh 1-NN prediction change ho sakti hai.</p>
+<p><strong>Scaling:</strong> Income thousands mein aur age tens mein ho toh raw Euclidean distance income se dominate ho sakti hai. Appropriate scaling useful hai. Validation mein scaler sirf training fold par fit karo; held-out point se fitting leakage hoti hai.</p>
+<h3 id="topic-9">2.3 Classification rule and ties</h3>
+<p>Nearest-neighbour index set $N_k(x)$ ke liye:</p>
+<p>$$\boxed{\hat y=\arg\max_c\sum_{i\in N_k(x)}\mathbf1[y_i=c]}.$$</p>
+<p>Binary class mein odd $k$ majority-vote tie avoid karta hai, <strong>distance tie nahi</strong>. Equal-distance candidates at the $k$th position ke liye tie rule needed ho sakta hai.</p>
+<p>Workflow: distances → sort → first $k$ points → labels count → majority. Raw numerical feature values ka majority nahi lena.</p>
+<h3 id="topic-10">Q7 — 3-NN classification in three dimensions</h3>
+<p><strong>Source:</strong> 2024 Dec 01 Quiz 2, Q7.</p>
+<p><strong>Question:</strong></p>
+<p>Consider the following feature vectors in $\mathbb R^3$:</p>
+<p>$$x_1=[1,2,3]^T,\quad x_2=[-1,-2,0]^T,\quad x_3=[3,0,1]^T,\quad x_4=[0,1,4]^T,\quad x_5=[2,-1,-3]^T.$$</p>
+<p>The labels of these points are $y_1=0,y_2=1,y_3=1,y_4=0,y_5=1$.
+If we use a k-NN algorithm with $k=3$, what would be the predicted label for the test point $x_{\mathrm{test}}=[1,1,2]^T$?</p>
+<p><strong>Solution:</strong></p>
+<p><strong>Step 1: Squared distances calculate karo.</strong></p>
+<table>
+<thead>
+<tr>
+<th>Point</th>
+<th>Calculation of $d^2$</th>
+<th style="text-align:right">$d^2$</th>
+<th style="text-align:right">Label</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$x_1$</td>
+<td>$(1-1)^2+(2-1)^2+(3-2)^2$</td>
+<td style="text-align:right">2</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td>$x_2$</td>
+<td>$(-1-1)^2+(-2-1)^2+(0-2)^2$</td>
+<td style="text-align:right">17</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td>$x_3$</td>
+<td>$(3-1)^2+(0-1)^2+(1-2)^2$</td>
+<td style="text-align:right">6</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td>$x_4$</td>
+<td>$(0-1)^2+(1-1)^2+(4-2)^2$</td>
+<td style="text-align:right">5</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td>$x_5$</td>
+<td>$(2-1)^2+(-1-1)^2+(-3-2)^2$</td>
+<td style="text-align:right">30</td>
+<td style="text-align:right">1</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Step 2:</strong> Sorted order $x_1,x_4,x_3,x_2,x_5$. First three labels $0,0,1$.</p>
+<p><strong>Step 3:</strong> Class 0 gets two votes, class 1 one vote.</p>
+<p>$$\boxed{\hat y=0}.$$</p>
+<h3 id="topic-11">2.4 KNN regression: Vote ki jagah average</h3>
+<p><strong>Short definition:</strong> Selected neighbours ke numerical targets ka average predict karo.</p>
+<p>$$\boxed{\hat y(x)=\frac1k\sum_{i\in N_k(x)}y_i}.$$</p>
+<p>Neighbour selection same hai, aggregation different. Example labels $2.8,4.7,5.1$ categories nahi; inka mean meaningful hai. Unless question distance weights specify kare, ordinary unweighted mean use karo.</p>
+<h3 id="topic-12">Q15 — 3-NN regression at (3, 2)</h3>
+<p><strong>Source:</strong> 2025 Aug 03 Quiz 2, Q15.</p>
+<p><strong>Question:</strong></p>
+<p>Perform a 3-NN regressor for the following dataset:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:right">$x_1$</th>
+<th style="text-align:right">$x_2$</th>
+<th style="text-align:right">$y$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right">1</td>
+<td style="text-align:right">2</td>
+<td style="text-align:right">3.5</td>
+</tr>
+<tr>
+<td style="text-align:right">2</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">2.8</td>
+</tr>
+<tr>
+<td style="text-align:right">3</td>
+<td style="text-align:right">3</td>
+<td style="text-align:right">5.1</td>
+</tr>
+<tr>
+<td style="text-align:right">4</td>
+<td style="text-align:right">2</td>
+<td style="text-align:right">4.7</td>
+</tr>
+<tr>
+<td style="text-align:right">5</td>
+<td style="text-align:right">3</td>
+<td style="text-align:right">6.2</td>
+</tr>
+<tr>
+<td style="text-align:right">6</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">5.9</td>
+</tr>
+</tbody>
+</table>
+<p>where, $x=[x_1\ x_2]^T$ is a feature vector and $y$ is the label. What will be the predicted value for the test data point $[3\ 2]^T$? Enter the answer correct to one decimal place.</p>
+<p><strong>Solution:</strong></p>
+<p><strong>Step 1:</strong> Distances from $(3,2)$:</p>
+<table>
+<thead>
+<tr>
+<th>Point</th>
+<th style="text-align:right">$d^2$</th>
+<th style="text-align:right">Target</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$(1,2)$</td>
+<td style="text-align:right">$(-2)^2+0^2=4$</td>
+<td style="text-align:right">3.5</td>
+</tr>
+<tr>
+<td>$(2,1)$</td>
+<td style="text-align:right">$(-1)^2+(-1)^2=2$</td>
+<td style="text-align:right">2.8</td>
+</tr>
+<tr>
+<td>$(3,3)$</td>
+<td style="text-align:right">$0^2+1^2=1$</td>
+<td style="text-align:right">5.1</td>
+</tr>
+<tr>
+<td>$(4,2)$</td>
+<td style="text-align:right">$1^2+0^2=1$</td>
+<td style="text-align:right">4.7</td>
+</tr>
+<tr>
+<td>$(5,3)$</td>
+<td style="text-align:right">$2^2+1^2=5$</td>
+<td style="text-align:right">6.2</td>
+</tr>
+<tr>
+<td>$(6,1)$</td>
+<td style="text-align:right">$3^2+(-1)^2=10$</td>
+<td style="text-align:right">5.9</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Step 2:</strong> Neighbours $(3,3),(4,2),(2,1)$; targets $5.1,4.7,2.8$. First two ki distance tie harmless hai because dono selected hain.</p>
+<p><strong>Step 3:</strong></p>
+<p>$$\hat y=\frac{5.1+4.7+2.8}{3}=\frac{12.6}{3}=\boxed{4.2}.$$</p>
+<h3 id="topic-13">Q20 — 3-NN regression at (2, 2)</h3>
+<p><strong>Source:</strong> 2026 Aug 14 Quiz 2, Q20.</p>
+<p><strong>Question:</strong></p>
+<p>Perform a 3-NN regressor for the following dataset:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:right">$x_1$</th>
+<th style="text-align:right">$x_2$</th>
+<th style="text-align:right">$y$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right">2</td>
+<td style="text-align:right">3</td>
+<td style="text-align:right">4.1</td>
+</tr>
+<tr>
+<td style="text-align:right">1</td>
+<td style="text-align:right">4</td>
+<td style="text-align:right">3.2</td>
+</tr>
+<tr>
+<td style="text-align:right">4</td>
+<td style="text-align:right">2</td>
+<td style="text-align:right">5.5</td>
+</tr>
+<tr>
+<td style="text-align:right">3</td>
+<td style="text-align:right">5</td>
+<td style="text-align:right">6.8</td>
+</tr>
+<tr>
+<td style="text-align:right">5</td>
+<td style="text-align:right">2</td>
+<td style="text-align:right">7.1</td>
+</tr>
+<tr>
+<td style="text-align:right">2</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">3.9</td>
+</tr>
+</tbody>
+</table>
+<p>where, $x=[x_1\ x_2]^T$ is a feature vector and $y$ is the label. What will be the predicted value for the test data point $x_{\mathrm{test}}=[2\ 2]^T$? Enter the answer correct to one decimal place.</p>
+<p><strong>Solution:</strong> Q15 ka same method, but dataset different hai.</p>
+<ol>
+<li>Listed row order mein squared distances: $1,5,4,10,9,1$.</li>
+<li>First, sixth aur third rows closest hain; corresponding targets $4.1,3.9,5.5$.</li>
+<li>Average:</li>
+</ol>
+<p>$$\boxed{\hat y=\frac{4.1+3.9+5.5}{3}=\frac{13.5}{3}=4.5}.$$</p>
+<hr />
+<h2 id="topic-14">3. Choice of k: Flexibility, training error and computation</h2>
+<h3 id="topic-15">3.1 Small k vs large k</h3>
+<p><strong>Real life:</strong> Sirf ek neighbour ki opinion lo toh unusual opinion dominate karegi; larger group local noise average kar sakta hai. Bahut large group lo toh local differences hi ignore ho sakte hain.</p>
+<table>
+<thead>
+<tr>
+<th>k choice</th>
+<th>Typical behavior</th>
+<th>Bias</th>
+<th>Variance</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Small k</td>
+<td>Local details/noise follow karta hai</td>
+<td>Lower</td>
+<td>Higher</td>
+</tr>
+<tr>
+<td>Large k</td>
+<td>Smoother, less locally flexible prediction</td>
+<td>Higher</td>
+<td>Lower</td>
+</tr>
+</tbody>
+</table>
+<p>These are standard trends, har individual dataset par strict monotonic theorem nahi.</p>
+<ul>
+<li>$k=1$: Outliers ke around tiny decision regions ban sakte hain.</li>
+<li>$k=n$: All queries ko same global class majority milti hai (fixed tie rule); regression mein global target mean.</li>
+<li>$k$ hyperparameter hai; validation/cross-validation se choose karo, final test data se tune mat karo.</li>
+</ul>
+<p><img src="assets/week7/knn_k_boundaries.png" loading="lazy" alt="KNN boundaries for small and larger k, with an outlier circled" /></p>
+<p><strong>Counterexample:</strong> Training error minimum hone se best k choose nahi hota. Self-neighbour 1-NN data memorize kar sakta hai, but unseen noisy sample par wrong prediction still possible.</p>
+<h3 id="topic-16">3.2 Self-neighbour: What is and is not guaranteed?</h3>
+<p>Training evaluation mein sample itself included ho toh distance zero hai. Distinct feature vectors ke case mein 1-NN returns its own label, giving zero training error.</p>
+<p>For 3-NN, self vote sirf one of three hai. Two other neighbours opposite class ke hon toh training point misclassified ho sakta hai.</p>
+<p><strong>Example:</strong> Labels $0,1,1$ for self plus two closest others → prediction 1, so class-0 self wrong. However class-separated clusters mein all three same label ho sakte hain → zero training error possible.</p>
+<h3 id="topic-17">Q1 — Minimum errors and increasing k</h3>
+<p><strong>Source:</strong> 2024 Mar 24 Quiz 2, Q1.</p>
+<p><strong>Question:</strong></p>
+<p>Comprehension: Consider a binary classification problem with a training dataset of 80 points, evenly distributed between two classes (40 points in each class). You decide to train a k-NN algorithm with $k=3$. Each point is considered its own neighbor during classification.
+Based on the above data, answer the given subquestions.</p>
+<p>(i) What is the minimum number of misclassifications that can occur in the training dataset when using this k-NN algorithm?</p>
+<p>(ii) Assuming there are outliers, the decision boundary becomes smoother with increasing value of k in a k-NN algorithm (Fill in 1 for yes and 0 for no).</p>
+<p><strong>Solution:</strong></p>
+<p><strong>(i) Step 1:</strong> Minimum possible error count zero se less nahi ho sakta.</p>
+<p><strong>Step 2:</strong> Class 0 ke 40 points ek tight cluster mein, class 1 ke 40 points far-away cluster mein imagine karo. Each point ke self plus two nearest neighbours same class ke ho sakte hain.</p>
+<p><strong>Step 3:</strong> All points correct possible, so lower bound attainable:</p>
+<p>$$\boxed{\text{Minimum misclassifications}=0}.$$</p>
+<p>Ye “always zero” nahi; class counts alone actual error determine nahi karte.</p>
+<p><strong>(ii):</strong> Increasing k averages more local votes, reducing isolated outlier influence and generally smoothing the boundary.</p>
+<p>$$\boxed{1\text{ (yes)}}.$$</p>
+<h3 id="topic-18">Q9 — Same minimum-error idea, reversed smoothing statement</h3>
+<p><strong>Source:</strong> 2024 Dec 01 Quiz 2, Q9.</p>
+<p><strong>Question:</strong></p>
+<p>Comprehension: Consider a binary classification problem with a training dataset of 100 points, evenly distributed between two classes (50 points in each class). You decide to train a k-NN algorithm with $k=3$. Each point is considered its own neighbor during classification.
+Based on the above data, answer the given subquestions.</p>
+<p>(i) What is the minimum number of misclassifications that can occur in the training dataset when using this k-NN algorithm?</p>
+<p>(ii) Assuming there are outliers, the decision boundary becomes smoother with decreasing value of k in a k-NN algorithm.</p>
+<p>(a) True</p>
+<p>(b) False</p>
+<p><strong>Solution:</strong></p>
+<p>(i) Q1(i) ka same separated-cluster construction 50+50 points par work karta hai; full argument repeat karne ki need nahi. <strong>Answer: $\boxed{0}$.</strong></p>
+<p>(ii) Yahan <strong>decreasing</strong> k likha hai. Smaller neighbourhood local noise ko more influence deti hai; smoother boundary ka usual direction increasing k hai. <strong>Answer: $\boxed{\text{(b) False}}$.</strong></p>
+<h3 id="topic-19">Q24 — Bias and variance versus k</h3>
+<p><strong>Source:</strong> 2026 Sep 13 ET, Q24.</p>
+<p><strong>Question:</strong></p>
+<p>Identify the correct relationship(s) between bias, variance, and the hyperparameter k in the k-Nearest Neighbours algorithm. (MSQ)</p>
+<p>(a) Increasing k leads to an increase in bias.</p>
+<p>(b) Decreasing k leads to an increase in bias.</p>
+<p>(c) Increasing k leads to an increase in variance.</p>
+<p>(d) Decreasing k leads to an increase in variance.</p>
+<p><strong>Solution:</strong> Large k smooths over local structure → higher bias, lower variance. Small k adapts closely to sample-specific structure → lower bias, higher variance.</p>
+<p>So (a) true, (b) false, (c) false, (d) true:</p>
+<p>$$\boxed{\text{(a), (d)}}.$$</p>
+<p><strong>Related questions:</strong> Q1(ii), Q9(ii) ask the same underlying flexibility trend through decision-boundary smoothness.</p>
+<h3 id="topic-20">3.3 Prediction cost and stored data</h3>
+<p>Brute-force KNN calculates $n$ distances per query, each involving $d$ features: distance work $O(nd)$. Full sorting adds $O(n\log n)$; top-k selection can avoid full sorting. Stored examples require roughly $O(nd)$ feature storage.</p>
+<p>Trees/spatial indexes or approximate-neighbour methods may reduce how many distances are evaluated. Speedup depends on dimension/data; all KNN implementations need not scan all points every time.</p>
+<h3 id="topic-21">Q23 — Distance metric, stored data and prediction cost</h3>
+<p><strong>Source:</strong> 2026 Aug 14 Quiz 2, Q23.</p>
+<p><strong>Question:</strong></p>
+<p>Which of the following statements about the K-Nearest Neighbours (KNN) algorithm are correct? (MSQ)</p>
+<p>(a) The choice of distance metric can affect the predicted class.</p>
+<p>(b) Once trained, KNN makes predictions without referring to the training data.</p>
+<p>(c) Every prediction does not require computing distances from the test point to all training data.</p>
+<p>(d) The computational cost of prediction generally increases with the size of the training dataset.</p>
+<p><strong>Solution:</strong></p>
+<ul>
+<li><strong>(a) True:</strong> Section 2.2 ka Euclidean/Manhattan example neighbour ordering change karta hai.</li>
+<li><strong>(b) False:</strong> Prediction stored training examples aur unke labels par depend karti hai.</li>
+<li><strong>(c) Basic brute-force setting mein false:</strong> Is course ke direct algorithm mein all training distances calculate hote hain.</li>
+<li><strong>(d) True:</strong> Larger dataset generally more search work/storage require karta hai.</li>
+</ul>
+<p>$$\boxed{\text{Paper&#x27;s intended answer: (a), (d)}}.$$</p>
+<p><strong>Wording care:</strong> (c) universally false statement nahi hai. Indexed KNN can skip many distance evaluations; agar all implementations consider karein, “all distances are not always required” valid hai. Answer key brute-force algorithm assume karti hai.</p>
+<hr />
+<h2 id="topic-22">4. Validation and geometric KNN questions</h2>
+<h3 id="topic-23">4.1 Leave-one-out cross-validation (LOOCV)</h3>
+<p><strong>Short definition:</strong> Ek point hold out karo, remaining $n-1$ points par train/store karke held-out point predict karo. Har point ke liye repeat.</p>
+<p>$$\boxed{\operatorname{LOOCV\ error}=\frac1n\sum_{i=1}^n\mathbf1[h_{D\setminus\{i\}}(x_i)\ne y_i]}.$$</p>
+<p><strong>Real life:</strong> Student ka answer hide karke baaki examples se predict karna. Hidden answer ko nearest neighbour bana dena unfair shortcut hoga.</p>
+<p><strong>Critical distinction:</strong> Training-error questions explicitly self include kar sakte hain; LOOCV mein held-out point <strong>exclude</strong> hota hai. Same dataset aur k ke liye these errors different ho sakte hain.</p>
+<h3 id="topic-24">Q13 — Test prediction, LOOCV and changing labels</h3>
+<p><strong>Source:</strong> 2025 Mar 16 Quiz 2, Q13.</p>
+<p><strong>Question:</strong></p>
+<p>Comprehension: Consider the following 2D data points along with their labels:</p>
+<table>
+<thead>
+<tr>
+<th>$x$</th>
+<th style="text-align:right">$[1,1]^T$</th>
+<th style="text-align:right">$[1,-1]^T$</th>
+<th style="text-align:right">$[2,1]^T$</th>
+<th style="text-align:right">$[2,2]^T$</th>
+<th style="text-align:right">$[2,-2]^T$</th>
+<th style="text-align:right">$[3,-3]^T$</th>
+<th style="text-align:right">$[4,-1]^T$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$y$</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+</tr>
+</tbody>
+</table>
+<p>Based on the above data, answer the given subquestions.</p>
+<p>(i) If we use a k-NN algorithm with $k=3$, what would be the predicted label for $x_{\mathrm{test}}=[4,0]^T$?</p>
+<p>(ii) Compute the Leave-one-out cross validation (LOOCV) error for the 3-nearest neighbour (3-NN) algorithm on this dataset. Enter the answer correct to two decimal places.</p>
+<p>(iii) Is it possible to reduce the cross-validation error obtained in the previous question by changing the label of certain points?</p>
+<p>(a) Yes</p>
+<p>(b) No</p>
+<p>(c) Cannot conclude from the given information</p>
+<p><strong>Solution — (i): Test prediction</strong></p>
+<p>Name the listed points $P_1,\ldots,P_7$ in that order.</p>
+<table>
+<thead>
+<tr>
+<th>Point</th>
+<th style="text-align:right">Squared distance to $(4,0)$</th>
+<th style="text-align:right">Label</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$P_1=(1,1)$</td>
+<td style="text-align:right">10</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td>$P_2=(1,-1)$</td>
+<td style="text-align:right">10</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td>$P_3=(2,1)$</td>
+<td style="text-align:right">5</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td>$P_4=(2,2)$</td>
+<td style="text-align:right">8</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td>$P_5=(2,-2)$</td>
+<td style="text-align:right">8</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td>$P_6=(3,-3)$</td>
+<td style="text-align:right">10</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td>$P_7=(4,-1)$</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+</tr>
+</tbody>
+</table>
+<p>First two neighbours $P_7,P_3$ both label 1. Third distance 8 par $P_4$ or $P_5$ tie hai. Either choice leaves at least two class-1 votes.</p>
+<p>$$\boxed{\hat y=1}.$$</p>
+<p><img src="assets/week7/q13_neighbors.png" loading="lazy" alt="Q13 points, test point and neighbour-distance circle" /></p>
+<p><strong>Solution — (ii): Each held-out point ko remove karo</strong></p>
+<p>Each row below mein displayed distances <strong>squared</strong> hain. Neighbour labels listed order mein hain.</p>
+<table>
+<thead>
+<tr>
+<th>Held out</th>
+<th>Three nearest remaining points</th>
+<th>Their $d^2$</th>
+<th>Labels</th>
+<th style="text-align:right">Prediction</th>
+<th style="text-align:right">True</th>
+<th style="text-align:right">Error</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$P_1$</td>
+<td>$P_3,P_4,P_2$</td>
+<td>$1,2,4$</td>
+<td>$1,1,1$</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td>$P_2$</td>
+<td>$P_5,P_1,P_3$</td>
+<td>$2,4,5$</td>
+<td>$0,1,1$</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td>$P_3$</td>
+<td>$P_1,P_4,P_2$</td>
+<td>$1,1,5$</td>
+<td>$1,1,1$</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td>$P_4$</td>
+<td>$P_3,P_1,P_2$</td>
+<td>$1,2,10$</td>
+<td>$1,1,1$</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td>$P_5$</td>
+<td>$P_2,P_6,P_7$</td>
+<td>$2,2,5$</td>
+<td>$1,0,1$</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td>$P_6$</td>
+<td>$P_5,P_7,P_2$</td>
+<td>$2,5,8$</td>
+<td>$0,1,1$</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td>$P_7$</td>
+<td>$P_5,P_6,P_3$</td>
+<td>$5,5,8$</td>
+<td>$0,0,1$</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Ek row ko detail mein:</strong> $P_5=(2,-2)$ hold out ho toh $P_2$ distance-square 2, $P_6$ 2, $P_7$ 5. Their labels $1,0,1$ majority 1, but true $P_5$ label 0 → error.</p>
+<p>Total wrong folds $3$ out of $7$:</p>
+<p>$$\boxed{\operatorname{LOOCV}=\frac37\approx0.43}.$$</p>
+<p><strong>Solution — (iii): Construct one relabeling</strong></p>
+<p>$P_5,P_6$ ke labels 0 se 1 change kar do. Ab all seven labels 1 hain; every held-out prediction 1 aur held-out target bhi 1. LOOCV error becomes 0, so mathematically reduction possible.</p>
+<p>$$\boxed{\text{(a) Yes}}.$$</p>
+<p>Ye hypothetical dataset modification ka answer hai; actual validation improve dikhane ke liye genuine labels change karna valid model-selection procedure nahi.</p>
+<h3 id="topic-25">4.2 Adding a point: Distance rank matters</h3>
+<p>New point ka angle se zyada query se distance important hai. New sample top-k mein enter kare toh existing farthest selected neighbour displace hota hai. Vote count dobara evaluate karo.</p>
+<h3 id="topic-26">Q18 — Region where an added positive point preserves prediction</h3>
+<p><strong>Source:</strong> 2026 Aug 14 Quiz 2, Q18.</p>
+<p><strong>Question:</strong></p>
+<p>Consider a training dataset for a classification problem with four data-points. Red circles represent data-points with label −1 and green squares represent data-points with label +1. A test-point is located at (0, 0). Dotted circles centered at (0, 0) with radii 1, 2, 3 and 4 are drawn for your convenience.</p>
+<p><img src="assets/week7/q18_points.png" loading="lazy" alt="Q18 supplied points and distance circles" /></p>
+<p>KNN with Euclidean distance and $k=3$ is the classifier. Now, a new training data-point with label +1 is added somewhere inside the outermost circle of radius 4 such that it leaves the predicted label of the test data-point unchanged. Let S be the set of all points that could be the potential location of this new training data-point. Find the area of the region corresponding to S.</p>
+<p>Note: We use KNN with $k=3$ for both datasets.</p>
+<p>(a) $7\pi$</p>
+<p>(b) $5\pi$</p>
+<p>(c) $16\pi$</p>
+<p>(d) $9\pi$</p>
+<p><strong>Solution:</strong></p>
+<p><strong>Step 1:</strong> Supplied graph mein increasing radii 1, 2, 3, 4 par labels $+1,-1,-1,-1$ hain. Current nearest three votes $+,-,-$ → predicted $-1$.</p>
+<p><strong>Step 2:</strong> New positive point ka radius $r&lt;3$ ho toh nearest three mein new positive, old positive aur one negative honge. Majority flips to $+1$.</p>
+<p><strong>Step 3:</strong> $3&lt;r&lt;4$ ho toh pehle ke nearest three unchanged: $+,-,-$. Prediction stays $-1$.</p>
+<p><strong>Step 4:</strong> Allowed region is outer annulus:</p>
+<p>$$\operatorname{Area}(S)=\pi(4^2)-\pi(3^2)=\pi(16-9)=\boxed{7\pi}.$$</p>
+<p><strong>Answer: (a).</strong> At $r=3$, neighbour tie rule decide karega boundary include hai ya nahi. Circle boundary ka area zero hai, so requested area unaffected.</p>
+<hr />
+<h2 id="topic-27">5. Decision tree: Feature questions se partition</h2>
+<h3 id="topic-28">5.1 Root, internal nodes and leaves</h3>
+<p><strong>Short definition:</strong> Decision tree recursively feature-based questions poochti hai aur final leaf par prediction deti hai.</p>
+<p><strong>Real life:</strong> Loan screening: “income above threshold?” phir “existing debt below threshold?” Har answer next question decide karta hai.</p>
+<ul>
+<li><strong>Root:</strong> First question, all training examples start here.</li>
+<li><strong>Internal node:</strong> Test/split, for example $x_1\le2$.</li>
+<li><strong>Branches:</strong> Yes/no outcomes.</li>
+<li><strong>Leaf:</strong> Final class; usually majority label of training samples reaching it.</li>
+</ul>
+<p>Regression tree leaf mein often mean target predict hota hai. Classification tree mein class proportions probability estimates bhi de sakte hain.</p>
+<h3 id="topic-29">5.2 Axis-aligned split and valid thresholds</h3>
+<p>Question $f_j\le\theta$ divides current node's data:</p>
+<p>$$D_{\mathrm{yes}}=\{(x,y)\in D:x_j\le\theta\},\quad D_{\mathrm{no}}=\{(x,y)\in D:x_j&gt;\theta\}.$$</p>
+<p>In 2D, one-coordinate test vertical/horizontal boundary banata hai. Child split <strong>sirf us child ke region mein</strong> apply hota hai, entire feature space mein nahi.</p>
+<p><strong>Counterexample to “both children always nonempty”:</strong> Values $1,2,3$ par test $x\le10$ gives all yes, no empty. Useful numerical candidates often sorted distinct feature values ke consecutive midpoints se milte hain. Distinct values $1,3,8$ → thresholds 2 and 5.5 give different nonempty partitions.</p>
+<p>Categorical questions like “city in {A,B}?” bhi possible hain; implementation suitable encoding/native categorical support require kar sakti hai.</p>
+<h3 id="topic-30">5.3 Depth, complexity and stopping</h3>
+<p>$$\boxed{\text{Depth}=\text{maximum number of edges on any root-to-leaf path}}.$$</p>
+<p>Stump has depth 1; root-only leaf depth 0. Number of internal splits across entire tree aur depth same nahi.</p>
+<ul>
+<li>Very shallow tree: Simple, often high bias/underfitting.</li>
+<li>Deep unrestricted tree: Flexible, can overfit, high variance.</li>
+<li>Max depth, minimum leaf size and pruning control complexity; validate hyperparameters.</li>
+<li>Pure node, no valid useful partition, depth/size limit etc. par stop kar sakte hain.</li>
+</ul>
+<p><strong>Zero-gain caveat:</strong> Sometimes one zero-gain split enables useful child splits, as in XOR. Algorithm “IG must be strictly positive” rule use kare toh aisi structure miss ho sakti hai.</p>
+<p><strong>Advantages:</strong> Small trees interpretable; nonlinear axis-aligned regions possible. <strong>Limits:</strong> Deep trees unstable; a small data perturbation can change early splits and entire structure. Trees universally weak predictors nahi—capacity chosen complexity par depend karti hai.</p>
+<h3 id="topic-31">Q4 — Which models can memorize the training data?</h3>
+<p><strong>Source:</strong> 2024 Aug 04 Quiz 2, Q4.</p>
+<p><strong>Question:</strong></p>
+<p>Which of the following classifiers are certainly capable of achieving zero training error for any binary classification problem with features in $\mathbb R^2$? Note: while computing the training error for KNN, each data-point is its own neighbor. (MSQ)</p>
+<p>(a) Decision tree</p>
+<p>(b) KNN with $k=1$</p>
+<p>(c) KNN with $k=5$</p>
+<p>(d) Naive Bayes</p>
+<p><strong>Solution:</strong></p>
+<ol>
+<li><strong>Decision tree:</strong> Sufficient depth aur distinct feature vectors hon toh successive coordinate thresholds finite training samples ko separate karke pure leaves bana sakte hain.</li>
+<li><strong>1-NN:</strong> Each distinct point ka closest point itself, so own label returned.</li>
+<li><strong>5-NN:</strong> Self one vote only. Four nearby opposite-class samples majority flip kar sakte hain.</li>
+<li><strong>Naive Bayes:</strong> Model assumptions arbitrary labels memorize karne ki guarantee nahi deti.</li>
+</ol>
+<p>$$\boxed{\text{Intended answer: (a), (b)}}.$$</p>
+<p><strong>Necessary assumption:</strong> Same exact feature vector ke contradictory labels nahi hone chahiye. Counterexample: $(0,0)$ twice, labels 0 and 1. Deterministic feature-only classifier ek input par both labels return nahi kar sakta. Isliye “any” ko literally contradictory datasets tak extend karne par guarantee false hai. Tree ki representational capacity aur a specific greedy learner ki success bhi separate baatein hain.</p>
+<h3 id="topic-32">Q17 — Tree depth, feature order and instability</h3>
+<p><strong>Source:</strong> 2025 Aug 31 ET, Q17.</p>
+<p><strong>Question:</strong></p>
+<p>Which of the following statements are true about the decision tree algorithm? (MSQ)</p>
+<p>(a) Decision trees are prone to overfitting if the maximum depth is set too shallow.</p>
+<p>(b) Decision trees are not affected by the order of features in the dataset.</p>
+<p>(c) Decision trees are sensitive to small perturbations in the dataset and can result in different tree structures.</p>
+<p>(d) Decision trees can handle both numerical and categorical features.</p>
+<p><strong>Solution:</strong></p>
+<ul>
+<li><strong>(a) False:</strong> Too shallow generally underfits; unrestricted depth promotes overfitting.</li>
+<li><strong>(b) Needs a tie-handling assumption:</strong> A unique best split evaluated over all features is invariant to feature-column order. But equal-gain ties resolved by “first feature encountered” can change selected feature and tree structure when columns reorder.</li>
+<li><strong>(c) True:</strong> Small changes can switch best split; downstream partitions then change.</li>
+<li><strong>(d) True:</strong> Numerical thresholds and categorical membership tests are possible, with suitable implementation/encoding.</li>
+</ul>
+<p>$$\boxed{\text{Paper answer: (c), (d)}}.$$</p>
+<p><strong>Counterexample for absolute (b):</strong> Two equally informative features tie at root. First-column tie-breaking picks whichever appears first. Order can affect that implementation; feature order is not inherently a mathematical predictor property.</p>
+<hr />
+<h2 id="topic-33">6. Entropy: Node kitna mixed hai?</h2>
+<h3 id="topic-34">6.1 Definition and binary formula</h3>
+<p><strong>Short definition:</strong> Entropy node ke class-label uncertainty/impurity ko measure karti hai.</p>
+<p><strong>Real life:</strong> Bag mein all red balls hon toh next color predictable hai; half red/half blue ho toh maximum uncertainty.</p>
+<p>Positive-class fraction:</p>
+<p>$$p=\frac{n_+}{n_++n_-}.$$</p>
+<p>With base-2 logarithms:</p>
+<p>$$\boxed{H(p)=-p\log_2p-(1-p)\log_2(1-p)}.$$</p>
+<p>Convention $0\log_2 0=0$ use karte hain. Entropy unit bits hai. Multiple classes ke liye $H=-\sum_c p_c\log_2p_c$.</p>
+<h3 id="topic-35">6.2 Properties and counterexamples</h3>
+<ul>
+<li>Pure node: $p=0$ or 1 → entropy 0.</li>
+<li>Balanced binary node: $p=0.5$ → entropy 1, maximum.</li>
+<li>Symmetry: $H(p)=H(1-p)$.</li>
+<li>Binary entropy $0\le H\le1$; multiclass maximum $\log_2 C$ ho sakta hai.</li>
+<li>Absolute count nahi, proportions determine entropy. 1 positive + 1 negative aur 100 + 100 dono entropy 1.</li>
+</ul>
+<p><strong>Counterexample to monotonic impurity:</strong> $p:0\to0.5\to1$ gives entropy $0\to1\to0$. Increasing positive fraction always impurity increase/decrease nahi karta.</p>
+<p><img src="assets/week7/entropy.png" loading="lazy" alt="Binary entropy versus positive-class proportion" /></p>
+<h3 id="topic-36">Q10 — Entropy from 60% and 40%</h3>
+<p><strong>Source:</strong> 2024 Dec 01 Quiz 2, Q10.</p>
+<p><strong>Question:</strong></p>
+<p>Comprehension: Consider a binary classification problem in which a decision tree is classifying data points into two classes, A and B. In a particular node of the tree, 60% of the data points belong to class A, while the remaining 40% belong to class B.
+Based on the above data, answer the given subquestions.</p>
+<p>(i) Do you have enough information to find the entropy of this node?</p>
+<p>(a) Yes</p>
+<p>(b) No</p>
+<p>(ii) If the answer to the previous question is “Yes,” calculate the entropy of this node to three decimal places. If the answer to the previous question is “No,” enter −1 as your answer.</p>
+<p><strong>Solution:</strong></p>
+<p>(i) Yes: Class proportions known hain, total sample count required nahi. $\boxed{\text{(a)}}$.</p>
+<p>(ii) Use $p=0.6$, $1-p=0.4$:</p>
+<p>$$H=-0.6\log_2(0.6)-0.4\log_2(0.4).$$</p>
+<p>$$\log_2(0.6)\approx-0.736966,\quad\log_2(0.4)\approx-1.321928.$$</p>
+<p>$$H\approx0.442180+0.528771=0.970951.$$</p>
+<p>$$\boxed{H=0.971\text{ bits}}.$$</p>
+<h3 id="topic-37">Q11 — Where is impurity maximum?</h3>
+<p><strong>Source:</strong> 2025 Mar 16 Quiz 2, Q11.</p>
+<p><strong>Question:</strong></p>
+<p>p is the proportion of points with label 1 in some node in a decision tree. Which of the following statements are true?</p>
+<p>(a) As the value of p increases from 0 to 1, the impurity of the node increases.</p>
+<p>(b) As the value of p increases from 0 to 1, the impurity of the node decreases.</p>
+<p>(c) The impurity of the node does not depend on p.</p>
+<p>(d) $p=0.5$ correspond to the case of maximum impurity.</p>
+<p><strong>Solution:</strong> Entropy curve first rises, then falls. It depends on p and peaks at equal proportions.</p>
+<p>$$\boxed{\text{(d)}}.$$</p>
+<h3 id="topic-38">Q14 — Conditions for a pure node</h3>
+<p><strong>Source:</strong> 2025 Apr 13 ET, Q14.</p>
+<p><strong>Question:</strong></p>
+<p>Which of the following conditions must be satisfied for a decision tree to be pure at a given node? (MSQ)</p>
+<p>(a) The entropy of the node is maximum.</p>
+<p>(b) The information gain at the node is negative.</p>
+<p>(c) All samples at a node belong to the same class.</p>
+<p>(d) The entropy of the node is 0.</p>
+<p><strong>Solution:</strong> Pure means all labels same, so $p=0$ or 1 and entropy 0. Maximum entropy means maximum mixing. Negative information gain is not purity criterion.</p>
+<p>$$\boxed{\text{(c), (d)}}.$$</p>
+<h3 id="topic-39">Q22 — Equal class counts</h3>
+<p><strong>Source:</strong> 2026 Aug 14 Quiz 2, Q22.</p>
+<p><strong>Question:</strong></p>
+<p>A node in a decision tree contains an equal number of positive and negative training examples. What is the entropy of this node?</p>
+<p>(a) 0</p>
+<p>(b) 0.5</p>
+<p>(c) 1</p>
+<p>(d) It depends on the total number of training examples.</p>
+<p><strong>Solution:</strong> Equal proportions give $p=1/2$. Since $\log_2(1/2)=-1$,</p>
+<p>$$H=-\tfrac12(-1)-\tfrac12(-1)=\boxed{1\text{ bit; option (c)}}.$$</p>
+<p>Same maximum-impurity property as Q11; total count doesn't change it.</p>
+<hr />
+<h2 id="topic-40">7. Information gain: Best next question kaise choose karein?</h2>
+<h3 id="topic-41">7.1 Weighted entropy reduction</h3>
+<p><strong>Short definition:</strong> Information gain (IG) split se pehle ki entropy minus split ke baad weighted average child entropy hai.</p>
+<p><strong>Real life:</strong> Sorting mixed balls into boxes useful tab hai jab resulting boxes less mixed hon. Large box ka contribution small box se more weight carry karega.</p>
+<p>$$\boxed{IG=H(D)-\left[\frac{n_L}{n}H(D_L)+\frac{n_R}{n}H(D_R)\right]}.$$</p>
+<p>Weights sum to 1. Equal half-half weighting tabhi valid jab children same size ke hon.</p>
+<p><strong>Algorithm:</strong> Candidate splits form karo → each split ka IG compute karo → maximum IG split choose karo → child nodes par repeat. This is greedy: local maximum gain globally best whole tree ki guarantee nahi.</p>
+<h3 id="topic-42">7.2 Properties worth remembering</h3>
+<ol>
+<li>Standard empirical entropy gain for a partition satisfies $0\le IG\le H(D)$.</li>
+<li>Both children pure → weighted child entropy zero → $IG=H(D)$.</li>
+<li>Same class proportions in both children as parent → $IG=0$.</li>
+<li><strong>One child more impure than parent ho sakta hai.</strong> Restriction weighted average par hai, individual child par nahi.</li>
+<li>Best entropy-based split means largest IG among compared candidates at same node. Other criteria like Gini, gain ratio or validation performance use karo toh ranking necessarily same nahi.</li>
+</ol>
+<p>Gini impurity optional alternative: $G=1-\sum_c p_c^2$; binary $G=2p(1-p)$. Entropy question mein Gini substitute mat karna.</p>
+<h3 id="topic-43">Q8 — Information gain of a decision stump</h3>
+<p><strong>Source:</strong> 2024 Dec 01 Quiz 2, Q8.</p>
+<p><strong>Question:</strong></p>
+<p>Consider a decision stump (parent with two children). The parent node has 200 data-points out of which 50 belong to the positive class. The left child has 100 data-points out of which 50 belong to the positive class. Find the information gain. Use $\log_2$. Enter your answer correct to three decimal places.</p>
+<p><strong>Solution:</strong></p>
+<p><strong>Step 1: Counts reconstruct karo.</strong></p>
+<table>
+<thead>
+<tr>
+<th>Node</th>
+<th style="text-align:right">Positive</th>
+<th style="text-align:right">Negative</th>
+<th style="text-align:right">Total</th>
+<th style="text-align:right">Positive fraction</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Parent</td>
+<td style="text-align:right">50</td>
+<td style="text-align:right">150</td>
+<td style="text-align:right">200</td>
+<td style="text-align:right">0.25</td>
+</tr>
+<tr>
+<td>Left</td>
+<td style="text-align:right">50</td>
+<td style="text-align:right">50</td>
+<td style="text-align:right">100</td>
+<td style="text-align:right">0.5</td>
+</tr>
+<tr>
+<td>Right</td>
+<td style="text-align:right">$50-50=0$</td>
+<td style="text-align:right">$150-50=100$</td>
+<td style="text-align:right">100</td>
+<td style="text-align:right">0</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Step 2:</strong> Parent entropy:</p>
+<p>$$H_P=-0.25\log_2(0.25)-0.75\log_2(0.75)=0.811278.$$</p>
+<p><strong>Step 3:</strong> Child entropies $H_L=1$, $H_R=0$.</p>
+<p><strong>Step 4:</strong> Weighted remaining entropy:</p>
+<p>$$H_{\mathrm{after}}=\frac{100}{200}(1)+\frac{100}{200}(0)=0.5.$$</p>
+<p><strong>Step 5:</strong></p>
+<p>$$\boxed{IG=0.811278-0.5=0.311278\approx0.311}.$$</p>
+<p><strong>Counterexample established:</strong> Left child entropy 1 exceeds parent entropy 0.811278, but weighted average decreases. “Every child must be purer” false hai.</p>
+<h3 id="topic-44">Q19 — Parent entropy, right-child entropy and gain</h3>
+<p><strong>Source:</strong> 2026 Aug 14 Quiz 2, Q19.</p>
+<p><strong>Question:</strong></p>
+<p>Comprehension: Consider a node in a decision tree that has 5 data-points. The ith data-point is represented by a feature-label pair $(x_i,y_i)$, where $y_i\in\{-1,1\}$.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:right">i</th>
+<th style="text-align:right">$x_i$</th>
+<th style="text-align:right">$y_i$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right">1</td>
+<td style="text-align:right">4</td>
+<td style="text-align:right">−1</td>
+</tr>
+<tr>
+<td style="text-align:right">2</td>
+<td style="text-align:right">10</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td style="text-align:right">3</td>
+<td style="text-align:right">13</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td style="text-align:right">4</td>
+<td style="text-align:right">25</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td style="text-align:right">5</td>
+<td style="text-align:right">38</td>
+<td style="text-align:right">−1</td>
+</tr>
+</tbody>
+</table>
+<p>Consider the split $x\le7$ at the parent node resulting in left and right child nodes. The left child node has all data points for which $x\le7$ is true. Entropy is used to determine the purity of the nodes. Recall that the formula for the entropy of a node is:</p>
+<p>$$E(p)=-p\log_2p-(1-p)\log_2(1-p)$$</p>
+<p>where p is the fraction of positive data-points in the node. Use at least three digits after the decimal point in all intermediate calculations. Based on the above data, answer the given subquestions.</p>
+<p>(i) Find the entropy of the parent node. Enter your answer correct to two decimal places.</p>
+<p>(ii) Find the entropy of the right child. Enter your answer correct to two decimal places.</p>
+<p>(iii) Find the information gain. Enter your answer correct to two decimal places.</p>
+<p><strong>Solution:</strong></p>
+<p><strong>(i):</strong> Parent has 3 positives, 2 negatives, so $p=3/5=0.6$. Q10 ka entropy calculation reuse karo:</p>
+<p>$$H_P=0.970951\quad\Rightarrow\quad\boxed{0.97}.$$</p>
+<p><strong>(ii):</strong> Left has only $(4,-1)$ → pure, entropy 0. Right has $(10,+1),(13,+1),(25,+1),(38,-1)$ → $p_R=3/4$:</p>
+<p>$$H_R=-\frac34\log_2\frac34-\frac14\log_2\frac14=0.811278.$$</p>
+<p>$$\boxed{H_R\approx0.81}.$$</p>
+<p><strong>(iii):</strong> Child weights are $1/5$ and $4/5$, not half-half:</p>
+<p>$$IG=0.970951-\left[\frac15(0)+\frac45(0.811278)\right].$$</p>
+<p>$$IG=0.970951-0.649022=0.321928\quad\Rightarrow\quad\boxed{0.32}.$$</p>
+<h3 id="topic-45">Q12 — Choose between two candidate thresholds</h3>
+<p><strong>Source:</strong> 2025 Mar 16 Quiz 2, Q12.</p>
+<p><strong>Question:</strong></p>
+<p>Consider the following feature (x) along with its label (y):</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:right">x</th>
+<th style="text-align:right">y</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td style="text-align:right">−1</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td style="text-align:right">2</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td style="text-align:right">−2</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td style="text-align:right">3</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td style="text-align:right">4</td>
+<td style="text-align:right">1</td>
+</tr>
+</tbody>
+</table>
+<p>If you are provided with the following two questions, which one should you choose for the first (top) node of the decision tree?</p>
+<p>$$Q_a:x\le-2,\qquad Q_b:x\le-1.$$</p>
+<p>Recall: Information gain $=\operatorname{Entropy}(D)-\gamma\operatorname{Entropy}(D_{\mathrm{Yes}})-(1-\gamma)\operatorname{Entropy}(D_{\mathrm{No}})$.</p>
+<p>Use the following values if required:
+$\log_2(3/4)=-0.41$, $\log_2(4/5)=-0.32$, $\log_2(1/5)=-2.32$, $\log_2(1/4)=-2$, $\log_2(1/2)=-1$.</p>
+<p>(a) $x\le-2$</p>
+<p>(b) $x\le-1$</p>
+<p>(c) Insufficient information</p>
+<p><strong>Solution:</strong></p>
+<p><strong>Step 1:</strong> Parent same for both candidates: 4 positives, 2 negatives. Instead of computing parent twice, minimize weighted child entropy.</p>
+<p><strong>Step 2: Candidate $Q_a$.</strong></p>
+<ul>
+<li>Yes: only $(-2,0)$, so entropy 0, weight $1/6$.</li>
+<li>No: remaining 5 labels $1,1,1,0,1$ → 4 positives, 1 negative.</li>
+</ul>
+<p>Using supplied rounded logs:</p>
+<p>$$H_{a,\mathrm{No}}=-\frac45(-0.32)-\frac15(-2.32)=0.256+0.464=0.72.$$</p>
+<p>$$H_{a,\mathrm{after}}=\frac16(0)+\frac56(0.72)=0.60.$$</p>
+<p><strong>Step 3: Candidate $Q_b$.</strong></p>
+<ul>
+<li>Yes: $(-2,0),(-1,1)$ → entropy 1, weight $2/6$.</li>
+<li>No: $(1,1),(2,1),(3,0),(4,1)$ → 3 positives, 1 negative, weight $4/6$.</li>
+</ul>
+<p>$$H_{b,\mathrm{No}}=-\frac34(-0.41)-\frac14(-2)=0.3075+0.5=0.8075.$$</p>
+<p>$$H_{b,\mathrm{after}}=\frac26(1)+\frac46(0.8075)=0.871667.$$</p>
+<p><strong>Step 4:</strong> $0.60&lt;0.871667$, so $Q_a$ leaves less impurity and has more gain.</p>
+<p>$$\boxed{\text{(a) }x\le-2}.$$</p>
+<p>With full-precision logs, gains approximately $0.316689$ and $0.044110$; ordering same. Supplied rounded logs ke results ko full precision values ke saath mix mat karo.</p>
+<h3 id="topic-46">Q25 — Information-gain properties</h3>
+<p><strong>Source:</strong> 2026 Sep 13 ET, Q25.</p>
+<p><strong>Question:</strong></p>
+<p>Which of the following statements about entropy and information gain in decision-tree learning are correct? (MSQ)</p>
+<p>(a) If a feature splits a node into perfectly pure children, its information gain at that node equals the entropy of that node.</p>
+<p>(b) A node whose examples all belong to a single class has entropy 0 and needs no further splitting.</p>
+<p>(c) Information gain can be negative if a split increases impurity.</p>
+<p>(d) After a parent node is split into child nodes, no individual child node can have entropy greater than the parent node’s entropy.</p>
+<p><strong>Solution:</strong></p>
+<ul>
+<li><strong>(a) True:</strong> Both child entropies 0 → $IG=H_P$.</li>
+<li><strong>(b) True:</strong> Pure node already has no class uncertainty; training-label separation ke liye further split needed nahi.</li>
+<li><strong>(c) False:</strong> Standard entropy gain from a partition of the same node's samples nonnegative hai. Negative calculation often wrong weights/counts/rounding indicate karti hai.</li>
+<li><strong>(d) False:</strong> Q8 mein parent entropy 0.811278, left child entropy 1. Weighted average 0.5 nonetheless lower hai.</li>
+</ul>
+<p>$$\boxed{\text{(a), (b)}}.$$</p>
+<h3 id="topic-47">Q2 — Combined KNN and decision-tree statements</h3>
+<p><strong>Source:</strong> 2024 Mar 24 Quiz 2, Q2.</p>
+<p><strong>Question:</strong></p>
+<p>Select all true statements. (MSQ)</p>
+<p>(a) In Decision tree, if a question $Q_1$ is “better” than question $Q_2$, then information gains for $Q_1$ is greater than information gains $Q_2$ always.</p>
+<p>(b) The training dataset is required while predicting the label of a test-point in the k-NN algorithm.</p>
+<p>(c) A question of the form $f_k\le\theta$ always partitions the dataset into two non-empty sets.</p>
+<p>(d) The depth of the tree is a hyperparameter and has to be chosen using cross validation.</p>
+<p>(e) Decision trees are prone to overfit if the maximum depth is set too low.</p>
+<p><strong>Solution:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Verdict in the question's setting</th>
+<th>Reason</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>(a)</td>
+<td>True</td>
+<td>“Better” here means larger entropy-based information gain at the same node</td>
+</tr>
+<tr>
+<td>(b)</td>
+<td>True</td>
+<td>KNN compares test point with stored training samples</td>
+</tr>
+<tr>
+<td>(c)</td>
+<td>False</td>
+<td>Threshold outside data range can leave one child empty</td>
+</tr>
+<tr>
+<td>(d)</td>
+<td>True, intended</td>
+<td>Maximum allowed depth is a tunable hyperparameter; cross-validation is a standard selection method</td>
+</tr>
+<tr>
+<td>(e)</td>
+<td>False</td>
+<td>Too low maximum depth generally underfits</td>
+</tr>
+</tbody>
+</table>
+<p>$$\boxed{\text{(a), (b), (d)}}.$$</p>
+<p><strong>Wording care:</strong> (a) is not a universal claim across Gini/gain ratio/test accuracy. In (d), <strong>max depth</strong> is the chosen limit; actual learned depth can be smaller. Cross-validation is recommended, not the only mathematically possible way to choose it.</p>
+<hr />
+<h2 id="topic-48">8. Tree geometry: Paths ko regions mein translate karo</h2>
+<h3 id="topic-49">8.1 Root-to-leaf path means AND of conditions</h3>
+<p><strong>Short definition:</strong> Ek leaf ka region us path ke saare tests ka intersection hai.</p>
+<p>Example: First $x_1&lt;2$ Yes, then $x_2&gt;1$ No → region $x_1&lt;2$ <strong>and</strong> $x_2\le1$. Different leaves of same class combine with OR.</p>
+<p><strong>Real life:</strong> Eligibility “age in range AND income above limit” jaisi multiple conditions meet karke decide hoti hai. Sirf last question ka answer enough nahi.</p>
+<p>Prediction: Root se start → exact inequality evaluate → correct branch → leaf label. Strict $&lt;$ aur $\le$ boundary par different outcomes dete hain.</p>
+<h3 id="topic-50">8.2 Uniform sampling: Probability becomes area fraction</h3>
+<p>If a point is uniform over region $R$:</p>
+<p>$$\boxed{P(\text{class 1})=\frac{\operatorname{Area}(\text{class-1 part of }R)}{\operatorname{Area}(R)}}.$$</p>
+<p>Disjoint leaf areas add kar sakte hain. Uniform assumption important: Nonuniform density mein same area necessarily same probability nahi.</p>
+<h3 id="topic-51">Q3 — Probability of class 1 in the unit square</h3>
+<p><strong>Source:</strong> 2024 Apr 28 ET, Q3.</p>
+<p><strong>Question:</strong></p>
+<p>Consider the following decision tree for a classification problem in which all the data-points are constrained to lie in the unit square in the first quadrant. That is $0\le x_1,x_2\le1$. If a point is picked uniformly at random from the unit square, what is the probability that the decision tree predicts this point as belonging to class 1?</p>
+<p><img src="assets/week7/q3_tree.png" loading="lazy" alt="Q3 supplied decision tree" /></p>
+<p><strong>Solution:</strong></p>
+<p><strong>Step 1: Tree read karo.</strong> Root question $x_1&lt;0.5$.</p>
+<ul>
+<li>No → $x_1\ge0.5$ → class 1.</li>
+<li>Yes → ask $x_2&gt;0.5$; Yes gives class 0, No gives class 1.</li>
+</ul>
+<p><strong>Step 2: Class-1 leaves ke regions.</strong></p>
+<p>$$A=\{0.5\le x_1\le1,\ 0\le x_2\le1\},$$</p>
+<p>$$B=\{0\le x_1&lt;0.5,\ 0\le x_2\le0.5\}.$$</p>
+<p><strong>Step 3: Areas.</strong></p>
+<p>$$\operatorname{Area}(A)=0.5\times1=0.5,\qquad\operatorname{Area}(B)=0.5\times0.5=0.25.$$</p>
+<p><strong>Step 4:</strong> Unit-square area 1:</p>
+<p>$$\boxed{P(1)=\frac{0.5+0.25}{1}=0.75}.$$</p>
+<p><strong>Alternative check:</strong> Only top-left quarter class 0 hai, so $P(1)=1-0.25$. Boundary lines have area zero, so their class convention probability change nahi karti.</p>
+<p><img src="assets/week7/q3_q18_regions.png" loading="lazy" alt="Q3 shaded prediction regions and Q18 annulus" /></p>
+<p>Left graph Q3 ki area decomposition dikhata hai; right graph earlier Q18 ka allowed annulus dikhata hai.</p>
+<h3 id="topic-52">Q6 — Integer thresholds, pure leaves and a test prediction</h3>
+<p><strong>Source:</strong> 2024 Aug 04 Quiz 2, Q6.</p>
+<p><strong>Question:</strong></p>
+<p>Comprehension: If a and b are integers, answer the given subquestions that follow. Hint: Plotting the dataset helps.</p>
+<p>Consider the following training dataset for a binary classification problem with the data-points in $\mathbb R^2$, the labels in the set {0, 1} and a decision tree grown from it that achieves zero training error:</p>
+<p>$$X=\begin{bmatrix}-2&amp;-0.9&amp;0.9&amp;2&amp;-2&amp;-0.9&amp;0.9&amp;2\\1&amp;0.9&amp;0.9&amp;1&amp;-1&amp;-0.9&amp;-0.9&amp;-1\end{bmatrix},$$</p>
+<p>$$y=[1\quad1\quad0\quad0\quad0\quad0\quad1\quad1]^T.$$</p>
+<p><img src="assets/week7/q6_tree.png" loading="lazy" alt="Q6 supplied decision tree with unknown thresholds" /></p>
+<p>(i) What is the value of a?</p>
+<p>(ii) What is the value of b?</p>
+<p>(iii) Find the entropy of the root node. Use $\log_2$.</p>
+<p>(iv) If $E_R$ is the entropy of the root and $E_L$ is the weighted entropy of all the leaves, what is $E_R-E_L$? Use $\log_2$.</p>
+<p>(v) What is the predicted label of the test data-point $[3,-4]^T$?</p>
+<p><strong>Solution — First convert columns into points</strong></p>
+<table>
+<thead>
+<tr>
+<th>Region</th>
+<th>Points</th>
+<th style="text-align:right">Label</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Top-left</td>
+<td>$(-2,1),(-0.9,0.9)$</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td>Top-right</td>
+<td>$(0.9,0.9),(2,1)$</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td>Bottom-left</td>
+<td>$(-2,-1),(-0.9,-0.9)$</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td>Bottom-right</td>
+<td>$(0.9,-0.9),(2,-1)$</td>
+<td style="text-align:right">1</td>
+</tr>
+</tbody>
+</table>
+<p>Tree root asks $x_1&lt;a$. Left subtree asks $x_2&lt;b$ with Yes → 0, No → 1. Right subtree asks the same with Yes → 1, No → 0.</p>
+<p><strong>(i) Find a.</strong> Left and right feature groups separate between $-0.9$ and $0.9$. Strict $x_1&lt;a$ requires:</p>
+<p>$$-0.9&lt;a\le0.9.$$</p>
+<p>Only integer in this interval is:</p>
+<p>$$\boxed{a=0}.$$</p>
+<p><strong>(ii) Find b.</strong> Bottom points must satisfy $x_2&lt;b$, top points must fail it:</p>
+<p>$$-0.9&lt;b\le0.9\quad\Rightarrow\quad\boxed{b=0}.$$</p>
+<p>Without integer restriction, many thresholds in these intervals work; answer uniquely 0 depends on that restriction.</p>
+<p><strong>(iii) Root entropy.</strong> Four labels 1 and four labels 0:</p>
+<p>$$p=4/8=1/2,\qquad\boxed{E_R=1\text{ bit}}.$$</p>
+<p><strong>(iv) Root-to-leaves entropy reduction.</strong> Each final leaf contains two same-label points → entropy 0. Weighted entropy:</p>
+<p>$$E_L=\frac28(0)+\frac28(0)+\frac28(0)+\frac28(0)=0.$$</p>
+<p>$$\boxed{E_R-E_L=1-0=1}.$$</p>
+<p><strong>Important distinction:</strong> Root's immediate split alone has IG 0: left and right halves each contain two class-0 and two class-1 points. Final leaves after further splits are pure. Whole-tree reduction 1 aur first-split gain 0 confuse mat karo.</p>
+<p><strong>(v) Test point $(3,-4)$.</strong></p>
+<ol>
+<li>$3&lt;0$? No → right subtree.</li>
+<li>$-4&lt;0$? Yes → label 1.</li>
+</ol>
+<p>$$\boxed{\hat y=1}.$$</p>
+<h3 id="topic-53">8.3 Reading a tree boundary locally</h3>
+<p>A vertical root split divides whole plane; next vertical/horizontal split restricted branch mein applies. Correct drawing ke liye har leaf ki condition pehle likho, then shade regions.</p>
+<h3 id="topic-54">Q16 — Tree boundary and prediction for (2, 2)</h3>
+<p><strong>Source:</strong> 2025 Aug 03 Quiz 2, Q16.</p>
+<p><strong>Question:</strong></p>
+<p>Comprehension: Consider the following decision tree for a binary classification problem with two features $f_1$ and $f_2$:</p>
+<p><img src="assets/week7/q16_tree.png" loading="lazy" alt="Q16 supplied decision tree" /></p>
+<p>Based on the above data, answer the given subquestions.</p>
+<p>(i) Which among the following represents the correct decision boundary for the decision tree? Note: Here + represents the label 1 and - represents the label 0.</p>
+<p><img src="assets/week7/q16_given_boundary.png" loading="lazy" alt="Boundary diagram supplied with Q16" /></p>
+<p>(ii) What will be the prediction for the new datapoint (2, 2)?</p>
+<p><strong>Solution — (i): All class-1 paths collect karo</strong></p>
+<p>Root asks $f_1\le1.5$.</p>
+<p><strong>Left branch:</strong> $f_1\le1.5$, then ask $f_1&lt;0$.</p>
+<ul>
+<li>If No: $0\le f_1\le1.5$ → class 0.</li>
+<li>If Yes: $f_1&lt;0$, then ask $f_2&gt;1.5$.
+<ul>
+<li>Yes → class 1.</li>
+<li>No → class 0.</li>
+</ul>
+</li>
+</ul>
+<p><strong>Right branch:</strong> $f_1&gt;1.5$, then ask $f_2&lt;0$.</p>
+<ul>
+<li>Yes → class 1.</li>
+<li>No → class 0.</li>
+</ul>
+<p>Thus class-1 region is:</p>
+<p>$$\boxed{\{f_1&lt;0,\ f_2&gt;1.5\}\ \cup\ \{f_1&gt;1.5,\ f_2&lt;0\}}.$$</p>
+<p>Everything else class 0. Top-left and bottom-right green regions match supplied boundary.</p>
+<p>$$\boxed{\text{Paper&#x27;s labeled answer: (b)}}.$$</p>
+<p><strong>Figure availability:</strong> Supplied compilation shows one boundary diagram and gives answer (b); other option diagrams are not present. Region calculation above independently identifies the correct geometry.</p>
+<p><strong>Solution — (ii):</strong></p>
+<ol>
+<li>$f_1=2\le1.5$? No → right branch.</li>
+<li>$f_2=2&lt;0$? No → leaf 0.</li>
+</ol>
+<p>$$\boxed{\hat y(2,2)=0}.$$</p>
+<p><img src="assets/week7/q6_q16_regions.png" loading="lazy" alt="Q6 plotted samples and Q16 derived regions" /></p>
+<h3 id="topic-55">8.4 Box membership and depth</h3>
+<p>In $d$ dimensions, one finite axis-aligned box has lower and upper bound for each coordinate:</p>
+<p>$$\ell_j\le x_j\le u_j,\qquad j=1,\ldots,d.$$</p>
+<p>Interior point ko certify karne ke liye all $2d$ inequalities satisfy honi chahiye. One-feature threshold test per node se box-membership classifier construct karne par longest inside path $2d$ tests ka hota hai. Any failed test immediately outside-class leaf par exit kar sakta hai.</p>
+<h3 id="topic-56">Q5 — Minimum depth for a three-dimensional box</h3>
+<p><strong>Source:</strong> 2024 Aug 04 Quiz 2, Q5.</p>
+<p><strong>Question:</strong></p>
+<p>Consider the following decision boundary obtained for a decision tree trained on a dataset in $\mathbb R^3$ for a binary classification problem. All green points (label 1) lie inside the box and the red points (label 0) are outside it. What is the minimum depth of this tree? Recall that the depth is the number of edges on the longest path from the root to a leaf.</p>
+<p><img src="assets/week7/q5_box.png" loading="lazy" alt="Q5 box boundary" /></p>
+<p><strong>Solution:</strong></p>
+<p><strong>Step 1:</strong> Box inside means:</p>
+<p>$$\ell_1\le x_1\le u_1,\quad\ell_2\le x_2\le u_2,\quad\ell_3\le x_3\le u_3.$$</p>
+<p><strong>Step 2:</strong> Six face constraints hain: left/right, front/back, bottom/top. Ordinary axis-aligned binary node ek threshold test karta hai.</p>
+<p><strong>Step 3:</strong> Inside path can ask these six checks sequentially. Har failure class 0; all pass → class 1. So depth 6 sufficient hai.</p>
+<p><strong>Step 4:</strong> Exact finite box boundary represent karne ke liye inside leaf path ko every coordinate mein lower and upper bounds enforce karne honge; fewer than six one-coordinate tests se some direction unbounded reh jaayegi. So smaller depth cannot represent that exact box region.</p>
+<p>$$\boxed{\text{Minimum depth}=6}.$$</p>
+<p><strong>Scope:</strong> Ye pictured <strong>box decision region</strong> represent karne ka answer hai. Sirf finitely many plotted samples correctly classify karne ki demand ho, exact box boundary required na ho, toh actual positions ke depending shallower tree possible ho sakti hai.</p>
+<h3 id="topic-57">8.5 XOR-style quadrants: Split count versus depth</h3>
+<p>Opposite quadrants same label hone par one straight axis threshold enough nahi. Root ek coordinate ka sign separate kare, and each child doosre coordinate ka sign test kare. Four pure leaves, three internal splits, depth two.</p>
+<p>Q6 ka checkerboard opposite-label orientation mein tha; same tree structure idea yahan bhi useful hai.</p>
+<h3 id="topic-58">Q21 — Four quadrants with alternating labels</h3>
+<p><strong>Source:</strong> 2026 Aug 14 Quiz 2, Q21.</p>
+<p><strong>Question:</strong></p>
+<p>Consider a binary classification problem in $\mathbb R^2$. The feature space is partitioned into the following four regions:</p>
+<p>$$R_1=\{(x_1,x_2)\mid x_1\ge0,x_2\ge0\},\quad R_2=\{(x_1,x_2)\mid x_1&lt;0,x_2\ge0\},$$</p>
+<p>$$R_3=\{(x_1,x_2)\mid x_1&lt;0,x_2&lt;0\},\quad R_4=\{(x_1,x_2)\mid x_1\ge0,x_2&lt;0\}.$$</p>
+<p>Each region contains the same number of observations. All observations in regions $R_1$ and $R_3$ belong to the positive class, while all observations in regions $R_2$ and $R_4$ belong to the negative class. A decision tree is constructed using axis-aligned binary splits of the form $x_1\le t$ or $x_2\le t$, where t is any real number. At each node, the split is chosen to maximize the information gain based on entropy. What is the minimum number of binary questions (splits) that the decision tree must ask to obtain leaf nodes with zero entropy?</p>
+<p>(a) 3</p>
+<p>(b) 2</p>
+<p>(c) 4</p>
+<p>(d) It is impossible using only axis-aligned splits.</p>
+<p><strong>Solution — Intended quadrant construction:</strong></p>
+<p><strong>Step 1:</strong> Parent balanced hai because two equally populated quadrants positive and two negative. Entropy 1.</p>
+<p><strong>Step 2:</strong> First coordinate ke sign par split karo. Left half contains $R_2$ negative and $R_3$ positive; right half contains $R_1$ positive and $R_4$ negative. Both children balanced, entropy 1; this sign split has IG 0.</p>
+<p><strong>Step 3:</strong> Left child mein second coordinate sign test: bottom positive, top negative. Two pure leaves.</p>
+<p><strong>Step 4:</strong> Right child mein second coordinate sign test: top positive, bottom negative. Two pure leaves.</p>
+<table>
+<thead>
+<tr>
+<th>Node</th>
+<th>Test idea</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Root</td>
+<td>Is $x_1$ negative?</td>
+<td>Left/right half</td>
+</tr>
+<tr>
+<td>Left child</td>
+<td>Is $x_2$ negative?</td>
+<td>$R_3:+$, $R_2:-$</td>
+</tr>
+<tr>
+<td>Right child</td>
+<td>Is $x_2$ negative?</td>
+<td>$R_4:-$, $R_1:+$</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Step 5:</strong> One root split + one split in each child:</p>
+<p>$$\boxed{\text{Total splits}=1+1+1=3\quad\text{(a)}}.$$</p>
+<p>Each sample answers only two questions along its path, so <strong>depth is 2</strong>, not 3. For the full quadrant pattern, four pure quadrant regions need four leaves, and a full binary tree with four leaves has three internal nodes.</p>
+<p><strong>Assumptions behind this exam answer:</strong></p>
+<ul>
+<li>Finite training data mein negative/nonnegative observed coordinate values ke beech threshold choose karke sign groups implement kar sakte hain; if no points on axes, threshold 0 suffices. At the continuous axes, literal $\le0$ and $&lt;0$ differ, so equality convention must be handled separately when claiming exact regions everywhere.</li>
+<li>Equal quadrant counts alone don't fix within-quadrant locations. Other thresholds may have positive gain, and a greedy maximum-gain learner can choose a different root and need more splits. Therefore <strong>3 is the intended quadrant-representation construction</strong>, not a guarantee for every unspecified finite dataset under every greedy rule. A learner refusing zero-gain splits can also stop too early.</li>
+</ul>
+<hr />
+<h2 id="topic-59">9. Quick revision</h2>
+<h3 id="topic-60">9.1 Formula sheet</h3>
+<table>
+<thead>
+<tr>
+<th>Quantity</th>
+<th>Formula / rule</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Classification error rate</td>
+<td>Number wrong / number evaluated</td>
+</tr>
+<tr>
+<td>Squared Euclidean distance</td>
+<td>$\sum_j(x_j-z_j)^2$</td>
+</tr>
+<tr>
+<td>KNN classification</td>
+<td>Majority label among selected k neighbours</td>
+</tr>
+<tr>
+<td>KNN regression</td>
+<td>$\frac1k\sum_{i\in N_k(x)}y_i$</td>
+</tr>
+<tr>
+<td>LOOCV</td>
+<td>Hold out one, predict using others; total wrong / n</td>
+</tr>
+<tr>
+<td>Binary entropy</td>
+<td>$-p\log_2p-(1-p)\log_2(1-p)$</td>
+</tr>
+<tr>
+<td>Pure node</td>
+<td>$p\in\{0,1\}$, $H=0$</td>
+</tr>
+<tr>
+<td>Maximum binary entropy</td>
+<td>$p=0.5$, $H=1$ bit</td>
+</tr>
+<tr>
+<td>Information gain</td>
+<td>$H_P-\frac{n_L}{n}H_L-\frac{n_R}{n}H_R$</td>
+</tr>
+<tr>
+<td>Pure children</td>
+<td>$IG=H_P$</td>
+</tr>
+<tr>
+<td>Tree depth</td>
+<td>Longest root-to-leaf edge count</td>
+</tr>
+<tr>
+<td>Full binary tree</td>
+<td>Internal nodes = leaves − 1</td>
+</tr>
+<tr>
+<td>Uniform-region probability</td>
+<td>Favorable area / total area</td>
+</tr>
+<tr>
+<td>Annulus area</td>
+<td>$\pi(R^2-r^2)$</td>
+</tr>
+<tr>
+<td>Exact finite d-dimensional box with axis tests</td>
+<td>Minimum depth $2d$</td>
+</tr>
+</tbody>
+</table>
+<h3 id="topic-61">9.2 Common mistakes</h3>
+<table>
+<thead>
+<tr>
+<th>Mistake</th>
+<th>Correction</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Odd k removes every possible tie</td>
+<td>Removes binary vote ties; distance ties can remain</td>
+</tr>
+<tr>
+<td>3-NN self-neighbour guarantees zero error</td>
+<td>Self is one vote; other two can disagree</td>
+</tr>
+<tr>
+<td>Minimum possible error means actual error</td>
+<td>Actual error needs geometry/labels; minimum is an attainable lower bound</td>
+</tr>
+<tr>
+<td>Include held-out point in LOOCV</td>
+<td>Remove it before selecting neighbours</td>
+</tr>
+<tr>
+<td>KNN regression takes majority</td>
+<td>Average numerical targets</td>
+</tr>
+<tr>
+<td>Larger k always improves test accuracy</td>
+<td>Too large k can underfit; validate</td>
+</tr>
+<tr>
+<td>Tree depth equals all internal nodes</td>
+<td>Depth counts one longest path; splits count entire tree</td>
+</tr>
+<tr>
+<td>Feature threshold always makes two nonempty children</td>
+<td>Check min/max and actual values</td>
+</tr>
+<tr>
+<td>Child entropies always average half-half</td>
+<td>Weight by child sample counts</td>
+</tr>
+<tr>
+<td>Every child must have lower entropy than parent</td>
+<td>Only weighted average is constrained; Q8 is a counterexample</td>
+</tr>
+<tr>
+<td>Root IG equals total tree reduction</td>
+<td>Q6 first split IG 0, root-to-pure-leaves reduction 1</td>
+</tr>
+<tr>
+<td>Pure means maximum entropy</td>
+<td>Pure entropy is 0; balanced binary entropy is 1</td>
+</tr>
+<tr>
+<td>Every split line spans entire plane</td>
+<td>Child split restricted to ancestor-defined region</td>
+</tr>
+<tr>
+<td>Zero training error means good generalization</td>
+<td>Memorization may overfit</td>
+</tr>
+</tbody>
+</table>
+<h3 id="topic-62">9.3 Solving checklist</h3>
+<ol>
+<li><strong>KNN:</strong> Query, metric, k, self inclusion and tie rule read karo. Squared-distance table banao, neighbours choose karo, then vote/average.</li>
+<li><strong>Validation:</strong> Held-out samples and preprocessing fitting separate rakho. Error count ko correct denominator se divide karo.</li>
+<li><strong>Entropy:</strong> Positive/negative counts convert to proportions; base-2 logs use karo; pure node directly 0.</li>
+<li><strong>IG:</strong> Parent/child counts reconcile karo, child weights sum to 1 check karo, gain before rounding calculate karo.</li>
+<li><strong>Tree prediction:</strong> Root-to-leaf exact path follow karo; equality condition miss mat karo.</li>
+<li><strong>Region questions:</strong> Leaf conditions intersect karo; same-class leaves union karo; uniform probability ke liye disjoint areas add karo.</li>
+<li><strong>Complexity questions:</strong> Depth, number of splits and number of leaves clearly distinguish karo.</li>
+<li><strong>Final answer:</strong> Decimal places/options follow karo; ambiguous wording ke assumptions identify karo.</li>
+</ol>
+</article><nav class="next-prev" aria-label="Previous and next weeks"><a href="week6.html">← Week 6</a><a href="week8.html">Week 8 →</a></nav></main>
+<aside class="contents"><details open><summary>On this page</summary><nav aria-label="Topic index"><a class="level-h2" href="#topic-1">Topic index</a><a class="level-h2" href="#topic-2">1. Classification foundations</a><a class="level-h3" href="#topic-3">1.1 Features, labels and prediction</a><a class="level-h3" href="#topic-4">1.2 Zero–one loss and training error</a><a class="level-h3" href="#topic-5">1.3 Linear classifier aur squared-error limitation</a><a class="level-h2" href="#topic-6">2. K-Nearest Neighbours: Nearby examples se prediction</a><a class="level-h3" href="#topic-7">2.1 KNN ka idea</a><a class="level-h3" href="#topic-8">2.2 Distance aur scaling</a><a class="level-h3" href="#topic-9">2.3 Classification rule and ties</a><a class="level-h3" href="#topic-10">Q7 — 3-NN classification in three dimensions</a><a class="level-h3" href="#topic-11">2.4 KNN regression: Vote ki jagah average</a><a class="level-h3" href="#topic-12">Q15 — 3-NN regression at (3, 2)</a><a class="level-h3" href="#topic-13">Q20 — 3-NN regression at (2, 2)</a><a class="level-h2" href="#topic-14">3. Choice of k: Flexibility, training error and computation</a><a class="level-h3" href="#topic-15">3.1 Small k vs large k</a><a class="level-h3" href="#topic-16">3.2 Self-neighbour: What is and is not guaranteed?</a><a class="level-h3" href="#topic-17">Q1 — Minimum errors and increasing k</a><a class="level-h3" href="#topic-18">Q9 — Same minimum-error idea, reversed smoothing statement</a><a class="level-h3" href="#topic-19">Q24 — Bias and variance versus k</a><a class="level-h3" href="#topic-20">3.3 Prediction cost and stored data</a><a class="level-h3" href="#topic-21">Q23 — Distance metric, stored data and prediction cost</a><a class="level-h2" href="#topic-22">4. Validation and geometric KNN questions</a><a class="level-h3" href="#topic-23">4.1 Leave-one-out cross-validation (LOOCV)</a><a class="level-h3" href="#topic-24">Q13 — Test prediction, LOOCV and changing labels</a><a class="level-h3" href="#topic-25">4.2 Adding a point: Distance rank matters</a><a class="level-h3" href="#topic-26">Q18 — Region where an added positive point preserves prediction</a><a class="level-h2" href="#topic-27">5. Decision tree: Feature questions se partition</a><a class="level-h3" href="#topic-28">5.1 Root, internal nodes and leaves</a><a class="level-h3" href="#topic-29">5.2 Axis-aligned split and valid thresholds</a><a class="level-h3" href="#topic-30">5.3 Depth, complexity and stopping</a><a class="level-h3" href="#topic-31">Q4 — Which models can memorize the training data?</a><a class="level-h3" href="#topic-32">Q17 — Tree depth, feature order and instability</a><a class="level-h2" href="#topic-33">6. Entropy: Node kitna mixed hai?</a><a class="level-h3" href="#topic-34">6.1 Definition and binary formula</a><a class="level-h3" href="#topic-35">6.2 Properties and counterexamples</a><a class="level-h3" href="#topic-36">Q10 — Entropy from 60% and 40%</a><a class="level-h3" href="#topic-37">Q11 — Where is impurity maximum?</a><a class="level-h3" href="#topic-38">Q14 — Conditions for a pure node</a><a class="level-h3" href="#topic-39">Q22 — Equal class counts</a><a class="level-h2" href="#topic-40">7. Information gain: Best next question kaise choose karein?</a><a class="level-h3" href="#topic-41">7.1 Weighted entropy reduction</a><a class="level-h3" href="#topic-42">7.2 Properties worth remembering</a><a class="level-h3" href="#topic-43">Q8 — Information gain of a decision stump</a><a class="level-h3" href="#topic-44">Q19 — Parent entropy, right-child entropy and gain</a><a class="level-h3" href="#topic-45">Q12 — Choose between two candidate thresholds</a><a class="level-h3" href="#topic-46">Q25 — Information-gain properties</a><a class="level-h3" href="#topic-47">Q2 — Combined KNN and decision-tree statements</a><a class="level-h2" href="#topic-48">8. Tree geometry: Paths ko regions mein translate karo</a><a class="level-h3" href="#topic-49">8.1 Root-to-leaf path means AND of conditions</a><a class="level-h3" href="#topic-50">8.2 Uniform sampling: Probability becomes area fraction</a><a class="level-h3" href="#topic-51">Q3 — Probability of class 1 in the unit square</a><a class="level-h3" href="#topic-52">Q6 — Integer thresholds, pure leaves and a test prediction</a><a class="level-h3" href="#topic-53">8.3 Reading a tree boundary locally</a><a class="level-h3" href="#topic-54">Q16 — Tree boundary and prediction for (2, 2)</a><a class="level-h3" href="#topic-55">8.4 Box membership and depth</a><a class="level-h3" href="#topic-56">Q5 — Minimum depth for a three-dimensional box</a><a class="level-h3" href="#topic-57">8.5 XOR-style quadrants: Split count versus depth</a><a class="level-h3" href="#topic-58">Q21 — Four quadrants with alternating labels</a><a class="level-h2" href="#topic-59">9. Quick revision</a><a class="level-h3" href="#topic-60">9.1 Formula sheet</a><a class="level-h3" href="#topic-61">9.2 Common mistakes</a><a class="level-h3" href="#topic-62">9.3 Solving checklist</a></nav></details></aside></div>
+<footer>MLT Notes <span>Learn one concept at a time.</span></footer>
+</body></html>

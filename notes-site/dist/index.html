@@ -1,0 +1,838 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Week 1 · Principal Component Analysis | MLT Notes</title>
+<script src="theme.js"></script>
+<link rel="stylesheet" href="style.css">
+<script>window.MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']],processEscapes:true},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']},svg:{fontCache:'global'}};</script>
+<script defer src="vendor/tex-svg.js"></script></head>
+<body><a class="skip" href="#notes">Skip to notes</a>
+<header><a class="brand" href="index.html"><span class="brand-mark">m</span> MLT <span class="brand-muted">/ study notes</span></a><label class="theme-control">Theme <select id="theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label></header>
+<div class="layout"><aside class="weeks"><details open><summary>Course weeks <span>12</span></summary><nav aria-label="Course weeks"><a class="week-link selected" href="index.html" aria-current=page><span class="week-number">01</span><span>Principal Component Analysis</span></a><a class="week-link " href="week2.html" ><span class="week-number">02</span><span>Kernel PCA</span></a><a class="week-link " href="week3.html" ><span class="week-number">03</span><span>K-Means Clustering</span></a><a class="week-link " href="week4.html" ><span class="week-number">04</span><span>Estimation, GMM and EM Algorithm</span></a><a class="week-link " href="week5.html" ><span class="week-number">05</span><span>Linear and Kernel Regression</span></a><a class="week-link " href="week6.html" ><span class="week-number">06</span><span>Regularisation and Cross-Validation</span></a><a class="week-link " href="week7.html" ><span class="week-number">07</span><span>KNN and Decision Tree</span></a><a class="week-link " href="week8.html" ><span class="week-number">08</span><span>Naive Bayes</span></a><a class="week-link " href="week9.html" ><span class="week-number">09</span><span>Perceptron and Logistic Regression</span></a><a class="week-link " href="week10.html" ><span class="week-number">10</span><span>Support Vector Machine</span></a><a class="week-link " href="week11.html" ><span class="week-number">11</span><span>Soft-Margin SVM and Ensemble Methods</span></a><a class="week-link " href="week12.html" ><span class="week-number">12</span><span>Loss Functions and Artificial Neural Networks</span></a></nav></details></aside>
+<main id="notes"><div class="eyebrow">MACHINE LEARNING TECHNIQUES <span>/ WEEK 01</span></div><article><h1 id="topic-0">MLT Week 1: Principal Component Analysis Notes</h1>
+<p><strong>Flow:</strong> Data ko fewer numbers mein represent karna → projection → best direction → centering/covariance → eigenvectors → residuals → variance aur rank → storage → dual PCA → complete master problem.</p>
+<h2 id="topic-1">1. Representation learning: Compression ka idea</h2>
+<h3 id="topic-2">1.1 Supervised, unsupervised aur PCA</h3>
+<p><strong>Short definition:</strong> Supervised learning mein features ke saath target labels milte hain; unsupervised learning mein sirf features milte hain aur unka structure discover karte hain.</p>
+<p>House features se given price predict karna supervised hai. Bina labels ke similar houses group karna clustering; many correlated features ko fewer coordinates mein represent karna <strong>representation learning</strong> hai.</p>
+<p><strong>PCA:</strong> Principal Component Analysis orthogonal directions choose karti hai jinke along data ka maximum variance retain ho. Fewer directions rakhkar approximate reconstruction milti hai. Data already lower-dimensional linear space mein ho toh exact reconstruction bhi possible hai.</p>
+<p><strong>Real life:</strong> Height inches aur height centimetres two columns hain, par independent information ek hi hai. Dono numbers store karne ke bajay ek number aur conversion rule enough hai. PCA similar redundancy identify karti hai, though practical features usually perfectly dependent nahi hote.</p>
+<h3 id="topic-3">1.2 Representative vector aur coefficient</h3>
+<p>Ek fixed nonzero vector $w\in\mathbb R^d$ aur each point ka scalar $c_i$ store karo:</p>
+<p>$$\hat x_i=c_iw.$$</p>
+<p>Point line $\operatorname{span}(w)$ par ho toh $x_i=c_iw$ exactly. Line se bahar ho toh $\hat x_i$ point ka approximate proxy hai. Zero representative se sirf zero reconstruct hoga; nonzero data compress nahi kar sakte.</p>
+<h3 id="topic-4">M1 — Exact representation before PCA</h3>
+<p>Handwritten notes, pp. 2–3; AI notes ka same motivating example.</p>
+<p><strong>Question:</strong> Consider $D=\{(-7,-14),(2.5,5),(1,2),(0,0)\}$. Using $w=(2.5,5)$ as a representative, find the coefficients, reconstruct the points, and compare the number of stored scalars with direct storage.</p>
+<p><strong>Step 1 — Pattern:</strong> Har point $y=2x$ satisfy karta hai, aur $w$ bhi isi line par hai.</p>
+<p><strong>Step 2 — Coefficients:</strong> $c_i=x_{i1}/2.5=x_{i2}/5$.</p>
+<table>
+<thead>
+<tr>
+<th>Point</th>
+<th style="text-align:right">Coefficient</th>
+<th>Reconstruction $c_iw$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$(-7,-14)$</td>
+<td style="text-align:right">$-2.8$</td>
+<td>$(-7,-14)$</td>
+</tr>
+<tr>
+<td>$(2.5,5)$</td>
+<td style="text-align:right">$1$</td>
+<td>$(2.5,5)$</td>
+</tr>
+<tr>
+<td>$(1,2)$</td>
+<td style="text-align:right">$0.4$</td>
+<td>$(1,2)$</td>
+</tr>
+<tr>
+<td>$(0,0)$</td>
+<td style="text-align:right">$0$</td>
+<td>$(0,0)$</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Step 3 — Error:</strong> Reconstructed points same hain, so error zero.</p>
+<p><strong>Step 4 — Storage:</strong> Direct $dn=2\times4=8$ numbers. Representative ke 2 numbers + four coefficients = 6 numbers. Saving $(8-6)/8=\boxed{25\%}$.</p>
+<p><img src="assets/week1/01_collinear.png" loading="lazy" alt="Collinear points represented exactly by one vector" /></p>
+<p>Yahan arbitrary representative use hua hai; dataset centered nahi hai. Standard PCA mein pehle mean subtract karenge. Reconstruction ke saath mean ka role Section 4 mein aayega.</p>
+<h2 id="topic-5">2. Projection: Point line par nahi ho toh?</h2>
+<h3 id="topic-6">2.1 Scalar, vector aur error ko separate rakho</h3>
+<p><strong>Definition:</strong> Orthogonal projection kisi line/subspace par point ka nearest point hai. Torch ki shadow jaisa socho, but shadow <strong>perpendicularly</strong> drop hoti hai.</p>
+<p>For any nonzero $w$:</p>
+<p>$$\boxed{c^*=\frac{x^Tw}{w^Tw}},\qquad
+\boxed{\hat x=c^*w},\qquad e=x-\hat x.$$</p>
+<p>PCA directions ko unit length choose karte hain: $\|w\|=1$. Tab:</p>
+<p>$$\boxed{c=x^Tw},\qquad\boxed{\hat x=(x^Tw)w},\qquad\boxed{e=x-(x^Tw)w}.$$</p>
+<table>
+<thead>
+<tr>
+<th>Quantity</th>
+<th>Type</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$c=x^Tw$</td>
+<td>Scalar</td>
+<td>Signed coordinate along unit direction</td>
+</tr>
+<tr>
+<td>$(x^Tw)w$</td>
+<td>$d$-dimensional vector</td>
+<td>Reconstructed point on line</td>
+</tr>
+<tr>
+<td>$|x^Tw|$</td>
+<td>Nonnegative scalar</td>
+<td>Projection vector ki length</td>
+</tr>
+<tr>
+<td>$e$</td>
+<td>$d$-dimensional vector</td>
+<td>Lost component</td>
+</tr>
+<tr>
+<td>$\|e\|^2$</td>
+<td>Nonnegative scalar</td>
+<td>Squared reconstruction error</td>
+</tr>
+</tbody>
+</table>
+<p><img src="assets/week1/02_proxies.png" loading="lazy" alt="Points and their nearest proxies on a line" /></p>
+<p><img src="assets/week1/03_projection.png" loading="lazy" alt="Coefficient, projection vector and perpendicular error" /></p>
+<h3 id="topic-7">2.2 Properties with intuition</h3>
+<p>Projection ka residual perpendicular hai: $e^Tw=0$. Isliye right triangle banta hai:</p>
+<p>$$\boxed{\|x\|^2=(x^Tw)^2+\|e\|^2}\quad(\|w\|=1).$$</p>
+<p><strong>Sign flip:</strong> $w\to-w$ karne par coefficient ka sign reverse hota hai, reconstruction same: $(-x^Tw)(-w)=(x^Tw)w$. Ek PC direction ke dono signs valid hain.</p>
+<p><strong>Counterexample to “unit formula always works”:</strong> $x=(3,4),w=(2,0)$ par $x^Tw=6$, but correct coefficient $6/4=1.5$ hai. Galat formula $cw=(12,0)$ dega; actual projection $(3,0)$ hai.</p>
+<p><img src="assets/week1/06_pythagoras.png" loading="lazy" alt="Pythagoras connects retained projection and lost error" /></p>
+<h3 id="topic-8">M2 — Projection calculation and non-unit variation</h3>
+<p>Handwritten notes, p. 7.</p>
+<p><strong>Question:</strong> Let $x=(3,4)$ and $w=(1,0)$. Find the scalar projection, projection vector, residual vector, and squared reconstruction error. Verify orthogonality.</p>
+<p><strong>Step 1:</strong> $\|w\|=1$, so $c=3(1)+4(0)=\boxed3$.</p>
+<p><strong>Step 2:</strong> $\hat x=cw=3(1,0)=\boxed{(3,0)}$.</p>
+<p><strong>Step 3:</strong> $e=(3,4)-(3,0)=\boxed{(0,4)}$.</p>
+<p><strong>Step 4:</strong> $e^Tw=0(1)+4(0)=0$; perpendicular condition satisfied.</p>
+<p><strong>Step 5:</strong> $\|e\|^2=0^2+4^2=\boxed{16}$. Cross-check: $\|x\|^2-c^2=25-9=16$.</p>
+<p><strong>Question:</strong> If the representative is instead $w=(2,0)$, find the minimizing coefficient and the projection.</p>
+<p><strong>Solution:</strong> Same line hai, but representative ki scale different. $c=(x^Tw)/(w^Tw)=6/4=1.5$, hence $cw=(3,0)$ and error still 16.</p>
+<p><img src="assets/week1/17_residual_example.png" loading="lazy" alt="M2 projection and squared-error accounting" /></p>
+<p>For fixed nonzero $w$, $f(c)=\|x-cw\|^2$ upward-opening quadratic hai. Minimum perpendicular projection par aata hai; har question mein calculus repeat karne ki need nahi.</p>
+<p><img src="assets/week1/05_coefficient_error.png" loading="lazy" alt="Squared error as a function of the coefficient, illustrative unit-direction example" /></p>
+<h2 id="topic-9">3. Best direction: Minimum error means maximum retained variance</h2>
+<h3 id="topic-10">3.1 Ek point ki nearest projection se dataset ki best line tak</h3>
+<p>Abhi $w$ given tha. PCA mein <strong>best $w$ choose</strong> karna hai. Centered points $x_i$ ke liye:</p>
+<p>$$\min_{\|w\|=1}\frac1n\sum_i\|x_i-(x_i^Tw)w\|^2
+\quad\Longleftrightarrow\quad
+\max_{\|w\|=1}\frac1n\sum_i(x_i^Tw)^2.$$</p>
+<p>Reason: Pythagoras mein total $\frac1n\sum_i\|x_i\|^2$ fixed hai. Retained part badhega toh lost part ghatega.</p>
+<p><strong>Graph intuition:</strong> Good line data ke main spread ke along hoti hai. Us par projections spread out hote hain aur perpendicular errors small. Perpendicular bad direction mein projections crowded ho jaate hain.</p>
+<p><img src="assets/week1/04_good_bad.png" loading="lazy" alt="Good versus bad directions: retained spread and reconstruction error" /></p>
+<p>“Most spread” ka matlab <strong>variance</strong> hai, sirf largest endpoint gap nahi. Same range wale coordinate sets bhi different variances rakh sakte hain.</p>
+<h3 id="topic-11">M3 — Graph se first PC identify karna</h3>
+<p>AI notes · Q5.</p>
+<p><strong>Question:</strong> Six data points in $\mathbb R^2$ and four candidate lines through the origin—blue, green, red and orange—are shown below. Which line represents the first principal component direction?</p>
+<p><img src="assets/week1/07_q5_lines.png" loading="lazy" alt="Q5 candidate directions and their projection spread" /></p>
+<p><strong>Step 1:</strong> Har candidate line par perpendicular projections dekho.</p>
+<p><strong>Step 2:</strong> Orange direction data ke long trend ko follow karti hai. Red direction almost perpendicular hai, isliye projections crowded hain.</p>
+<p><strong>Step 3:</strong> Displayed AI illustration mein projection variances orange $\approx5.44$, blue $\approx2.92$, green $\approx2.58$, red $\approx0.05$ hain. Largest orange:</p>
+<p>$$\boxed{\text{Orange line}}.$$</p>
+<p>Graph AI notes ki illustration hai; displayed decimals us illustration ke hain. Exam mein actual given points/projections follow karo. Non-centered points hon toh variance calculate karne se pehle projected mean subtract karna hoga.</p>
+<h3 id="topic-12">M4 — Projection lengths se variance</h3>
+<p>AI notes · Q7; handwritten p. 9.</p>
+<p><strong>Question:</strong> The lengths of the projections of six points from a centered dataset onto the first principal component are $\{8,7,3,5,2,4\}$. What is the variance along that component?</p>
+<p><strong>Step 1:</strong> Lengths $|x_i^Tw_1|$ hain. Squaring ke baad signs irrelevant hain.</p>
+<p><strong>Step 2:</strong> Squares sum karo: $64+49+9+25+4+16=167$.</p>
+<p><strong>Step 3:</strong> Centered-data, $1/n$ convention use karke intended calculation:</p>
+<p>$$\boxed{\operatorname{Var}(w_1)=167/6\approx27.83}.$$</p>
+<p><strong>Data caveat:</strong> Exact listed lengths ka sum 29 hai, odd. Unhe plus/minus signs dekar zero sum nahi ban sakta; thus exactly centered six-point data ke saath printed lengths inconsistent hain. Above answer supplied exercise ka intended square-average hai. Lengths ka ordinary mean subtract karke variance nikalna bhi correct replacement nahi, because signed coordinates missing hain.</p>
+<h3 id="topic-13">M5 — Collinear data: PC, variance and zero error</h3>
+<p>AI notes · Q9; handwritten p. 8 same dataset par point projection karta hai.</p>
+<p><strong>Question:</strong> Let $D=\{(-2,-6),(-1,-3),(1,3),(2,6)\}$. Find (i) the first principal component, (ii) the variance along it, and (iii) the variance along the second principal component.</p>
+<p><strong>Step 1:</strong> Coordinate sums zero, so mean $(0,0)$.</p>
+<p><strong>Step 2:</strong> Data $y=3x$ par hai. Direction $(1,3)$ normalize karo:</p>
+<p>$$\boxed{w_1=(1,3)/\sqrt{10}}.$$</p>
+<p><strong>Step 3:</strong> Coordinates $x_i^Tw_1$ are $-2\sqrt{10},-\sqrt{10},\sqrt{10},2\sqrt{10}$.</p>
+<p>$$\operatorname{Var}(w_1)=\frac{40+10+10+40}{4}=\boxed{25}.$$</p>
+<p><strong>Step 4:</strong> Perpendicular unit direction $w_2=(-3,1)/\sqrt{10}$ par har dot product 0. So second variance $\boxed0$.</p>
+<p><strong>Point check:</strong> $(2,6)$ ka coefficient $2\sqrt{10}$; reconstruction $2\sqrt{10}\,(1,3)/\sqrt{10}=(2,6)$. One PC se exact reconstruction; opposite PC sign bhi valid.</p>
+<h2 id="topic-14">4. Centering and covariance: Best direction calculate kaise karein?</h2>
+<h3 id="topic-15">4.1 Mean subtract kyun karte hain?</h3>
+<p><strong>Definition:</strong> Centering means feature-wise mean subtract karna:</p>
+<p>$$\mu=\frac1n\sum_i x_i,\qquad\tilde x_i=x_i-\mu,\qquad\sum_i\tilde x_i=0.$$</p>
+<p>PCA data ke <strong>mean ke around variation</strong> capture karti hai. City ke houses door location par hon toh origin se distance important nahi; houses ka aapas mein spread important hai.</p>
+<p>Raw coordinates mein reconstruction:</p>
+<p>$$\boxed{\hat x_i=\mu+W_kW_k^T(x_i-\mu)}.$$</p>
+<p>Thus raw-space fitted line generally mean se guzarti hai, origin se zaroori nahi. Centered coordinate system mein origin se guzarti hai.</p>
+<p><img src="assets/week1/15_centering.png" loading="lazy" alt="Before and after centering" /></p>
+<p><strong>Centering versus standardization:</strong> Mean subtract karna spread scale nahi badalta. Standardization additionally standard deviation se divide karti hai. Rupees versus years jaise unequal units PCA direction dominate kar sakte hain. Standardization choice problem context par depend karti hai; covariance PCA aur standardized-data PCA same result dena guaranteed nahi.</p>
+<h3 id="topic-16">4.2 Matrix convention and covariance entries</h3>
+<p>In notes mein <strong>points columns</strong> hain:</p>
+<p>$$X_c=[\tilde x_1\ \cdots\ \tilde x_n]\in\mathbb R^{d\times n},\qquad
+\boxed{C=\frac1nX_cX_c^T=\frac1n\sum_i\tilde x_i\tilde x_i^T}.$$</p>
+<p>$C$ shape $d\times d$; diagonal entries feature variances, off-diagonal entries feature covariances:</p>
+<p>$$C_{jk}=\frac1n\sum_i\tilde x_{ij}\tilde x_{ik}.$$</p>
+<p>For unit $w$, $\boxed{\operatorname{Var}(w)=w^TCw}$.</p>
+<p>$1/(n-1)$ sample covariance use ho toh eigenvalues/variances $n/(n-1)$ factor se change hote hain; eigenvectors aur explained-variance ratios same. Question ka denominator follow karo. Yahan default $1/n$ hai.</p>
+<h3 id="topic-17">M6 — Centered points se covariance</h3>
+<p>Handwritten p. 11.</p>
+<p><strong>Question:</strong> Find the covariance matrix of the dataset $\{(2,1),(1,2),(-2,-1),(-1,-2)\}$ using the $1/n$ convention.</p>
+<p><strong>Step 1:</strong> Mean $(0,0)$, so points already centered.</p>
+<p><strong>Step 2:</strong> Required products:</p>
+<table>
+<thead>
+<tr>
+<th>Point</th>
+<th style="text-align:right">$x_1^2$</th>
+<th style="text-align:right">$x_2^2$</th>
+<th style="text-align:right">$x_1x_2$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$(2,1)$</td>
+<td style="text-align:right">4</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">2</td>
+</tr>
+<tr>
+<td>$(1,2)$</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">4</td>
+<td style="text-align:right">2</td>
+</tr>
+<tr>
+<td>$(-2,-1)$</td>
+<td style="text-align:right">4</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">2</td>
+</tr>
+<tr>
+<td>$(-1,-2)$</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">4</td>
+<td style="text-align:right">2</td>
+</tr>
+<tr>
+<td>Sum</td>
+<td style="text-align:right">10</td>
+<td style="text-align:right">10</td>
+<td style="text-align:right">8</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Step 3:</strong> Each entry ko $n=4$ se divide:</p>
+<p>$$\boxed{C=\begin{bmatrix}2.5&amp;2\\2&amp;2.5\end{bmatrix}}.$$</p>
+<p>Cross-check: symmetric hai, trace 5; positive covariance means dono features together move karte hain.</p>
+<h3 id="topic-18">4.3 Covariance properties and principal directions</h3>
+<p>$C$ symmetric positive semidefinite hai: real, nonnegative eigenvalues. Orthonormal eigenvectors choose kar sakte hain. Descending order:</p>
+<p>$$\lambda_1\geq\lambda_2\geq\cdots\geq\lambda_d\geq0,\qquad Cw_j=\lambda_jw_j.$$</p>
+<p>$$\boxed{\text{PC}_1=w_1\text{ for largest }\lambda_1},\qquad
+\boxed{\operatorname{Var}(w_j)=\lambda_j}.$$</p>
+<p>Total variance $\boxed{\operatorname{tr}(C)=\sum_j\lambda_j}$. Smallest eigenvalue direction least variance retain karti hai, not first PC.</p>
+<p><strong>Non-uniqueness:</strong> Sign always arbitrary. Repeated eigenvalues ho toh associated eigenspace mein multiple orthonormal choices possible. “Every eigenvector pair automatically orthogonal” repeated eigenvalues ke liye false; PCA orthonormal basis <strong>choose</strong> karti hai.</p>
+<p><img src="assets/week1/08_eigen_directions.png" loading="lazy" alt="Eigenvectors and variance as direction changes; illustrative data" /></p>
+<h3 id="topic-19">M7 — Cube covariance and equal-variance directions</h3>
+<p>Handwritten pp. 11–12.</p>
+<p><strong>Question:</strong> Eight data points are the corners $(\pm1,\pm1,\pm1)$ of a cube of side length 2 centered at the origin. Find the covariance matrix, the sum of all its entries, and the variance along any unit vector $v$.</p>
+<p><strong>Step 1:</strong> Every feature mein four $+1$, four $-1$, so mean zero.</p>
+<p><strong>Step 2:</strong> Diagonal entries: each squared coordinate 1, average 1.</p>
+<p><strong>Step 3:</strong> Off-diagonal products four $+1$, four $-1$, so average zero.</p>
+<p>$$\boxed{C=I_3},\qquad\boxed{\text{sum of all entries}=3}.$$</p>
+<p><strong>Step 4:</strong> $v^TCv=v^Tv=1$, hence every unit direction has variance $\boxed1$.</p>
+<p>No unique best PC1: any unit vector can be first, then orthonormal completion choose karo. All eigenvalues 1. General matrix mein <strong>sum of all entries</strong> total variance nahi; total variance <strong>trace</strong> hai. Cube mein off-diagonal zero hone se dono coincide hue.</p>
+<h3 id="topic-20">M8 — Given covariance, candidate PCs and transformed covariance</h3>
+<p>AI notes · Q1; handwritten pp. 13–14.</p>
+<p><strong>Question:</strong> A centered dataset has covariance $C=\begin{bmatrix}1&amp;2\\2&amp;4\end{bmatrix}$. Two candidate unit vectors are $u=(-0.894,0.447)^T$ and $v=(0.447,0.894)^T$. (i) Which is the first PC? (ii) How much variance does it capture? (iii) What is the covariance after transforming to the principal-component basis?</p>
+<p><strong>Step 1:</strong> Decimals rounded hain. Exact directions $u=(-2,1)/\sqrt5$, $v=(1,2)/\sqrt5$ use karo.</p>
+<p><strong>Step 2:</strong></p>
+<p>$$Cu=\frac1{\sqrt5}\begin{bmatrix}-2+2\\-4+4\end{bmatrix}=0,$$</p>
+<p>$$Cv=\frac1{\sqrt5}\begin{bmatrix}1+4\\2+8\end{bmatrix}=5v.$$</p>
+<p><strong>Step 3:</strong> $v$ ki variance 5, $u$ ki 0. Therefore $\boxed{\mathrm{PC}_1=v}$, captured variance $\boxed5$; fraction $5/(5+0)=100\%$.</p>
+<p><strong>Step 4:</strong> Basis columns $W=[v\ u]$ ordered by decreasing eigenvalue:</p>
+<p>$$\boxed{C_z=W^TCW=\begin{bmatrix}5&amp;0\\0&amp;0\end{bmatrix}}.$$</p>
+<p>Sirf PC1 retain ho toh reduced covariance $[5]$ is $1\times1$. Full-basis rotation ka covariance $2\times2$. Question “transform” versus “reduce” distinguish karo.</p>
+<h3 id="topic-21">M9 — Raw points se complete 2D PCA</h3>
+<p>AI notes · Q10; handwritten pp. 20–21 and 31 par same dataset. Ek hi solution yahan.</p>
+<p><strong>Question:</strong> For $x_1=(2,2),x_2=(1,2),x_3=(2,1)$, find the mean, covariance matrix, eigenvalues, principal directions, and percentage of variance explained by the first PC.</p>
+<p><strong>Step 1 — Mean:</strong></p>
+<p>$$\boxed{\mu=(5/3,5/3)}.$$</p>
+<p><strong>Step 2 — Center:</strong></p>
+<p>$$\tilde x_1=(1/3,1/3),\quad\tilde x_2=(-2/3,1/3),\quad\tilde x_3=(1/3,-2/3).$$</p>
+<p>Their sum zero: useful quick check.</p>
+<p><strong>Step 3 — Covariance entries:</strong></p>
+<p>$$C_{11}=\frac13\frac{1+4+1}{9}=\frac29,\quad C_{22}=\frac29,$$</p>
+<p>$$C_{12}=\frac13\frac{1-2-2}{9}=-\frac19.$$</p>
+<p>$$\boxed{C=\frac19\begin{bmatrix}2&amp;-1\\-1&amp;2\end{bmatrix}}.$$</p>
+<p><strong>Step 4 — Eigenpairs:</strong> For $\begin{bmatrix}a&amp;b\\b&amp;a\end{bmatrix}$, directions $(1,1)$ and $(1,-1)$ have eigenvalues $a+b,a-b$. Here:</p>
+<p>$$\boxed{\lambda_1=1/3,\ w_1=(1,-1)/\sqrt2},\qquad
+\boxed{\lambda_2=1/9,\ w_2=(1,1)/\sqrt2}.$$</p>
+<p><strong>Step 5 — Fraction:</strong> Total $1/3+1/9=4/9$. PC1 fraction $(1/3)/(4/9)=\boxed{75\%}$; PC2 25%.</p>
+<p><img src="assets/week1/09_centered_example.png" loading="lazy" alt="Q10 raw points, mean and centered principal directions" /></p>
+<p>Raw first-PC line mean se guzarti hai: $x_1+x_2=10/3$. Eigenvector direction $(1,-1)$ ko raw origin se line bana dena wrong hoga.</p>
+<h2 id="topic-22">5. Residuals, multiple PCs and coordinates</h2>
+<h3 id="topic-23">5.1 Round-wise PCA</h3>
+<p><strong>Definition:</strong> First PC capture karne ke baad bacha vector residual hai:</p>
+<p>$$r_i^{(1)}=\tilde x_i-(\tilde x_i^Tw_1)w_1.$$</p>
+<p>Residuals $w_1$ ke perpendicular hain. Unki highest-variance direction next PC hai. PCA repeatedly same variation choose nahi karti; har next PC previous PCs se orthogonal hoti hai.</p>
+<p><img src="assets/week1/11_roundwise.png" loading="lazy" alt="First round and the residual data for the second round" /></p>
+<p>For $W_k=[w_1\ \cdots\ w_k]$, $W_k^TW_k=I_k$:</p>
+<p>$$\boxed{z_i=W_k^T\tilde x_i\in\mathbb R^k},\qquad
+\boxed{\hat x_i=\mu+W_kz_i},\qquad
+\boxed{r_i=\tilde x_i-W_kW_k^T\tilde x_i}.$$</p>
+<p>Coordinates $z_i$ compressed data hain, eigenvectors $W_k$ shared decoder/basis hain. $W_kW_k^T$ projection matrix hai, symmetric aur idempotent; generally identity tabhi jab full ambient basis retain ho.</p>
+<h3 id="topic-24">M10 — Missing projection length from residual error</h3>
+<p>AI notes · Q8; handwritten p. 15.</p>
+<p><strong>Question:</strong> Six centered points in $\mathbb R^2$ have second-PC projection magnitudes $\{1,2,1,3,2,k\}$. Their average squared reconstruction error after retaining only the first PC is $28/6$. Find $k&gt;0$.</p>
+<p><strong>Step 1:</strong> 2D mein discarded direction sirf $w_2$ hai. Thus each error squared equals second-coordinate squared.</p>
+<p><strong>Step 2:</strong></p>
+<p>$$\frac{1^2+2^2+1^2+3^2+2^2+k^2}{6}=\frac{28}{6}.$$</p>
+<p><strong>Step 3:</strong> $19+k^2=28$, so $k^2=9$. Given positive condition:</p>
+<p>$$\boxed{k=3}.$$</p>
+<p>Magnitude wording important: six strictly positive <strong>signed</strong> PC coordinates centered dataset ke liye zero mean nahi ho sakte. Lengths ki squares use ho rahi hain. Higher-dimensional data mein discarded PC3, PC4, etc. ka error bhi include hoga; yeh shortcut specifically 2D ka hai.</p>
+<h3 id="topic-25">M11 — PCA coordinates in a supplied orthonormal basis</h3>
+<p>Handwritten p. 15.</p>
+<p><strong>Question:</strong> A centered three-dimensional dataset has principal directions $w_1=(1,1,0)/\sqrt2$, $w_2=(-1,1,0)/\sqrt2$, $w_3=(0,0,1)$. Find the PCA coordinates of $x=(1,2,3)$. Reconstruct $x$ using the first two components and calculate its squared error.</p>
+<p><strong>Step 1:</strong> Dot products:</p>
+<p>$$z_1=(1+2)/\sqrt2=3/\sqrt2,\quad
+z_2=(-1+2)/\sqrt2=1/\sqrt2,\quad z_3=3.$$</p>
+<p><strong>Step 2:</strong> Top-two reconstruction:</p>
+<p>$$\hat x=\frac3{\sqrt2}\frac{(1,1,0)}{\sqrt2}
++\frac1{\sqrt2}\frac{(-1,1,0)}{\sqrt2}=(1,2,0).$$</p>
+<p><strong>Step 3:</strong> Residual $(0,0,3)$, squared error $\boxed9=z_3^2$. All three components retain karte toh reconstruction exactly $(1,2,3)$.</p>
+<p>Reconstruction/error subpart same handwritten coordinate example ka extension hai; new dataset solve karne ki need nahi.</p>
+<h2 id="topic-26">6. Eigenvalues: Retained variance, lost error and choosing k</h2>
+<h3 id="topic-27">6.1 One formula family</h3>
+<p>For centered covariance with $1/n$ denominator:</p>
+<p>$$\boxed{V_{\rm retained}(k)=\sum_{j=1}^k\lambda_j},\qquad
+\boxed{E_k=\frac1n\sum_i\|r_i\|^2=\sum_{j=k+1}^d\lambda_j}.$$</p>
+<p>$$\boxed{\mathrm{EVR}(k)=\frac{\sum_{j\leq k}\lambda_j}{\sum_{j\leq d}\lambda_j}},\qquad
+\mathrm{EVR}(k)+\frac{E_k}{\operatorname{tr}(C)}=1.$$</p>
+<p><strong>Total</strong> squared reconstruction error $=nE_k$, while $E_k$ per-point average hai. Per-feature-per-point MSE requested ho toh additionally $d$ se divide. Same name “error” dekhkar normalization assume mat karo.</p>
+<p>Target $q$ preserve karne ke liye smallest $k$ with cumulative ratio $\geq q$ choose karo. Equality qualifies for “at least”; “more than” ke liye strict inequality.</p>
+<p>All eigenvalues zero hon toh total variance zero; percentage $0/0$ undefined hai, even though mean-only reconstruction exact hai.</p>
+<h3 id="topic-28">M12 — Error from discarded eigenvalues</h3>
+<p>Handwritten pp. 22–23.</p>
+<p><strong>Question:</strong> A centered dataset has covariance eigenvalues $10,5,2,1$. Find the average squared reconstruction error when the first two PCs are retained. Also find the errors for one, three and four PCs.</p>
+<p><strong>Step 1:</strong> Decreasing order already given. Top two retained $10,5$, discarded $2,1$.</p>
+<p><strong>Step 2:</strong> $\boxed{E_2=2+1=3}$.</p>
+<p><strong>Step 3:</strong> Same rule ke changed subparts:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:right">Retained $k$</th>
+<th style="text-align:right">Kept variance</th>
+<th style="text-align:right">Average error</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right">1</td>
+<td style="text-align:right">10</td>
+<td style="text-align:right">$5+2+1=8$</td>
+</tr>
+<tr>
+<td style="text-align:right">2</td>
+<td style="text-align:right">15</td>
+<td style="text-align:right">$2+1=3$</td>
+</tr>
+<tr>
+<td style="text-align:right">3</td>
+<td style="text-align:right">17</td>
+<td style="text-align:right">$1$</td>
+</tr>
+<tr>
+<td style="text-align:right">4</td>
+<td style="text-align:right">18</td>
+<td style="text-align:right">$0$</td>
+</tr>
+</tbody>
+</table>
+<p>More PCs se optimal reconstruction error increase nahi hota. Total sum har row mein 18 hai: retained + lost.</p>
+<h3 id="topic-29">M13 — Variance percentage and minimum PC count</h3>
+<p>AI notes · Q11; handwritten pp. 18 and 25, same spectrum.</p>
+<p><strong>Question:</strong> The covariance eigenvalues are $7,5,1$. What percentage of the variance is explained by the first PC? How many PCs are needed to preserve at least 95% variance?</p>
+<p><strong>Step 1:</strong> Total $7+5+1=13$.</p>
+<p><strong>Step 2:</strong> First ratio $7/13=\boxed{53.85\%}$ approximately.</p>
+<p><strong>Step 3:</strong> Cumulative top-two ratio $12/13\approx92.31\%&lt;95\%$. All three give 100%.</p>
+<p>$$\boxed{k=3}.$$</p>
+<p><img src="assets/week1/10_scree.png" loading="lazy" alt="Scree and cumulative variance for eigenvalues 7, 5, 1" /></p>
+<p>95% target ka matlab “95% of the number of PCs” nahi; <strong>95% of total eigenvalue sum</strong> hai.</p>
+<h3 id="topic-30">M14 — Geometric spectrum se unknown parameter</h3>
+<p>AI notes · Q3; handwritten p. 19.</p>
+<p><strong>Question:</strong> A covariance matrix has eigenvalues $\lambda^5,\lambda^4,\lambda^3,\lambda^2,\lambda,1$, where $\lambda&gt;1$. The first three components explain approximately 88.88% of the total variance. Find $\lambda$.</p>
+<p><strong>Step 1:</strong> $\lambda&gt;1$ se listed order decreasing hai; top three first three powers hain.</p>
+<p><strong>Step 2:</strong> Intended recurring percentage $88.888\ldots\%=8/9$ use karo:</p>
+<p>$$\frac{\lambda^5+\lambda^4+\lambda^3}{\lambda^5+\lambda^4+\lambda^3+\lambda^2+\lambda+1}=\frac89.$$</p>
+<p><strong>Step 3:</strong> Numerator $\lambda^3(\lambda^2+\lambda+1)$; denominator $(\lambda^3+1)(\lambda^2+\lambda+1)$. Common positive factor cancel:</p>
+<p>$$\frac{\lambda^3}{\lambda^3+1}=\frac89
+\Rightarrow9\lambda^3=8\lambda^3+8
+\Rightarrow\boxed{\lambda=2}.$$</p>
+<p><strong>Step 4:</strong> Spectrum $32,16,8,4,2,1$. Top-three sum 56, total 63; $56/63=8/9$.</p>
+<p>Literal finite 88.88% use karoge toh value approximately 2, exactly 2 nahi; supplied exercise ka intended rounded answer 2 hai.</p>
+<p><img src="assets/week1/12_geometric_spectrum.png" loading="lazy" alt="Geometric spectrum and cumulative variance" /></p>
+<h2 id="topic-31">7. Rank, linear dependencies and zero-variance directions</h2>
+<h3 id="topic-32">7.1 Ambient dimension versus effective linear dimension</h3>
+<p><strong>Definition:</strong> Ambient dimension $d$ stored features ki count hai. Centered data rank $r$ independent linear directions ki count hai.</p>
+<p>$$\boxed{\operatorname{rank}(C)=\operatorname{rank}(X_c)=r\leq\min(d,n-1)}.$$</p>
+<p>Exactly $r$ positive covariance eigenvalues aur $d-r$ zero eigenvalues. Top $r$ PCs centered dataset reconstruct exactly karte hain. “Data lies in an $r$-dimensional subspace” alone implies rank <strong>at most $r$</strong>; exactly $r$ kehne ke liye data us space ko span kare.</p>
+<p><strong>Counterexample:</strong> Points on a single line also lie in a plane. “Lie in a plane” se rank exactly 2 conclude nahi kar sakte.</p>
+<p>PCA rank linear/affine dimension hai; curved one-dimensional circle ka centered covariance rank 2 ho sakta hai. Intrinsic nonlinear dimension ko automatically covariance rank mat samjho.</p>
+<h3 id="topic-33">M15 — Span of two vectors: Zero-error shortcut</h3>
+<p>AI notes · Q4; handwritten p. 23 contains the same rank principle.</p>
+<p><strong>Question:</strong> One hundred points in $\mathbb R^4$ satisfy</p>
+<p>$$x_i=a_i(3,1,0,2)^T+b_i(1,0,3,0)^T,\qquad
+\sum_{i=1}^{100}a_i=\sum_{i=1}^{100}b_i=0.$$</p>
+<p>What is the reconstruction error when the top two PCs are used?</p>
+<p><strong>Step 1:</strong> Coefficient sums zero imply mean zero.</p>
+<p><strong>Step 2:</strong> Every point span of two fixed vectors mein hai, so rank at most 2. Vectors independent hain, but sample coefficient patterns rank aur reduce kar sakte hain.</p>
+<p><strong>Step 3:</strong> Therefore $\lambda_3=\lambda_4=0$.</p>
+<p>$$\boxed{E_2=\lambda_3+\lambda_4=0}.$$</p>
+<p>Actual PCs given spanning vectors ke normalized versions hona zaroori nahi; supplied two vectors orthogonal bhi nahi. Error answer ke liye full eigendecomposition unnecessary hai.</p>
+<h3 id="topic-34">M16 — Dimensions, zero eigenvalues and reconstruction</h3>
+<p>AI notes · Q12.</p>
+<p><strong>Question:</strong> A centered dataset contains 2000 points in $\mathbb R^{30}$, all lying in a four-dimensional subspace. Which statements are true?</p>
+<ol>
+<li>The feature covariance matrix is $2000\times2000$.</li>
+<li>The feature covariance matrix is $30\times30$.</li>
+<li>At least 26 covariance eigenvalues are zero.</li>
+<li>Retaining four PCs gives zero reconstruction error.</li>
+</ol>
+<p><strong>Step 1:</strong> $X_c$ shape $30\times2000$; $C=X_cX_c^T/2000$ shape $30\times30$. Statement 1 false, 2 true.</p>
+<p><strong>Step 2:</strong> Rank at most 4, so at least $30-4=26$ zero eigenvalues. Statement 3 true.</p>
+<p><strong>Step 3:</strong> All positive eigenvalue directions top four mein covered hain; discarded eigenvalues zero. Statement 4 true.</p>
+<p>$$\boxed{2,3,4\text{ are true}}.$$</p>
+<p>Handwritten p. 26 ka $\mathbb R^{50}$ / six-dimensional example same pattern: at least 44 zeros, six PCs sufficient. Exactly 44 zeros only if centered rank exactly 6.</p>
+<h3 id="topic-35">M17 — Feature dependencies se rank</h3>
+<p>Handwritten p. 27.</p>
+<p><strong>Question:</strong> A data matrix has six feature columns. The first three columns $c_1,c_2,c_3$ are linearly independent, and $c_4=2c_1-c_2$, $c_5=c_2+c_3$, $c_6=4c_1-3c_3$. After how many principal components does the reconstruction error become zero?</p>
+<p><strong>Step 1:</strong> Last three columns first three ke combinations hain; they add no independent directions.</p>
+<p><strong>Step 2:</strong> Given matrix rank 3. <strong>If columns are already centered</strong>, covariance rank exactly 3; top three PCs sufficient and necessary for zero error.</p>
+<p>$$\boxed{k=3\text{ for centered independent columns}}.$$</p>
+<p><strong>Centering condition:</strong> Raw columns independent hon toh centering rank reduce kar sakti hai. Example constant column $\mathbf1$ centered hoke zero ho jaati hai. Raw-only wording mein three PCs certainly sufficient, but minimum less than three bhi ho sakta hai. Handwritten answer 3 centered-rank interpretation use karta hai.</p>
+<p>Is question mein feature columns means rows-as-observations notation hai; rank conclusion transpose se change nahi hota.</p>
+<h3 id="topic-36">M18 — Hyperplane normal as a zero-variance direction</h3>
+<p>Handwritten p. 16.</p>
+<p><strong>Question:</strong> All centered data points in $\mathbb R^4$ satisfy $2x_1+x_2-x_3+2x_4=0$. Which of the following can be unit directions perpendicular to the data hyperplane?</p>
+<p>A. $(2,1,-1,2)/\sqrt{10}$</p>
+<p>B. $(-2,-1,1,-2)/\sqrt{10}$</p>
+<p>C. $(1,0,2,1)/\sqrt6$</p>
+<p>D. $(2,0,1,2)/3$</p>
+<p><strong>Step 1:</strong> Equation ke coefficients se normal $a=(2,1,-1,2)$.</p>
+<p><strong>Step 2:</strong> $\|a\|=\sqrt{4+1+1+4}=\sqrt{10}$. Hence unit normals $\pm a/\sqrt{10}$.</p>
+<p><strong>Step 3:</strong> A,B valid; C scalar multiple nahi. D unit hai ($\|D\|^2=9/9=1$), but normal ka scalar multiple nahi. Sirf unit length enough nahi.</p>
+<p>$$\boxed{A,B}.$$</p>
+<p><strong>PCA connection:</strong> Every point ka normal-direction projection zero; $Ca=0$. At least one zero eigenvalue. Agar data whole hyperplane span kare toh exactly one zero eigenvalue aur this normal last PC hai. Smaller span ho toh additional zero directions possible hain.</p>
+<h3 id="topic-37">M19 — Repeated features, constants and leading PC</h3>
+<p>Handwritten p. 17.</p>
+<p><strong>Question:</strong> Ten features satisfy $x_1=x_2=x_3$, with variance 100. Features $x_4,\ldots,x_8$ each have variance 10 and are mutually uncorrelated and uncorrelated with the first three. Features $x_9=x_{10}=0$. Which statement is correct?</p>
+<p>A. Exactly three eigenvalues are zero, and PC1 is $(1,0,\ldots,0)$.</p>
+<p>B. Exactly four eigenvalues are zero, and PC1 is $(1,1,1,0,\ldots,0)/\sqrt3$.</p>
+<p>C. Exactly four eigenvalues are zero, and PC1 is $(1,0,\ldots,0)$.</p>
+<p><strong>Step 1:</strong> First-three covariance block $100\mathbf1\mathbf1^T$: eigenvalues $300,0,0$.</p>
+<p><strong>Step 2:</strong> Next-five independent covariance directions each variance 10: five eigenvalues 10.</p>
+<p><strong>Step 3:</strong> Last-two constant features contribute two more zeros.</p>
+<p>Spectrum $300,10,10,10,10,10,0,0,0,0$. Hence rank 6 and $\boxed4$ zero eigenvalues.</p>
+<p><strong>Step 4:</strong> Largest-variance direction combines identical features:</p>
+<p>$$\boxed{w_1=(1,1,1,0,0,0,0,0,0,0)/\sqrt3}.$$</p>
+<p><strong>Answer: B.</strong> Choosing $(1,0,\ldots,0)$ captures variance 100; combined normalized direction captures 300. Correlated features ki variance combine ho sakti hai.</p>
+<h2 id="topic-38">8. Storage: Fewer coordinates always fewer numbers nahi</h2>
+<h3 id="topic-39">8.1 What must be stored?</h3>
+<p><strong>Real life:</strong> Compressed coordinates bina decoder/basis ke useful nahi; receiver ko coordinates se original features reconstruct karne ka rule bhi chahiye.</p>
+<p>For $n$ points, $d$ features, retained $k$ PCs:</p>
+<p>$$\boxed{\text{Direct}=dn},\qquad
+\boxed{\text{PCA}=dk+kn},\qquad
+\boxed{\text{PCA with stored mean}=dk+kn+d}.$$</p>
+<p>Basis $W_k$ shared once; har point ke liye repeat nahi. Eigenvalues reconstruction ke liye required nahi, unless task separately asks to store them.</p>
+<p>Ignoring mean overhead, saving when $k(d+n)&lt;dn$, i.e. $\boxed{k&lt;dn/(d+n)}$. Thus $k&lt;d$ alone total storage saving guarantee nahi.</p>
+<h3 id="topic-40">M20 — 90% variance and storage</h3>
+<p>AI notes · Q6; handwritten p. 29.</p>
+<p><strong>Question:</strong> There are 100 points in $\mathbb R^{10}$. Ordered covariance eigenvalues satisfy $\sum_{j=1}^{10}\lambda_j=200$, $\sum_{j=1}^{4}\lambda_j=140$, and $\sum_{j=1}^{6}\lambda_j=180$. How many numbers must be stored to retain at least 90% variance using the minimum number of PCs? Ignore mean-vector storage.</p>
+<p><strong>Step 1:</strong> Required sum $0.9\times200=180$.</p>
+<p><strong>Step 2:</strong> Six PCs reach 180. Four reach only 140. Five bhi insufficient: tail $\lambda_7+\cdots+\lambda_{10}=20&gt;0$, so ordering implies $\lambda_6\geq\lambda_7&gt;0$. Therefore sum through five $=180-\lambda_6&lt;180$.</p>
+<p>$$\boxed{k_{\min}=6}.$$</p>
+<p><strong>Step 3:</strong> Basis $10\times6=60$ scalars; coordinates $6\times100=600$.</p>
+<p>$$\boxed{\text{Storage}=660\text{ numbers}}.$$</p>
+<p>Direct 1000, saving $34\%$. Mean also stored ho toh 670 and saving 33%.</p>
+<p><img src="assets/week1/13_threshold.png" loading="lazy" alt="Illustrative cumulative path through the specified fourth and sixth sums" /></p>
+<p>Curve ke intermediate values illustrative hain; question only stated sums deta hai. Minimum six ka conclusion ordered nonnegative spectrum se above establish hua.</p>
+<p><img src="assets/week1/14_storage.png" loading="lazy" alt="Original versus compressed storage for M20" /></p>
+<h2 id="topic-41">9. Dual PCA: Feature space versus sample space</h2>
+<h3 id="topic-42">9.1 X X-transpose aur X-transpose X ka difference</h3>
+<p><strong>Definition:</strong> Dual PCA small sample-space matrix se nonzero principal directions recover karti hai. Useful jab $d\gg n$.</p>
+<table>
+<thead>
+<tr>
+<th>Matrix</th>
+<th>Shape, points-as-columns convention</th>
+<th>Eigenvectors live in</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$X_cX_c^T$</td>
+<td>$d\times d$</td>
+<td>Feature space $\mathbb R^d$</td>
+</tr>
+<tr>
+<td>$G=X_c^TX_c$</td>
+<td>$n\times n$</td>
+<td>Sample coefficient space $\mathbb R^n$</td>
+</tr>
+<tr>
+<td>$C=X_cX_c^T/n$</td>
+<td>$d\times d$</td>
+<td>Feature space</td>
+</tr>
+</tbody>
+</table>
+<p>First two matrices ke <strong>nonzero eigenvalues same</strong> hain; zero counts and eigenvector dimensions different. Covariance eigenvalues extra $1/n$ scaling leti hain.</p>
+<p>For unit $v$ satisfying $Gv=\gamma v$, $\gamma&gt;0$:</p>
+<p>$$\boxed{w=\frac{X_cv}{\sqrt\gamma}},\qquad
+\boxed{\lambda_C=\gamma/n}.$$</p>
+<p>If normalized Gram matrix $G/n$ ka eigenvalue $\lambda$ diya ho, denominator $\sqrt{n\lambda}$ hoga. Zero eigenvalue ko denominator mein mat use karo.</p>
+<p><strong>Size example:</strong> $d=10{,}000,n=100$ ho toh feature matrix $10{,}000\times10{,}000$, Gram matrix $100\times100$. Gram eigenvector itself PC nahi; $X_cv$ se feature-space direction banti hai.</p>
+<h3 id="topic-43">M21 — Gram eigenvalues se variance</h3>
+<p>Handwritten p. 33.</p>
+<p><strong>Question:</strong> The nonzero eigenvalues of the centered Gram matrix $X_c^TX_c$ are $10,5,3,2,1$. Express the covariance eigenvalues in terms of the number of data points $n$, and find the variance fraction explained by PC1.</p>
+<p><strong>Step 1:</strong> Gram aur $X_cX_c^T$ ke nonzero eigenvalues same.</p>
+<p><strong>Step 2:</strong> Covariance mein divide by $n$:</p>
+<p>$$\boxed{10/n,5/n,3/n,2/n,1/n}.$$</p>
+<p><strong>Step 3:</strong> Fraction mein normalization cancel:</p>
+<p>$$\boxed{\mathrm{EVR}(1)=\frac{10/n}{21/n}=10/21\approx47.62\%}.$$</p>
+<p>Absolute variance $10/n$, fraction $10/21$: dono quantities mix mat karo.</p>
+<h3 id="topic-44">M22 — Principal direction as weighted sum of data</h3>
+<p>Handwritten p. 33.</p>
+<p><strong>Question:</strong> For a positive eigenvalue $\gamma=10$ of $X_c^TX_c$, a corresponding unit eigenvector has second coordinate $v_2=3/\sqrt{54}$. If the principal direction is written as $w=\sum_i\alpha_i\tilde x_i$, find $\alpha_2$.</p>
+<p><strong>Step 1:</strong> $w=X_cv/\sqrt\gamma=\sum_i(v_i/\sqrt\gamma)\tilde x_i$.</p>
+<p><strong>Step 2:</strong> So $\alpha_2=v_2/\sqrt\gamma$:</p>
+<p>$$\boxed{\alpha_2=\frac3{\sqrt{54}\sqrt{10}}=\frac3{\sqrt{540}}\approx0.1291}.$$</p>
+<p>Full eigenvector ki baaki entries is calculation ke liye required nahi. Eigenvalue covariance ka hota toh denominator $\sqrt{n\lambda}$ hota.</p>
+<h2 id="topic-45">10. Conceptual master check</h2>
+<h3 id="topic-46">M23 — True/false with reasons</h3>
+<p>AI notes · Q2.</p>
+<p><strong>Question:</strong> Which statements about PCA are true?</p>
+<ol>
+<li>The principal components are the eigenvectors of the covariance matrix.</li>
+<li>The eigenvalues of the covariance matrix represent the variance captured along the corresponding eigenvectors.</li>
+<li>The principal components are mutually orthogonal.</li>
+<li>The first principal component corresponds to the smallest positive eigenvalue of the covariance matrix.</li>
+</ol>
+<p><strong>1 — True:</strong> PC <strong>directions/loadings</strong> covariance eigenvectors hain. Compressed scores $W^TX_c$ ko bhi some books “components” bolte hain; yahan direction meaning hai.</p>
+<p><strong>2 — True for unit eigenvectors:</strong> $w_j^TCw_j=\lambda_jw_j^Tw_j=\lambda_j$.</p>
+<p><strong>3 — True:</strong> PCA orthonormal eigenbasis choose karti hai. Repeated eigenvalues ho toh basis unique nahi, but orthonormal choice possible hai.</p>
+<p><strong>4 — False:</strong> First PC largest eigenvalue ki direction hai. M8 mein smallest eigenvalue zero tha, zero spread; first PC variance 5 thi.</p>
+<p>$$\boxed{1,2,3\text{ true; }4\text{ false}}.$$</p>
+<h3 id="topic-47">10.1 Properties jo mixed questions mein kaam aati hain</h3>
+<ul>
+<li><strong>Uncorrelated scores, not generally independent:</strong> $\operatorname{Cov}(z)=\operatorname{diag}(\lambda_j)$. Independence stronger condition hai; zero covariance alone enough nahi.</li>
+<li><strong>Full PCA rotation versus truncation:</strong> Full orthogonal basis distances preserve karti hai; top-$k$ projection distances reduce kar sakti hai, always preserve nahi.</li>
+<li><strong>Translation:</strong> Proper centering ke baad sab points ko same vector se shift karne par covariance/PC directions unchanged; mean shifts.</li>
+<li><strong>Uniform scaling:</strong> All features ko common $a$ se scale karo toh covariance $a^2C$; eigenvalues $a^2\lambda_j$, fractions same. One feature alone rescale karne se directions change ho sakti hain.</li>
+<li><strong>Zero eigenvalue:</strong> Training centered data mein us direction ka no spread. New arbitrary unseen point bhi us subspace par hoga, yeh automatically guaranteed nahi.</li>
+<li><strong>Variance versus usefulness:</strong> PCA largest variation retain karti hai, labels/classification usefulness optimize nahi karti. High variance feature noise bhi ho sakta hai.</li>
+</ul>
+<h2 id="topic-48">11. Complete master problem: Saare steps ek sequence mein</h2>
+<h3 id="topic-49">M24 — From raw data to dual PCA</h3>
+<p>Handwritten pp. 34–37.</p>
+<p><strong>Question:</strong> Consider the dataset</p>
+<p>$$x_1=(2,1,1),\quad x_2=(0,-1,1),\quad
+x_3=(-2,-1,-1),\quad x_4=(0,1,-1).$$</p>
+<p>Using the $1/n$ covariance convention, find:</p>
+<ol>
+<li>The mean and covariance matrix.</li>
+<li>All eigenvalues and an orthonormal set of principal directions.</li>
+<li>The rank and the number of zero covariance eigenvalues.</li>
+<li>The explained variance and minimum PC count for at least 95% retention.</li>
+<li>The two-dimensional PCA coordinates of all four points.</li>
+<li>The reconstructions and residuals using only PC1, and the average and total squared reconstruction errors.</li>
+<li>The storage required with two PCs, compared with direct storage.</li>
+<li>The centered Gram matrix and its eigenvalues.</li>
+</ol>
+<h3 id="topic-50">11.1 Mean and covariance</h3>
+<p><strong>Step 1:</strong> Pairwise cancellation: $x_3=-x_1$, $x_4=-x_2$.</p>
+<p>$$\boxed{\mu=(0,0,0)}.$$</p>
+<p><strong>Step 2:</strong> Points-as-columns matrix:</p>
+<p>$$X_c=\begin{bmatrix}2&amp;0&amp;-2&amp;0\\1&amp;-1&amp;-1&amp;1\\1&amp;1&amp;-1&amp;-1\end{bmatrix}.$$</p>
+<p><strong>Step 3:</strong> Coordinate product sums:</p>
+<table>
+<thead>
+<tr>
+<th>Entry</th>
+<th style="text-align:right">Product sum</th>
+<th style="text-align:right">Divide by 4</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$C_{11}$</td>
+<td style="text-align:right">$4+0+4+0=8$</td>
+<td style="text-align:right">2</td>
+</tr>
+<tr>
+<td>$C_{22}$</td>
+<td style="text-align:right">$1+1+1+1=4$</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td>$C_{33}$</td>
+<td style="text-align:right">$1+1+1+1=4$</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td>$C_{12}$</td>
+<td style="text-align:right">$2+0+2+0=4$</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td>$C_{13}$</td>
+<td style="text-align:right">$2+0+2+0=4$</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td>$C_{23}$</td>
+<td style="text-align:right">$1-1+1-1=0$</td>
+<td style="text-align:right">0</td>
+</tr>
+</tbody>
+</table>
+<p>$$\boxed{C=\begin{bmatrix}2&amp;1&amp;1\\1&amp;1&amp;0\\1&amp;0&amp;1\end{bmatrix}},\qquad\operatorname{tr}(C)=4.$$</p>
+<h3 id="topic-51">11.2 Eigenpairs: Use structure, then verify</h3>
+<p><strong>Step 1 — First direction:</strong></p>
+<p>$$C(2,1,1)^T=(6,3,3)^T=3(2,1,1)^T.$$</p>
+<p>Norm $\sqrt6$, so $\boxed{\lambda_1=3,\ w_1=(2,1,1)/\sqrt6}$.</p>
+<p><strong>Step 2 — Second:</strong></p>
+<p>$$C(0,1,-1)^T=(0,1,-1)^T.$$</p>
+<p>Thus $\boxed{\lambda_2=1,\ w_2=(0,1,-1)/\sqrt2}$.</p>
+<p><strong>Step 3 — Third:</strong> Each point obeys $x_{i1}=x_{i2}+x_{i3}$. Normal $(-1,1,1)$ has zero projections and $C(-1,1,1)^T=0$:</p>
+<p>$$\boxed{\lambda_3=0,\ w_3=(-1,1,1)/\sqrt3}.$$</p>
+<p><strong>Check:</strong> Pairwise dot products zero; all norms 1; sum of eigenvalues $3+1+0=4$ equals trace.</p>
+<h3 id="topic-52">11.3 Rank, explained variance and k</h3>
+<p>Two positive eigenvalues: $\boxed{r=2}$, one zero eigenvalue. Points lie in a plane through origin even though ambient dimension 3.</p>
+<p>$$\mathrm{EVR}(1)=3/4=75\%,\qquad\mathrm{EVR}(2)=4/4=100\%.$$</p>
+<p>For at least 95%, $\boxed{k=2}$. Average error after two PCs $\lambda_3=0$.</p>
+<p><img src="assets/week1/18_master_plane.png" loading="lazy" alt="The master dataset lies in a two-dimensional plane" /></p>
+<h3 id="topic-53">11.4 PCA coordinates</h3>
+<p>For each point, $z_i=(x_i^Tw_1,x_i^Tw_2)$.</p>
+<p><strong>First point:</strong> $x_1^Tw_1=(4+1+1)/\sqrt6=\sqrt6$; $x_1^Tw_2=(1-1)/\sqrt2=0$.</p>
+<p><strong>Second point:</strong> $x_2^Tw_1=(-1+1)/\sqrt6=0$; $x_2^Tw_2=(-1-1)/\sqrt2=-\sqrt2$.</p>
+<p>Other points negatives hain, so coordinates bhi negative:</p>
+<table>
+<thead>
+<tr>
+<th>Point</th>
+<th style="text-align:right">PC1 score</th>
+<th style="text-align:right">PC2 score</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$x_1$</td>
+<td style="text-align:right">$\sqrt6$</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td>$x_2$</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">$-\sqrt2$</td>
+</tr>
+<tr>
+<td>$x_3$</td>
+<td style="text-align:right">$-\sqrt6$</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td>$x_4$</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">$\sqrt2$</td>
+</tr>
+</tbody>
+</table>
+<p><img src="assets/week1/16_master_coordinates.png" loading="lazy" alt="Master problem in PCA coordinates" /></p>
+<p>This plot mein first axis ka average squared score $(6+0+6+0)/4=3$, second ka $(0+2+0+2)/4=1$. Eigenvalue-as-variance directly visible hai.</p>
+<h3 id="topic-54">11.5 Top-one reconstruction, residual and error</h3>
+<p>$$\hat x_i=(x_i^Tw_1)w_1.$$</p>
+<table>
+<thead>
+<tr>
+<th>Point</th>
+<th>Reconstruction</th>
+<th>Residual</th>
+<th style="text-align:right">Squared error</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$(2,1,1)$</td>
+<td>$(2,1,1)$</td>
+<td>$(0,0,0)$</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td>$(0,-1,1)$</td>
+<td>$(0,0,0)$</td>
+<td>$(0,-1,1)$</td>
+<td style="text-align:right">2</td>
+</tr>
+<tr>
+<td>$(-2,-1,-1)$</td>
+<td>$(-2,-1,-1)$</td>
+<td>$(0,0,0)$</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td>$(0,1,-1)$</td>
+<td>$(0,0,0)$</td>
+<td>$(0,1,-1)$</td>
+<td style="text-align:right">2</td>
+</tr>
+</tbody>
+</table>
+<p>$$\boxed{\text{Average error}=(0+2+0+2)/4=1},\qquad\boxed{\text{Total error}=4}.$$</p>
+<p>Eigenvalue cross-check: discarded sum $\lambda_2+\lambda_3=1+0=1$. Two PCs retain karne par har point exactly reconstruct hoga.</p>
+<h3 id="topic-55">11.6 Storage: A useful counterexample</h3>
+<p>$d=3,n=4,k=2$.</p>
+<p>$$\text{Direct}=3\times4=12,\qquad
+\text{PCA}=3\times2+2\times4=\boxed{14}.$$</p>
+<p><strong>14 &gt; 12:</strong> Coordinates 3D se 2D hue, but basis overhead ki wajah se total scalar storage badh gayi. Small dataset mein dimensionality reduction always storage compression nahi.</p>
+<p>Here mean zero known hai. Generic explicit mean vector bhi store karte toh 17 numbers.</p>
+<h3 id="topic-56">11.7 Dual matrix and spectrum</h3>
+<p><strong>Step 1:</strong> Dot products se Gram matrix:</p>
+<p>$$\boxed{G=X_c^TX_c=
+\begin{bmatrix}
+6&amp;0&amp;-6&amp;0\\
+0&amp;2&amp;0&amp;-2\\
+-6&amp;0&amp;6&amp;0\\
+0&amp;-2&amp;0&amp;2
+\end{bmatrix}}.$$</p>
+<p><strong>Step 2:</strong> $X_cX_c^T=4C$ ki eigenvalues $12,4,0$. Gram $4\times4$ hai, rank 2; same nonzero eigenvalues, two zeros:</p>
+<p>$$\boxed{\operatorname{eig}(G)=12,4,0,0}.$$</p>
+<p><strong>Step 3 — Direction recovery check:</strong> $v_1=(1,0,-1,0)/\sqrt2$ is unit Gram eigenvector for 12.</p>
+<p>$$X_cv_1=(x_1-x_3)/\sqrt2=\sqrt2(2,1,1),$$</p>
+<p>$$\frac{X_cv_1}{\sqrt{12}}=\frac{(2,1,1)}{\sqrt6}=w_1.$$</p>
+<p>Isi dataset se projection, covariance, rank, EVR, error, storage aur dual normalization sab connect ho gaye.</p>
+<h2 id="topic-57">12. Master-question sequence and quick revision</h2>
+<table>
+<thead>
+<tr>
+<th>Solve in order</th>
+<th>Skill covered</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>M1 → M2</td>
+<td>Exact representation, unit/non-unit projection, residual</td>
+</tr>
+<tr>
+<td>M3 → M5</td>
+<td>Graph intuition, projection-length variance, collinear data</td>
+</tr>
+<tr>
+<td>M6 → M9</td>
+<td>Covariance construction, symmetry, eigenpairs, full centered PCA</td>
+</tr>
+<tr>
+<td>M10 → M11</td>
+<td>Lost coordinates, residual error, multi-PC coordinates</td>
+</tr>
+<tr>
+<td>M12 → M14</td>
+<td>Discarded eigenvalues, variance thresholds, unknown spectrum parameter</td>
+</tr>
+<tr>
+<td>M15 → M19</td>
+<td>Subspaces, rank bounds, feature dependencies, normals, repeated features</td>
+</tr>
+<tr>
+<td>M20</td>
+<td>Minimum retained count and full storage accounting</td>
+</tr>
+<tr>
+<td>M21 → M22</td>
+<td>Gram eigenvalue scaling and weighted-data representation</td>
+</tr>
+<tr>
+<td>M23 → M24</td>
+<td>Concept checks, then complete end-to-end calculation</td>
+</tr>
+</tbody>
+</table>
+<h3 id="topic-58">12.1 Compact formula sheet</h3>
+<table>
+<thead>
+<tr>
+<th>Task</th>
+<th>Formula</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Center</td>
+<td>$\tilde x=x-\mu$</td>
+</tr>
+<tr>
+<td>General line coefficient</td>
+<td>$c=x^Tw/(w^Tw)$</td>
+</tr>
+<tr>
+<td>Unit projection</td>
+<td>$\hat x=(x^Tw)w$</td>
+</tr>
+<tr>
+<td>Feature covariance</td>
+<td>$C=X_cX_c^T/n$</td>
+</tr>
+<tr>
+<td>Direction variance</td>
+<td>$w^TCw$, unit $w$</td>
+</tr>
+<tr>
+<td>PC directions</td>
+<td>Orthonormal eigenvectors, descending eigenvalues</td>
+</tr>
+<tr>
+<td>Compressed coordinates</td>
+<td>$z=W_k^T(x-\mu)$</td>
+</tr>
+<tr>
+<td>Raw reconstruction</td>
+<td>$\hat x=\mu+W_kz$</td>
+</tr>
+<tr>
+<td>Average squared error</td>
+<td>$\sum_{j&gt;k}\lambda_j$</td>
+</tr>
+<tr>
+<td>Retained fraction</td>
+<td>$\sum_{j\leq k}\lambda_j/\operatorname{tr}(C)$</td>
+</tr>
+<tr>
+<td>Zero covariance eigenvalues</td>
+<td>$d-\operatorname{rank}(X_c)$</td>
+</tr>
+<tr>
+<td>Storage</td>
+<td>$dk+kn$, plus $d$ if mean stored</td>
+</tr>
+<tr>
+<td>Gram to covariance eigenvalue</td>
+<td>$\lambda_C=\gamma_G/n$</td>
+</tr>
+<tr>
+<td>Gram to PC direction</td>
+<td>$w=X_cv/\sqrt{\gamma_G}$</td>
+</tr>
+</tbody>
+</table>
+<p>Before solving: <strong>centered hai? points rows ya columns? unit vector hai? covariance ya Gram eigenvalues? average ya total error? mean/basis storage included?</strong> In six checks se most calculation traps avoid ho jaate hain.</p>
+</article><nav class="next-prev" aria-label="Previous and next weeks"><span></span><a href="week2.html">Week 2 →</a></nav></main>
+<aside class="contents"><details open><summary>On this page</summary><nav aria-label="Topic index"><a class="level-h2" href="#topic-1">1. Representation learning: Compression ka idea</a><a class="level-h3" href="#topic-2">1.1 Supervised, unsupervised aur PCA</a><a class="level-h3" href="#topic-3">1.2 Representative vector aur coefficient</a><a class="level-h3" href="#topic-4">M1 — Exact representation before PCA</a><a class="level-h2" href="#topic-5">2. Projection: Point line par nahi ho toh?</a><a class="level-h3" href="#topic-6">2.1 Scalar, vector aur error ko separate rakho</a><a class="level-h3" href="#topic-7">2.2 Properties with intuition</a><a class="level-h3" href="#topic-8">M2 — Projection calculation and non-unit variation</a><a class="level-h2" href="#topic-9">3. Best direction: Minimum error means maximum retained variance</a><a class="level-h3" href="#topic-10">3.1 Ek point ki nearest projection se dataset ki best line tak</a><a class="level-h3" href="#topic-11">M3 — Graph se first PC identify karna</a><a class="level-h3" href="#topic-12">M4 — Projection lengths se variance</a><a class="level-h3" href="#topic-13">M5 — Collinear data: PC, variance and zero error</a><a class="level-h2" href="#topic-14">4. Centering and covariance: Best direction calculate kaise karein?</a><a class="level-h3" href="#topic-15">4.1 Mean subtract kyun karte hain?</a><a class="level-h3" href="#topic-16">4.2 Matrix convention and covariance entries</a><a class="level-h3" href="#topic-17">M6 — Centered points se covariance</a><a class="level-h3" href="#topic-18">4.3 Covariance properties and principal directions</a><a class="level-h3" href="#topic-19">M7 — Cube covariance and equal-variance directions</a><a class="level-h3" href="#topic-20">M8 — Given covariance, candidate PCs and transformed covariance</a><a class="level-h3" href="#topic-21">M9 — Raw points se complete 2D PCA</a><a class="level-h2" href="#topic-22">5. Residuals, multiple PCs and coordinates</a><a class="level-h3" href="#topic-23">5.1 Round-wise PCA</a><a class="level-h3" href="#topic-24">M10 — Missing projection length from residual error</a><a class="level-h3" href="#topic-25">M11 — PCA coordinates in a supplied orthonormal basis</a><a class="level-h2" href="#topic-26">6. Eigenvalues: Retained variance, lost error and choosing k</a><a class="level-h3" href="#topic-27">6.1 One formula family</a><a class="level-h3" href="#topic-28">M12 — Error from discarded eigenvalues</a><a class="level-h3" href="#topic-29">M13 — Variance percentage and minimum PC count</a><a class="level-h3" href="#topic-30">M14 — Geometric spectrum se unknown parameter</a><a class="level-h2" href="#topic-31">7. Rank, linear dependencies and zero-variance directions</a><a class="level-h3" href="#topic-32">7.1 Ambient dimension versus effective linear dimension</a><a class="level-h3" href="#topic-33">M15 — Span of two vectors: Zero-error shortcut</a><a class="level-h3" href="#topic-34">M16 — Dimensions, zero eigenvalues and reconstruction</a><a class="level-h3" href="#topic-35">M17 — Feature dependencies se rank</a><a class="level-h3" href="#topic-36">M18 — Hyperplane normal as a zero-variance direction</a><a class="level-h3" href="#topic-37">M19 — Repeated features, constants and leading PC</a><a class="level-h2" href="#topic-38">8. Storage: Fewer coordinates always fewer numbers nahi</a><a class="level-h3" href="#topic-39">8.1 What must be stored?</a><a class="level-h3" href="#topic-40">M20 — 90% variance and storage</a><a class="level-h2" href="#topic-41">9. Dual PCA: Feature space versus sample space</a><a class="level-h3" href="#topic-42">9.1 X X-transpose aur X-transpose X ka difference</a><a class="level-h3" href="#topic-43">M21 — Gram eigenvalues se variance</a><a class="level-h3" href="#topic-44">M22 — Principal direction as weighted sum of data</a><a class="level-h2" href="#topic-45">10. Conceptual master check</a><a class="level-h3" href="#topic-46">M23 — True/false with reasons</a><a class="level-h3" href="#topic-47">10.1 Properties jo mixed questions mein kaam aati hain</a><a class="level-h2" href="#topic-48">11. Complete master problem: Saare steps ek sequence mein</a><a class="level-h3" href="#topic-49">M24 — From raw data to dual PCA</a><a class="level-h3" href="#topic-50">11.1 Mean and covariance</a><a class="level-h3" href="#topic-51">11.2 Eigenpairs: Use structure, then verify</a><a class="level-h3" href="#topic-52">11.3 Rank, explained variance and k</a><a class="level-h3" href="#topic-53">11.4 PCA coordinates</a><a class="level-h3" href="#topic-54">11.5 Top-one reconstruction, residual and error</a><a class="level-h3" href="#topic-55">11.6 Storage: A useful counterexample</a><a class="level-h3" href="#topic-56">11.7 Dual matrix and spectrum</a><a class="level-h2" href="#topic-57">12. Master-question sequence and quick revision</a><a class="level-h3" href="#topic-58">12.1 Compact formula sheet</a></nav></details></aside></div>
+<footer>MLT Notes <span>Learn one concept at a time.</span></footer>
+</body></html>

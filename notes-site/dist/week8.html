@@ -1,0 +1,1545 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Week 8 · Naive Bayes | MLT Notes</title>
+<script src="theme.js"></script>
+<link rel="stylesheet" href="style.css">
+<script>window.MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']],processEscapes:true},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']},svg:{fontCache:'global'}};</script>
+<script defer src="vendor/tex-svg.js"></script></head>
+<body><a class="skip" href="#notes">Skip to notes</a>
+<header><a class="brand" href="index.html"><span class="brand-mark">m</span> MLT <span class="brand-muted">/ study notes</span></a><label class="theme-control">Theme <select id="theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label></header>
+<div class="layout"><aside class="weeks"><details open><summary>Course weeks <span>12</span></summary><nav aria-label="Course weeks"><a class="week-link " href="index.html" ><span class="week-number">01</span><span>Principal Component Analysis</span></a><a class="week-link " href="week2.html" ><span class="week-number">02</span><span>Kernel PCA</span></a><a class="week-link " href="week3.html" ><span class="week-number">03</span><span>K-Means Clustering</span></a><a class="week-link " href="week4.html" ><span class="week-number">04</span><span>Estimation, GMM and EM Algorithm</span></a><a class="week-link " href="week5.html" ><span class="week-number">05</span><span>Linear and Kernel Regression</span></a><a class="week-link " href="week6.html" ><span class="week-number">06</span><span>Regularisation and Cross-Validation</span></a><a class="week-link " href="week7.html" ><span class="week-number">07</span><span>KNN and Decision Tree</span></a><a class="week-link selected" href="week8.html" aria-current=page><span class="week-number">08</span><span>Naive Bayes</span></a><a class="week-link " href="week9.html" ><span class="week-number">09</span><span>Perceptron and Logistic Regression</span></a><a class="week-link " href="week10.html" ><span class="week-number">10</span><span>Support Vector Machine</span></a><a class="week-link " href="week11.html" ><span class="week-number">11</span><span>Soft-Margin SVM and Ensemble Methods</span></a><a class="week-link " href="week12.html" ><span class="week-number">12</span><span>Loss Functions and Artificial Neural Networks</span></a></nav></details></aside>
+<main id="notes"><div class="eyebrow">MACHINE LEARNING TECHNIQUES <span>/ WEEK 08</span></div><article><h1 id="topic-0">MLT Week 8: Naive Bayes Notes</h1>
+<p><strong>Flow:</strong> Model ka idea → Bayes rule → conditional independence → parameter counting → data se parameters → prediction → smoothing → decision boundary → Gaussian aur mixed features.</p>
+<h2 id="topic-1">Topic index</h2>
+<table>
+<thead>
+<tr>
+<th>Topic</th>
+<th>Subtopics</th>
+<th>Questions</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1. Modelling ka idea</td>
+<td>Training/test distribution, generative vs discriminative</td>
+<td>Q14</td>
+</tr>
+<tr>
+<td>2. Bayes rule</td>
+<td>Prior, likelihood, joint, evidence, posterior</td>
+<td>Q20</td>
+</tr>
+<tr>
+<td>3. Naive assumption</td>
+<td>Binary representation, conditional independence, absent features</td>
+<td>Q6, Q19</td>
+</tr>
+<tr>
+<td>4. Parameter counting</td>
+<td>Free vs stored, binary, categorical, no independence</td>
+<td>Q2, Q5, Q10, Q21</td>
+</tr>
+<tr>
+<td>5. Parameter estimation</td>
+<td>MLE, matrix orientation, class-specific counts</td>
+<td>Q1, Q17</td>
+</tr>
+<tr>
+<td>6. Prediction</td>
+<td>Complement, joint vs posterior, zero likelihood, reused dataset, categories</td>
+<td>Q7, Q3, Q12, Q4, Q9, Q13</td>
+</tr>
+<tr>
+<td>7. Smoothing</td>
+<td>Zero-frequency issue, standard vs specified pseudo data</td>
+<td>Q11, Q16, Q18</td>
+</tr>
+<tr>
+<td>8. Bernoulli decision function</td>
+<td>Log scores, linear boundary, limitations</td>
+<td>Small labelled illustration</td>
+</tr>
+<tr>
+<td>9. Gaussian and mixed Naive Bayes</td>
+<td>Density, MLE, covariance, boundaries, mixed features</td>
+<td>Q8, Q15</td>
+</tr>
+<tr>
+<td>10. Revision</td>
+<td>Formula sheet, mistakes, solving checklist</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="topic-2">1. Model kya seekh raha hai?</h2>
+<h3 id="topic-3">1.1 Training aur test ka connection</h3>
+<p><strong>Definition:</strong> Classification mein features $x$ dekhkar class label $y$ predict karte hain.</p>
+<p><strong>Real life:</strong> Email mein kaunse words hain, yeh features; email spam hai ya normal, yeh label.</p>
+<p>Training data mein dono milte hain: $\{(x_i,y_i)\}_{i=1}^{N}$. Test time par naye $x$ ka label chahiye.</p>
+<p>Basic modelling assumption: training aur test observations ek hi underlying distribution se aate hain, commonly independent samples maane jaate hain. Matlab test email training email ki exact copy nahi hona chahiye; unke patterns comparable hone chahiye. Agar training English emails par ho aur testing completely different language/domain par, performance guarantee nahi hai.</p>
+<h3 id="topic-4">1.2 Generative model</h3>
+<p><strong>Short definition:</strong> Features aur label ki <strong>joint distribution</strong> $P(X,Y)$ model karta hai.</p>
+<p>Socho model email banane ki story seekhta hai:</p>
+<ol>
+<li>Pehle class choose: spam ya non-spam, using $P(Y)$.</li>
+<li>Phir us class ke hisaab se words/features generate, using $P(X\mid Y)$.</li>
+</ol>
+<p>$$P(X,Y)=P(Y)P(X\mid Y).$$</p>
+<p>Baad mein observed email se class infer karne ke liye Bayes rule lagta hai. <strong>Naive Bayes generative hai.</strong> Actual new emails generate karna classifier use karne ke liye zaroori nahi; joint distribution model karna defining point hai.</p>
+<p><img src="assets/week8/01_bayes_flow.png" loading="lazy" alt="Generative process and inference: prior to likelihood to posterior" /></p>
+<h3 id="topic-5">1.3 Discriminative model</h3>
+<p><strong>Short definition:</strong> Directly $P(Y\mid X)$ ya decision boundary seekhta hai.</p>
+<p>Real-life connection: “Spam email kaise banta hai?” ki jagah “Is email ko kis class mein rakhna hai?” par focus.</p>
+<table>
+<thead>
+<tr>
+<th>Model family</th>
+<th>Direct learning target</th>
+<th>Examples</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Generative</td>
+<td>$P(Y)$ and $P(X\mid Y)$, hence $P(X,Y)$</td>
+<td>Naive Bayes, Gaussian discriminant models</td>
+</tr>
+<tr>
+<td>Discriminative</td>
+<td>$P(Y\mid X)$ or a decision boundary</td>
+<td>Logistic regression; perceptron/SVM as boundary models</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Property:</strong> Generative classifier bhi prediction ke waqt posterior nikal sakta hai. Isse woh discriminative model nahi ban jaata; difference <strong>kya directly model kiya</strong> mein hai.</p>
+<h3 id="topic-6">1.4 Q14 — Generative vs discriminative</h3>
+<p><strong>Source:</strong> 2025 Aug 03 Quiz 2, Q14.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>Which among the following are true? (MSQ)</p>
+<p>(a) In generative model, we are interested in how the features are generated.</p>
+<p>(b) In discriminative model, we are interested in how the features are generated.</p>
+<p>(c) In discriminative model, we are interested in modelling $p(y\mid x)$, where $y$ is the label and $x$ is a feature.</p>
+<p>(d) In generative model, we are interested in modelling $p(y\mid x)$, where $y$ is the label and $x$ is a feature.</p>
+<p>(e) Gaussian Naive Bayes is a discriminative model.</p>
+</blockquote>
+<p><strong>Step 1:</strong> Generative model features ki class-wise generation/distribution model karta hai → <strong>(a) true</strong>, <strong>(b) false</strong>.</p>
+<p><strong>Step 2:</strong> Discriminative probability model directly $p(y\mid x)$ model kar sakta hai → <strong>(c) true</strong>.</p>
+<p><strong>Step 3:</strong> (d) mein intended distinction direct modelling ka hai. Generative model posterior <strong>derive</strong> karta hai, primary target joint distribution hai → exam interpretation mein <strong>(d) false</strong>.</p>
+<p><strong>Step 4:</strong> Gaussian NB bhi class-conditional distribution model karta hai → <strong>(e) false</strong>.</p>
+<p><strong>Answer: (a), (c).</strong> Supplied key bhi yahi hai.</p>
+<p><strong>Yaad rakho:</strong> “Posterior use karta hai” aur “posterior directly model karta hai” alag statements hain.</p>
+<hr />
+<h2 id="topic-7">2. Bayes rule: Features dekhkar belief update kaise karein?</h2>
+<h3 id="topic-8">2.1 Five quantities, ek hi story</h3>
+<p>Email example mein:</p>
+<table>
+<thead>
+<tr>
+<th>Quantity</th>
+<th>Formula</th>
+<th>Hinglish meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Prior</td>
+<td>$P(Y=c)$</td>
+<td>Email dekhne se pehle class ka chance</td>
+</tr>
+<tr>
+<td>Likelihood</td>
+<td>$P(X=x\mid Y=c)$</td>
+<td>Class given ho toh aise features kitne likely?</td>
+</tr>
+<tr>
+<td>Joint</td>
+<td>$P(X=x,Y=c)$</td>
+<td>Yeh features <strong>aur</strong> yeh class saath mein</td>
+</tr>
+<tr>
+<td>Evidence</td>
+<td>$P(X=x)$</td>
+<td>Yeh features kisi bhi class se milne ka total chance</td>
+</tr>
+<tr>
+<td>Posterior</td>
+<td>$P(Y=c\mid X=x)$</td>
+<td>Features dekhne ke baad class ka updated chance</td>
+</tr>
+</tbody>
+</table>
+<p>$$\boxed{P(Y=c\mid X=x)=\frac{P(X=x\mid Y=c)P(Y=c)}{\sum_r P(X=x\mid Y=r)P(Y=r)}}$$</p>
+<p>Binary classes ke liye convenient notation:</p>
+<p>$$S_1=P(x\mid1)P(1),\qquad S_0=P(x\mid0)P(0).$$</p>
+<p>$$P(1\mid x)=\frac{S_1}{S_0+S_1},\qquad P(0\mid x)=\frac{S_0}{S_0+S_1}.$$</p>
+<h3 id="topic-9">2.2 Label vs probability: Sabse important distinction</h3>
+<p><strong>Sirf label poochha hai:</strong> $S_0$ aur $S_1$ compare karo; common positive denominator cancel hota hai.</p>
+<p><strong>Posterior probability poochhi hai:</strong> Normalize zaroor karo.</p>
+<p><strong>Joint probability poochhi hai:</strong> Prior × likelihood hi answer hai; normalize nahi karna.</p>
+<p><strong>Conditional feature likelihood poochhi hai:</strong> $P(x\mid c)$ chahiye; prior multiply nahi karna.</p>
+<p><strong>Counterexample:</strong> $S_1=0.02$, $S_0=0.03$ ho toh posterior $0.02$ nahi, $0.02/0.05=0.4$ hai. Scores ka sum 1 hona zaroori nahi; posterior class probabilities ka sum 1 hona chahiye.</p>
+<blockquote>
+<p>Concept slides pp. 7–8 mein denominator drop karne ke baad posterior ke saath equality likhi hai. Correct relation $P(y\mid x)\propto P(x\mid y)P(y)$ hai. Equality sirf normalization ke baad.</p>
+</blockquote>
+<h3 id="topic-10">2.3 Q20 — Joint se posterior</h3>
+<p><strong>Source:</strong> 2026 Aug 14 Quiz 2, Q20.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>A generative classifier models the joint distribution of the feature vector $X$ and the class label $Y$. For a particular email represented by the feature vector $x$, suppose $P(X=x,Y=\mathrm{Spam})=0.015$ and $P(X=x,Y=\mathrm{Not\ Spam})=0.035$. Compute the posterior probability $P(Y=\mathrm{Spam}\mid X=x)$.</p>
+</blockquote>
+<p><strong>Step 1 — Given quantities identify karo.</strong> Dono <strong>joint</strong> probabilities hain, priors dobara multiply nahi karne.</p>
+<p><strong>Step 2 — Evidence:</strong></p>
+<p>$$P(X=x)=0.015+0.035=0.050.$$</p>
+<p><strong>Step 3 — Normalize:</strong></p>
+<p>$$P(\mathrm{Spam}\mid x)=\frac{0.015}{0.050}=\boxed{0.3}.$$</p>
+<p><strong>Check:</strong> Non-spam posterior $0.7$; sum $1$.</p>
+<p><strong>Question se property:</strong> Class-wise joint probabilities ka sum evidence deta hai.</p>
+<hr />
+<h2 id="topic-11">3. “Naive” assumption: Bade joint ko chhote products mein todna</h2>
+<h3 id="topic-12">3.1 Binary feature representation</h3>
+<p><strong>Definition:</strong> Bernoulli feature ke sirf do values: $0$ aur $1$.</p>
+<p>Spam example: Vocabulary <code>[free, meeting, prize]</code> ho aur email mein <code>free</code> aur <code>prize</code> present hon, toh $x=(1,0,1)$.</p>
+<p>Yahan frequency count nahi, <strong>presence/absence</strong> hai. <code>free</code> ek baar aaye ya das baar, binary feature 1 hi rahega.</p>
+<h3 id="topic-13">3.2 Class-conditional independence</h3>
+<p><strong>Short definition:</strong> Class fix karne ke baad features ko independent assume karte hain.</p>
+<p>$$\boxed{P(x_1,\ldots,x_d\mid Y=c)=\prod_{j=1}^{d}P(x_j\mid Y=c)}$$</p>
+<p>Hinglish: Pehle decide karo “spam group ke andar dekh rahe hain”; phir har word ka chance separately multiply karo. <strong>Class ko ignore karke unconditional probabilities multiply nahi karni.</strong></p>
+<h3 id="topic-14">3.3 Conditional independence ≠ unconditional independence</h3>
+<p><strong>Counterexample:</strong> Half emails spam hain. Spam mein two words independently probability $0.9$ se aate hain; non-spam mein independently $0.1$ se.</p>
+<p>$$P(f_1=1)=P(f_2=1)=0.5.$$</p>
+<p>Lekin:</p>
+<p>$$P(f_1=1,f_2=1)=0.5(0.9\times0.9)+0.5(0.1\times0.1)=0.41.$$</p>
+<p>Unconditional product $0.5\times0.5=0.25$, jo $0.41$ nahi hai. Class-wise independent hote hue bhi overall dependent ho sakte hain.</p>
+<p><strong>Practical limitation:</strong> “New” aur “York” jaise words same class ke andar bhi linked ho sakte hain. NB ka assumption imperfect ho sakta hai; phir bhi classifier useful ho sakta hai. Correct classification ka matlab posterior perfectly calibrated hai, yeh zaroori nahi.</p>
+<h3 id="topic-15">3.4 Bernoulli likelihood: 0 feature ko ignore mat karna</h3>
+<p>Notation:</p>
+<p>$$\theta_{jc}=P(f_j=1\mid Y=c),\qquad P(f_j=0\mid Y=c)=1-\theta_{jc}.$$</p>
+<p>Single observed feature:</p>
+<p>$$P(f_j=x_j\mid c)=\theta_{jc}^{x_j}(1-\theta_{jc})^{1-x_j}.$$</p>
+<p>All features:</p>
+<p>$$\boxed{P(x\mid c)=\prod_{j=1}^{d}\theta_{jc}^{x_j}(1-\theta_{jc})^{1-x_j}}.$$</p>
+<p><strong>Use ka simple rule:</strong> $x_j=1$ → $\theta_{jc}$ lo; $x_j=0$ → $1-\theta_{jc}$ lo. Har feature ka <strong>ek matching factor</strong>.</p>
+<p><strong>Counterexample:</strong> $x=(1,0)$ aur $\theta_{1c}=0.8,\theta_{2c}=0.9$ ho toh likelihood $0.8\times0.1=0.08$, <strong>$0.8\times0.9$ nahi</strong>.</p>
+<h3 id="topic-16">3.5 Q6 — Assumption identify karo</h3>
+<p><strong>Source:</strong> 2024 Sep 01 ET, Q6.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>For a dataset with features in $\mathbb R^3$, which of the following expresses the class conditional independence assumption in a Naive Bayes model? $p(\cdot)$ denotes probability.</p>
+<p>(a) $p((x_1,x_2,x_3)\mid y)=p(x_1\mid y)\cdot p(x_2\mid y)\cdot p(x_3\mid y)$</p>
+<p>(b) $p((x_1,x_2,x_3),y)=p(y)\cdot p(x_1)\cdot p(x_2)\cdot p(x_3)$</p>
+<p>(c) $p((x_1,x_2,x_3)\mid y)=\dfrac{p((x_1,x_2,x_3),y)}{p(y)}$</p>
+<p>(d) $p(y\mid(x_1,x_2,x_3))=\dfrac{p((x_1,x_2,x_3),y)}{p(x_1,x_2,x_3)}$</p>
+</blockquote>
+<p><strong>Step 1:</strong> (a) mein same class $y$ given hai aur joint likelihood feature-wise product hai → exactly required assumption.</p>
+<p><strong>Step 2:</strong> (b) class conditioning drop karta hai → NB assumption nahi.</p>
+<p><strong>Step 3:</strong> (c), (d) conditional-probability identities hain, applicable nonzero denominators ke saath. Yeh independence <strong>assert nahi</strong> karti.</p>
+<p><strong>Answer: (a).</strong> Continuous features ke liye isi factorization ko densities par apply karte hain.</p>
+<h3 id="topic-17">3.6 Q19 — Bayes + naive assumption combine karo</h3>
+<p><strong>Source:</strong> 2026 Aug 14 Quiz 2, Q19.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>Suppose an email is represented by a binary feature vector $X=(x_1,x_2,\ldots,x_d)\in\{0,1\}^d$. A generative classifier first chooses the class label $Y$ according to the prior distribution $P(Y)$. It then generates the feature vector $X$ conditioned on the chosen class. The classifier assumes that, given the class label, the features are conditionally independent. Which of the following expressions correctly represents $P(Y=\mathrm{Spam}\mid X=x)$?</p>
+<p>(a) $\dfrac{P(Y=\mathrm{Spam})}{P(X=x)}$</p>
+<p>(b) $\dfrac{\left(\prod_{i=1}^{d}P(x_i)\right)P(Y=\mathrm{Spam})}{P(X=x)}$</p>
+<p>(c) $\prod_{i=1}^{d}P(Y=\mathrm{Spam}\mid x_i)$</p>
+<p>(d) $\dfrac{\left(\prod_{i=1}^{d}P(x_i\mid Y=\mathrm{Spam})\right)P(Y=\mathrm{Spam})}{P(X=x)}$</p>
+</blockquote>
+<p><strong>Step 1:</strong> Posterior = likelihood × prior / evidence.</p>
+<p><strong>Step 2:</strong> Class-conditional independence se likelihood $\prod_iP(x_i\mid\mathrm{Spam})$.</p>
+<p><strong>Step 3:</strong> Substitute karne par option <strong>(d)</strong> milta hai.</p>
+<p>(a) mein likelihood missing; (b) mein conditioning missing; (c) mein per-feature posteriors ka product correct Bayes expression nahi.</p>
+<p><strong>Answer: (d).</strong> Q6 jaisa assumption hai, lekin yahan complete posterior expression poochha hai; exact repeat nahi.</p>
+<hr />
+<h2 id="topic-18">4. Kitne parameters seekhne hain?</h2>
+<h3 id="topic-19">4.1 Free parameter ka meaning</h3>
+<p><strong>Definition:</strong> Jo probability independently choose karni pade, woh free parameter hai.</p>
+<p>Coin ke liye $P(H)=p$ choose kiya toh $P(T)=1-p$ automatically mil gaya. Do probabilities store ho sakti hain, par <strong>one free parameter</strong>.</p>
+<p>$C$ classes ki priors ka sum 1 hai → <strong>$C-1$ free priors</strong>.</p>
+<h3 id="topic-20">4.2 Binary features: Naive Bayes vs full joint</h3>
+<p>$d$ binary features, $C$ classes:</p>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th style="text-align:right">Feature parameters</th>
+<th style="text-align:right">Prior parameters</th>
+<th style="text-align:right">Total free parameters</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Naive Bayes</td>
+<td style="text-align:right">$Cd$</td>
+<td style="text-align:right">$C-1$</td>
+<td style="text-align:right">$\boxed{Cd+C-1}$</td>
+</tr>
+<tr>
+<td>Without conditional independence</td>
+<td style="text-align:right">$C(2^d-1)$</td>
+<td style="text-align:right">$C-1$</td>
+<td style="text-align:right">$\boxed{C2^d-1}$</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Why these counts?</strong> NB mein har class-feature pair ka ek Bernoulli probability chahiye. Full joint mein har class ke andar $2^d$ possible binary vectors hain; unki probabilities sum 1, so $2^d-1$ free values.</p>
+<p>Binary class case $C=2$:</p>
+<p>$$\text{NB: }2d+1,\qquad \text{full joint: }2^{d+1}-1.$$</p>
+<p><img src="assets/week8/02_parameter_growth.png" loading="lazy" alt="Free-parameter growth for binary classification, with and without the naive assumption" /></p>
+<p><strong>Graph ka meaning:</strong> Orange curve combinations ke saath rapidly badhti hai. Blue curve mein har extra feature sirf do probabilities add karta hai. Yahi sample/storage savings ka main reason hai.</p>
+<h3 id="topic-21">4.3 Categorical features</h3>
+<p>Feature $j$ ke $r_j$ values hon toh per class $r_j-1$ free probabilities:</p>
+<p>$$\boxed{(C-1)+C\sum_{j=1}^{d}(r_j-1)}.$$</p>
+<p>Sab features ke $r$ values hon toh $(C-1)+Cd(r-1)$.</p>
+<p><strong>Trap:</strong> $r$ categories ke liye $r$ free probabilities nahi; last one remaining mass hai.</p>
+<h3 id="topic-22">4.4 Q2 — Five classes, three binary features</h3>
+<p><strong>Source:</strong> 2024 Mar 24 Quiz 2, Q2.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>Suppose you have a five-class classification problem where class label $y\in\{0,1,2,3,4\}$ and each training example $x_i$ has binary features $f_1,f_2,f_3\in\{0,1\}$. How many parameters do we need to know to classify an example using Naive Bayes classifier?</p>
+</blockquote>
+<p><strong>Step 1:</strong> $C=5$, $d=3$.</p>
+<p><strong>Step 2:</strong> Feature probabilities $=5\times3=15$.</p>
+<p><strong>Step 3:</strong> Free class priors $=5-1=4$.</p>
+<p>$$\text{Total}=15+4=\boxed{19}.$$</p>
+<p><strong>Source key:</strong> “19 to 20”. Standard <strong>free-parameter answer 19</strong> hai. Agar saari 5 priors explicitly store karein toh 20 entries hongi, par ek redundant hai. Numerical acceptance range ko free-parameter definition mat samajhna.</p>
+<h3 id="topic-23">4.5 Q5 — With/without independence</h3>
+<p><strong>Source:</strong> 2024 Aug 04 Quiz 2, Q5.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>Consider a multi-class classification problem with 3 classes and 4 features, all of which are binary. A generative model is used to model the joint distribution of the features and labels. Based on the above data, answer the given subquestions.</p>
+<p>i. Find the total number of independent (free) parameters in the model if the class conditional independence assumption is not enforced.</p>
+<p>ii. Find the total number of independent (free) parameters in the model if the class conditional independence assumption is enforced.</p>
+</blockquote>
+<p><strong>Part (i), Step 1:</strong> Four binary features → $2^4=16$ feature vectors per class.</p>
+<p><strong>Step 2:</strong> Per class 15 free likelihood probabilities; 3 classes → $45$.</p>
+<p><strong>Step 3:</strong> Add $3-1=2$ priors: $45+2=\boxed{47}$.</p>
+<p><strong>Part (ii), Step 1:</strong> Independence se har class ke liye 4 Bernoulli parameters.</p>
+<p><strong>Step 2:</strong> $3\times4=12$ likelihood parameters.</p>
+<p><strong>Step 3:</strong> $12+2=\boxed{14}$.</p>
+<p><strong>Connection:</strong> Same prediction problem, but assumption ne 47 ko 14 kar diya.</p>
+<h3 id="topic-24">4.6 Q10 — General number of classes</h3>
+<p><strong>Source:</strong> 2025 Mar 16 Quiz 2, Q10.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>Consider a $k$-class classification problem with five binary features $f_1,f_2,f_3,f_4$, and $f_5$, where $k&gt;2$. How many parameters need to be estimated to learn a Naive Bayes classifier?</p>
+<p>(a) $5k$</p>
+<p>(b) $6k-1$</p>
+<p>(c) $(6k-1)^5$</p>
+<p>(d) $3k-3$</p>
+</blockquote>
+<p><strong>Step 1:</strong> Likelihood parameters $=5k$.</p>
+<p><strong>Step 2:</strong> Free priors $=k-1$.</p>
+<p><strong>Step 3:</strong> Total $5k+(k-1)=\boxed{6k-1}$ → <strong>(b)</strong>.</p>
+<p><strong>Same type:</strong> Q2, Q5(ii); numbers/symbols different hain, isliye short separate substitution diya hai.</p>
+<h3 id="topic-25">4.7 Q21 — Five-valued categorical attributes</h3>
+<p><strong>Source:</strong> 2026 Sep 13 ET, Q21.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>Given a dataset with $K$ discrete attributes, each taking exactly 5 possible values (where $K&gt;2$), for a three-class classification task, the number of parameters to be estimated for learning a naïve Bayes classifier is:</p>
+<p>(a) $3K+2$</p>
+<p>(b) $12K+2$</p>
+<p>(c) $3\cdot2^K$</p>
+<p>(d) $K^3$</p>
+</blockquote>
+<p><strong>Step 1:</strong> Yahan $K$ <strong>features ka count</strong> hai, classes ka nahi. Classes $C=3$.</p>
+<p><strong>Step 2:</strong> Five values → $5-1=4$ free probabilities per class-feature pair.</p>
+<p><strong>Step 3:</strong> Feature parameters $=3\times K\times4=12K$.</p>
+<p><strong>Step 4:</strong> Priors $=3-1=2$.</p>
+<p><strong>Answer: $\boxed{12K+2}$, option (b).</strong></p>
+<hr />
+<h2 id="topic-26">5. Data se probabilities: Maximum Likelihood Estimation (MLE)</h2>
+<h3 id="topic-27">5.1 Counting rule</h3>
+<p><strong>Definition:</strong> MLE yahan observed frequencies se probabilities estimate karta hai.</p>
+<p>Real life: Spam group ke 100 emails mein 70 mein <code>free</code> hai → spam given ho toh <code>free</code> ki estimated probability $70/100$.</p>
+<p>Let $N_c$ = class $c$ mein samples; $N_{jc}^{(1)}$ = us class mein feature $j$ ke ones.</p>
+<p>$$\boxed{\hat\pi_c=\frac{N_c}{N}},\qquad \boxed{\hat\theta_{jc}=\frac{N_{jc}^{(1)}}{N_c}}.$$</p>
+<p>Binary prior $\hat p=P(Y=1)=N_1/N$.</p>
+<p><strong>Important:</strong> Feature likelihood ka denominator <strong>class count</strong> hai; total dataset count nahi. $N_c=0$ ho toh unsmoothed estimate defined nahi; yahan exam datasets mein required classes present hain.</p>
+<h3 id="topic-28">5.2 Matrix orientation aur notation</h3>
+<p>Agar $X$ shape $(d,N)$ diya hai, <strong>columns samples</strong> hain aur rows features. Labels column order se match karo.</p>
+<p>Paper ka $\hat p_j^c$ = feature $j$ equals 1, given class $c$. Is note ka $\theta_{jc}$ same quantity hai. Superscript class hai, power nahi.</p>
+<h3 id="topic-29">5.3 Q1 — Columns ko samples padho</h3>
+<p><strong>Source:</strong> 2024 Mar 24 Quiz 2, Q1.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>Consider a naive Bayes model is trained on the following data matrix $X$ of shape $(d,n)$ and corresponding label vector $y$:</p>
+<p>$$X=\begin{bmatrix}1&amp;0&amp;0&amp;0\\0&amp;1&amp;0&amp;1\\0&amp;1&amp;1&amp;0\end{bmatrix},\qquad y=[1\ 0\ 1\ 1]^T.$$</p>
+<p>Assume that $\hat p$ and $\hat p_j^{y_i}$ are estimates for $P(y=1)$ and $P(f_j=1\mid y=y_i)$, respectively. Here, $f_i;\ i=1,2,3$ is the $i$th feature. These parameters are estimated using MLE. Based on the above data, answer the given subquestions.</p>
+<p>i. Calculate the value of $\hat p_2^1$.</p>
+<p>ii. Calculate the value of $\hat p_1^1$.</p>
+</blockquote>
+<p><strong>Step 1 — Columns unfold karo:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Sample</th>
+<th style="text-align:right">$f_1$</th>
+<th style="text-align:right">$f_2$</th>
+<th style="text-align:right">$f_3$</th>
+<th style="text-align:right">$y$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td>2</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td>3</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td>4</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Step 2:</strong> Class 1 samples = 1, 3, 4. Denominator $N_1=3$.</p>
+<p><strong>Step 3, part (i):</strong> In samples 1, 3, 4, feature 2 values $0,0,1$ → one success:</p>
+<p>$$\hat p_2^1=\frac13=\boxed{0.3333\ldots}.$$</p>
+<p><strong>Step 4, part (ii):</strong> Feature 1 values $1,0,0$ → one success:</p>
+<p>$$\hat p_1^1=\frac13=\boxed{0.3333\ldots}.$$</p>
+<p><strong>Question se trap:</strong> Answer $1/4$ nahi, kyunki class 0 sample denominator mein nahi aayega.</p>
+<h3 id="topic-30">5.4 Q17 — Same counting skill, new dataset</h3>
+<p><strong>Source:</strong> 2025 Dec 18 ET, Q17.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>Consider a naive Bayes classification problem with three binary features $f_1,f_2,f_3$ for a binary classification problem. You are given the following 8 training samples:</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>Sample</th>
+<th style="text-align:right">$f_1$</th>
+<th style="text-align:right">$f_2$</th>
+<th style="text-align:right">$f_3$</th>
+<th style="text-align:right">$y$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$x_1$</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td>$x_2$</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td>$x_3$</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td>$x_4$</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td>$x_5$</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td>$x_6$</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td>$x_7$</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td>$x_8$</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>Compute the Naive Bayes parameter estimate $\hat p(f_2=1\mid y=1)$ (without Laplace smoothing). Enter your answer correct to two decimal places.</p>
+</blockquote>
+<p><strong>Step 1:</strong> Class 1 rows $x_3,x_4,x_6,x_7$ → 4 samples.</p>
+<p><strong>Step 2:</strong> Feature 2 values $1,0,1,1$ → 3 ones.</p>
+<p><strong>Step 3:</strong> $\hat p(f_2=1\mid y=1)=3/4=\boxed{0.75}$.</p>
+<p><strong>Same type:</strong> Q1; yahan matrix orientation ka issue nahi, direct table hai.</p>
+<hr />
+<h2 id="topic-31">6. Parameters se prediction: Ab poora pipeline</h2>
+<h3 id="topic-32">6.1 Fixed solving recipe</h3>
+<ol>
+<li>Identify karo: <strong>label</strong>, <strong>joint</strong>, <strong>likelihood</strong> ya <strong>posterior</strong> poochha hai?</li>
+<li>Class priors aur class-wise feature probabilities nikalo/read karo.</li>
+<li>Test feature 0 ho toh complement lo; 1 ho toh direct parameter.</li>
+<li>Har class ki likelihood multiply karo.</li>
+<li>Prior multiply karke $S_c$ banao.</li>
+<li>Label ke liye biggest score; posterior ke liye score/sum.</li>
+</ol>
+<p>Tie ho toh question ka convention use karo. Slides mein strict <code>&gt;</code> aur <code>≥</code> dono conventions aaye hain; universal tie label assume mat karo. Is paper ke solved predictions mein tie nahi hai.</p>
+<h3 id="topic-33">6.2 Q7 — Given estimates, complement aur label</h3>
+<p><strong>Source:</strong> 2024 Dec 01 Quiz 2, Q7.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>Based on the above data, answer the given subquestions.
+A binary classification dataset has 2000 data points belonging to $\{0,1\}^2$. A Naive Bayes algorithm was run on the same dataset, resulting in the following estimates:</p>
+<p>$\hat p$, estimate for $P(y=1)=0.4$</p>
+<p>$\hat p_1^0$, estimate for $P(f_1=1\mid y=0)=0.25$</p>
+<p>$\hat p_2^0$, estimate for $P(f_2=1\mid y=0)=0.35$</p>
+<p>$\hat p_1^1$, estimate for $P(f_1=1\mid y=1)=0.15$</p>
+<p>$\hat p_2^1$, estimate for $P(f_2=1\mid y=1)=0.05$</p>
+<p>i. What is the estimated value of $P(f_2=0\mid y=1)$? Write your answer correct to two decimal places.</p>
+<p>ii. What will be the predicted label for the data point $[1,0]$?</p>
+</blockquote>
+<p><strong>Part (i):</strong> Binary outcomes exhaustive hain:</p>
+<p>$$P(f_2=0\mid1)=1-0.05=\boxed{0.95}.$$</p>
+<p><strong>Part (ii), Step 1:</strong> Priors $P(1)=0.4$, $P(0)=0.6$.</p>
+<p><strong>Step 2:</strong> $x=(1,0)$, so feature 1 direct, feature 2 complement:</p>
+<p>$$S_1=0.4\times0.15\times(1-0.05)=0.057.$$</p>
+<p>$$S_0=0.6\times0.25\times(1-0.35)=0.0975.$$</p>
+<p><strong>Step 3:</strong> $S_0&gt;S_1$ → <strong>predicted label $\boxed{0}$</strong>.</p>
+<p><strong>Useful check, not required by question:</strong> $P(1\mid x)=0.057/0.1545\approx0.3689$.</p>
+<p><strong>Property:</strong> 2000 count ko dobara use karna zaroori nahi, kyunki estimates already given hain.</p>
+<h3 id="topic-34">6.3 Q3 — A zero likelihood factor</h3>
+<p><strong>Source:</strong> 2024 Apr 28 ET, Q3.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>Consider the following dataset with 6 samples along with the corresponding labels. Each sample has three binary features $f_1,f_2$ and $f_3$.</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>sample</th>
+<th style="text-align:right">$f_1$</th>
+<th style="text-align:right">$f_2$</th>
+<th style="text-align:right">$f_3$</th>
+<th style="text-align:right">$y$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$x_1$</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td>$x_2$</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td>$x_3$</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td>$x_4$</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td>$x_5$</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td>$x_6$</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>Assume that the features are conditionally independent given the label $y$. Suppose the test sample is $x_{\mathrm{test}}=[0,1,0]^T$. What is the estimated probability that the test point belongs to class 0 (that is, $p(y=0\mid x_{\mathrm{test}})$)?</p>
+</blockquote>
+<p><strong>Step 1:</strong> Three samples in each class → both priors $1/2$. Smoothing specified nahi, ordinary MLE use kar rahe hain, supplied key ke consistent.</p>
+<p><strong>Step 2 — Class 0:</strong> Rows 3,4,5. For test values $(0,1,0)$:</p>
+<p>$$P(f_1=0\mid0)=\frac13,\quad P(f_2=1\mid0)=\frac23,\quad P(f_3=0\mid0)=0.$$</p>
+<p>$$S_0=\frac12\times\frac13\times\frac23\times0=0.$$</p>
+<p><strong>Step 3 — Class 1:</strong> Rows 1,2,6:</p>
+<p>$$P(f_1=0\mid1)=\frac13,\quad P(f_2=1\mid1)=1,\quad P(f_3=0\mid1)=\frac23.$$</p>
+<p>$$S_1=\frac12\times\frac13\times1\times\frac23=\frac19.$$</p>
+<p><strong>Step 4 — Asked posterior:</strong></p>
+<p>$$P(0\mid x)=\frac{0}{0+1/9}=\boxed{0}.$$</p>
+<p><strong>Property:</strong> Ek zero factor poori class likelihood zero kar deta hai. Lekin doosri class ka positive score check karo; dono zero ho toh $0/0$ hoga, posterior 0 nahi.</p>
+<h3 id="topic-35">6.4 Q12 — Zero factor, different class wins</h3>
+<p><strong>Source:</strong> 2025 Mar 16 Quiz 2, Q12.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>Consider a Naive Bayes problem with three features, $f_1,f_2$ and $f_3$ for a binary classification problem. We have a total of 6 training samples given in the table below:</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>Sample</th>
+<th style="text-align:right">$f_1$</th>
+<th style="text-align:right">$f_2$</th>
+<th style="text-align:right">$f_3$</th>
+<th style="text-align:right">$y$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$x_1$</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td>$x_2$</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td>$x_3$</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td>$x_4$</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td>$x_5$</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td>$x_6$</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>For $x_{\mathrm{test}}=[1\ 1\ 0]^T$, what output would Naive Bayes model predict assuming that no Laplacian smoothing has been done as part of the algorithm?</p>
+</blockquote>
+<p><strong>Step 1:</strong> Priors both $1/2$.</p>
+<p><strong>Step 2 — Class 0:</strong> $f_1=1$ count 1, $f_2=1$ count 1, $f_3=0$ count 0 among 3:</p>
+<p>$$S_0=\frac12\times\frac13\times\frac13\times0=0.$$</p>
+<p><strong>Step 3 — Class 1:</strong> Matching counts for $(1,1,0)$ are $(1,1,2)$ among 3:</p>
+<p>$$S_1=\frac12\times\frac13\times\frac13\times\frac23=\frac1{27}&gt;0.$$</p>
+<p><strong>Step 4:</strong> <strong>Predicted label $\boxed{1}$.</strong> Same zero-factor idea as Q3, but changed dataset/question hai; exact duplicate nahi.</p>
+<h3 id="topic-36">6.5 Q4 — Shared dataset ka master calculation</h3>
+<p><strong>Source:</strong> 2024 Aug 04 Quiz 2, Q4. <strong>Same dataset appears again:</strong> 2024 Dec 22 ET, Q9; subquestions different hain.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>Assume that there is no smoothing. Answer the given subquestions.
+Consider the following dataset for a binary classification problem in which the features are from $\{0,1\}^3$ and the labels are from $\{0,1\}$.</p>
+<p>$$X=\begin{bmatrix}1&amp;0&amp;1&amp;1&amp;0&amp;1&amp;0&amp;0\\0&amp;1&amp;0&amp;1&amp;1&amp;0&amp;1&amp;1\\1&amp;1&amp;0&amp;1&amp;1&amp;0&amp;0&amp;1\end{bmatrix},\qquad y=[1\ 1\ 1\ 1\ 0\ 0\ 0\ 0]^T.$$</p>
+<p>A Naive Bayes classifier is trained on this dataset. The parameters to be estimated are represented as $\hat p_i^y$, which are presented in the form of the table given below. Recall that $\hat p_i^y$ is the probability of feature $i$ taking a value 1 in class $y$:</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>$i$</th>
+<th>$y=0$</th>
+<th>$y=1$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>$a$</td>
+<td>$b$</td>
+</tr>
+<tr>
+<td>2</td>
+<td>$c$</td>
+<td>$d$</td>
+</tr>
+<tr>
+<td>3</td>
+<td>$e$</td>
+<td>$f$</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>i. Find the value of $c+d$.</p>
+<p>ii. Find the value of $a+c+e$.</p>
+<p>iii. Find the predicted label for the test point $[0\ 1\ 0]^T$.</p>
+</blockquote>
+<p><strong>Step 1:</strong> First four columns class 1; last four columns class 0. Both priors $1/2$.</p>
+<p><strong>Step 2 — Count ones once:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Class 0 values (columns 5–8)</th>
+<th>Class 1 values (columns 1–4)</th>
+<th>Parameters</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$f_1$</td>
+<td>$0,1,0,0$</td>
+<td>$1,0,1,1$</td>
+<td>$a=1/4,\ b=3/4$</td>
+</tr>
+<tr>
+<td>$f_2$</td>
+<td>$1,0,1,1$</td>
+<td>$0,1,0,1$</td>
+<td>$c=3/4,\ d=1/2$</td>
+</tr>
+<tr>
+<td>$f_3$</td>
+<td>$1,0,0,1$</td>
+<td>$1,1,0,1$</td>
+<td>$e=1/2,\ f=3/4$</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Part (i):</strong> $c+d=3/4+1/2=\boxed{1.25}$.</p>
+<p><strong>Part (ii):</strong> $a+c+e=1/4+3/4+1/2=\boxed{1.5}$.</p>
+<p><strong>Part (iii), Step 3:</strong> $x=(0,1,0)$ means complement, direct, complement:</p>
+<p>$$S_0=\frac12(1-a)c(1-e)=\frac12\cdot\frac34\cdot\frac34\cdot\frac12=\frac9{64}=0.140625.$$</p>
+<p>$$S_1=\frac12(1-b)d(1-f)=\frac12\cdot\frac14\cdot\frac12\cdot\frac14=\frac1{64}=0.015625.$$</p>
+<p><strong>Step 4:</strong> $S_0&gt;S_1$ → <strong>label $\boxed{0}$</strong>. As a check, posterior for class 0 $=9/10$.</p>
+<h3 id="topic-37">6.6 Q9 — Same parameters reuse; changed parts solve</h3>
+<p><strong>Source:</strong> 2024 Dec 22 ET, Q9.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>Consider the following dataset for a binary classification problem in which the features are from $\{0,1\}^3$ and the labels are from $\{0,1\}$.</p>
+<p>$$X=\begin{bmatrix}1&amp;0&amp;1&amp;1&amp;0&amp;1&amp;0&amp;0\\0&amp;1&amp;0&amp;1&amp;1&amp;0&amp;1&amp;1\\1&amp;1&amp;0&amp;1&amp;1&amp;0&amp;0&amp;1\end{bmatrix},\qquad y=[1\ 1\ 1\ 1\ 0\ 0\ 0\ 0]^T.$$</p>
+<p>A Naive Bayes classifier is trained on this dataset. The parameters to be estimated are represented as $\hat p_i^y$, which are presented in the form of the table given below:</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>$i$</th>
+<th>$y=0$</th>
+<th>$y=1$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>$a$</td>
+<td>$b$</td>
+</tr>
+<tr>
+<td>2</td>
+<td>$c$</td>
+<td>$d$</td>
+</tr>
+<tr>
+<td>3</td>
+<td>$e$</td>
+<td>$f$</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>Assume that there is no smoothing. Answer the given sub-questions.</p>
+<p>i. Find the value of $a+b$.</p>
+<p>ii. Find the value of $b+d+f$.</p>
+<p>iii. Find the predicted label for the test point $[1\ 0\ 1]^T$.</p>
+</blockquote>
+<p><strong>Reuse:</strong> Section 6.5 se $(a,b,c,d,e,f)=(1/4,3/4,3/4,1/2,1/2,3/4)$. Dataset ko dobara count nahi karenge.</p>
+<p><strong>Part (i):</strong> $a+b=1/4+3/4=\boxed{1}$.</p>
+<p><strong>Part (ii):</strong> $b+d+f=3/4+1/2+3/4=\boxed{2}$.</p>
+<p><strong>Part (iii), Step 1:</strong> New test $(1,0,1)$ → direct, complement, direct:</p>
+<p>$$S_0=\frac12a(1-c)e=\frac12\cdot\frac14\cdot\frac14\cdot\frac12=\frac1{64}.$$</p>
+<p>$$S_1=\frac12b(1-d)f=\frac12\cdot\frac34\cdot\frac12\cdot\frac34=\frac9{64}.$$</p>
+<p><strong>Step 2:</strong> $S_1&gt;S_0$ → <strong>label $\boxed{1}$</strong>.</p>
+<p><strong>Counterexample/property:</strong> Yahan $a+b=1$ aaya, par generally $P(f_1=1\mid0)+P(f_1=1\mid1)=1$ <strong>nahi</strong> hota. Different classes ki probabilities hain; dono $0.8$ bhi ho sakti hain. Complement rule same class ke outcomes 0/1 par lagta hai.</p>
+<h3 id="topic-38">6.7 Categorical prediction: Binary se natural extension</h3>
+<p><strong>Definition:</strong> Feature ke named categories ho sakte hain, jaise Outlook = Sunny/Overcast.</p>
+<p>Formula same hai:</p>
+<p>$$P(f_j=v\mid c)=\frac{\#\{f_j=v,Y=c\}}{N_c},\qquad S_c=\pi_c\prod_jP(f_j=x_j\mid c).$$</p>
+<p>Har feature ki <strong>observed category</strong> lo. Ek categorical attribute ke saare category probabilities multiply nahi karne.</p>
+<h3 id="topic-39">6.8 Q13 — Tennis posterior</h3>
+<p><strong>Source:</strong> 2025 Apr 13 ET, Q13.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>The following dataset represents different weather conditions and the corresponding decision on whether a person chooses to play tennis:</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>Day</th>
+<th>Outlook</th>
+<th>Temperature</th>
+<th>Humidity</th>
+<th>Wind</th>
+<th>Play Tennis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Overcast</td>
+<td>Hot</td>
+<td>High</td>
+<td>Weak</td>
+<td>No</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Sunny</td>
+<td>Hot</td>
+<td>High</td>
+<td>Weak</td>
+<td>No</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Sunny</td>
+<td>Hot</td>
+<td>Low</td>
+<td>Weak</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Overcast</td>
+<td>Hot</td>
+<td>High</td>
+<td>Weak</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Overcast</td>
+<td>Cool</td>
+<td>Low</td>
+<td>Strong</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Sunny</td>
+<td>Cool</td>
+<td>High</td>
+<td>Weak</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Sunny</td>
+<td>Cool</td>
+<td>Low</td>
+<td>Weak</td>
+<td>No</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Sunny</td>
+<td>Cool</td>
+<td>Low</td>
+<td>Strong</td>
+<td>No</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Sunny</td>
+<td>Hot</td>
+<td>Low</td>
+<td>Strong</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Overcast</td>
+<td>Hot</td>
+<td>High</td>
+<td>Weak</td>
+<td>Yes</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>Using the Naïve Bayes algorithm, compute the probability that a person will play tennis (Yes) given the conditions:</p>
+<ul>
+<li>Outlook = Overcast</li>
+<li>Temperature = Cool</li>
+<li>Humidity = High</li>
+<li>Wind = Weak</li>
+</ul>
+<p>Enter the answer up to three decimal places.</p>
+</blockquote>
+<p><strong>Step 1 — Priors:</strong> Yes rows = 3,4,5,6,9,10 → $6/10$; No rows = 1,2,7,8 → $4/10$.</p>
+<p><strong>Step 2 — Only required categories count karo:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Test condition</th>
+<th style="text-align:right">Count among Yes (6)</th>
+<th style="text-align:right">Count among No (4)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Overcast</td>
+<td style="text-align:right">3 → $3/6$</td>
+<td style="text-align:right">1 → $1/4$</td>
+</tr>
+<tr>
+<td>Cool</td>
+<td style="text-align:right">2 → $2/6$</td>
+<td style="text-align:right">2 → $2/4$</td>
+</tr>
+<tr>
+<td>High</td>
+<td style="text-align:right">3 → $3/6$</td>
+<td style="text-align:right">2 → $2/4$</td>
+</tr>
+<tr>
+<td>Weak</td>
+<td style="text-align:right">4 → $4/6$</td>
+<td style="text-align:right">3 → $3/4$</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Step 3 — Scores:</strong></p>
+<p>$$S_{\mathrm{Yes}}=\frac6{10}\cdot\frac36\cdot\frac26\cdot\frac36\cdot\frac46=\frac1{30}\approx0.033333.$$</p>
+<p>$$S_{\mathrm{No}}=\frac4{10}\cdot\frac14\cdot\frac24\cdot\frac24\cdot\frac34=\frac3{160}=0.01875.$$</p>
+<p><strong>Step 4 — Probability asked, so normalize:</strong></p>
+<p>$$P(\mathrm{Yes}\mid x)=\frac{1/30}{1/30+3/160}=\frac{16}{25}=\boxed{0.640}.$$</p>
+<p><strong>Check:</strong> $P(\mathrm{No}\mid x)=0.360$; predicted label Yes.</p>
+<p><strong>Trap:</strong> $0.033333$ joint score hai, final posterior nahi. Smoothing not specified, so raw class frequencies use ki hain.</p>
+<hr />
+<h2 id="topic-40">7. Zero-frequency problem aur smoothing</h2>
+<h3 id="topic-41">7.1 Problem kya hai?</h3>
+<p><strong>Definition:</strong> Training class mein koi feature outcome kabhi observe nahi hua, toh MLE uski probability zero de sakta hai.</p>
+<p>Real life: Training spam emails mein <code>jackpot</code> nahi aaya. Test spam mein aa gaya; model ek unseen word ke kaaran poora spam score zero kar sakta hai.</p>
+<p>Q3/Q12 mein zero factor dekha. Agar <strong>dono class scores zero</strong> hon toh normalized posterior $0/0$ undefined hai. “Dono posterior 0” kehna galat hoga, kyunki class posteriors ka sum 1 hona chahiye.</p>
+<p><strong>Present aur absent dono outcomes matter karte hain:</strong> Agar class mein feature hamesha 1 tha, test mein 0 aane par bhi zero factor milta hai.</p>
+<p><strong>Vocabulary distinction:</strong> Known feature jiski training count zero hai, aur bilkul naya word jo feature vocabulary mein hi nahi hai, alag cases hain. Smoothing existing categories ko positive probability deta hai; new vocabulary item ke liye representation/unknown-token policy bhi chahiye.</p>
+<h3 id="topic-42">7.2 Standard add-one Laplace smoothing</h3>
+<p>Binary feature ke <strong>dono possible outcomes</strong> mein one pseudo-count add karo:</p>
+<p>$$\boxed{\hat\theta_{jc}=\frac{N_{jc}^{(1)}+1}{N_c+2}}.$$</p>
+<p>$$P(f_j=0\mid c)=\frac{N_c-N_{jc}^{(1)}+1}{N_c+2}.$$</p>
+<p>General categorical feature with $r_j$ values:</p>
+<p>$$\boxed{P(f_j=v\mid c)=\frac{N_{jvc}+\alpha}{N_c+\alpha r_j}},\qquad\alpha=1\text{ for add-one}.$$</p>
+<p><strong>Why denominator changes?</strong> Binary feature mein total 2 pseudo-counts add hue; $r$ categories mein $r$ pseudo-counts. Class prior smoothing separate choice hai; agar specified ho toh $\hat\pi_c=(N_c+\alpha)/(N+C\alpha)$.</p>
+<h3 id="topic-43">7.3 Paper ki pseudo-sample update: Isko standard formula se mix mat karna</h3>
+<p>Q16/Q18 explicitly kehte hain: <strong>har class mein ek all-ones sample add karo</strong>.</p>
+<p>Tab class sample count $N_c\to N_c+1$, aur har feature ka ones count $N_{jc}^{(1)}\to N_{jc}^{(1)}+1$:</p>
+<p>$$\boxed{\hat\theta_{jc}^{\mathrm{specified}}=\frac{N_{jc}^{(1)}+1}{N_c+1}}.$$</p>
+<p>Yeh <strong>standard binary add-one formula $(s+1)/(N_c+2)$ nahi</strong> hai. Paper/slides is operation ko Laplacian/Laplace smoothing bolte hain; numerical solve mein question ka explicitly defined operation follow karo.</p>
+<p><strong>Counterexample:</strong> Three samples mein feature sab 1 hai. All-ones update $4/4=1$ deta hai; absent outcome ka chance ab bhi 0. Standard add-one $4/5$ deta hai, absent outcome $1/5$. Isliye all-ones-only update har zero-outcome problem solve nahi karta.</p>
+<p><img src="assets/week8/03_smoothing_comparison.png" loading="lazy" alt="No smoothing versus one all-ones sample versus standard binary add-one smoothing" /></p>
+<p>Graph mein smoothing se pehle ones count $0$, class size $3$ hai. Same starting data par answers $0$, $1/4$, $1/5$ hain. <strong>Question ka operation pehle padho.</strong></p>
+<h3 id="topic-44">7.4 Q11 — Smoothing ka purpose</h3>
+<p><strong>Source:</strong> 2025 Mar 16 Quiz 2, Q11.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>What is the main purpose of using Laplace smoothing in Naïve Bayes?</p>
+<p>(a) To prevent numerical errors when calculating the variance of Gaussian features.</p>
+<p>(b) To ensure that unseen categorical feature values receive small but nonzero probabilities.</p>
+<p>(c) To strengthen the model’s predictions by increasing the weight of certain features.</p>
+<p>(d) To balance the likelihood values of all features before computing posterior probabilities.</p>
+</blockquote>
+<p><strong>Step 1:</strong> Problem unseen categorical outcomes ke zero counts ka hai.</p>
+<p><strong>Step 2:</strong> Pseudo-count zero ko positive estimate mein convert karta hai → <strong>(b)</strong>.</p>
+<p><strong>Step 3:</strong> Gaussian variance handling alag issue hai; smoothing feature importance weighting ya likelihood equalization nahi karta.</p>
+<p><strong>Answer: (b).</strong></p>
+<h3 id="topic-45">7.5 Q16 — Parameter count + specified pseudo samples</h3>
+<p><strong>Source:</strong> 2025 Aug 31 ET, Q16.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>Consider a naive Bayes classification problem with three binary features $f_1,f_2,f_3$ for a binary classification problem. We have a total of 6 training samples given in the table below:</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>Sample</th>
+<th style="text-align:right">$f_1$</th>
+<th style="text-align:right">$f_2$</th>
+<th style="text-align:right">$f_3$</th>
+<th style="text-align:right">$y$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$x_1$</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td>$x_2$</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td>$x_3$</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td>$x_4$</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td>$x_5$</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td>$x_6$</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>Based on the above data, answer the given subquestions.</p>
+<p>i. How many parameters need to be estimated to make a prediction for a data point using a naive Bayes algorithm?</p>
+<p>ii. If a test point has label 1, what is the probability of $x_{\mathrm{test}}=[1\ 1\ 1]^T$? Assume that Laplacian smoothing is done, i.e., add two pseudo training examples $x_{\mathrm{pseudo}}^0=[1\ 1\ 1]^T$ for class 0 and $x_{\mathrm{pseudo}}^1=[1\ 1\ 1]^T$ for class 1. Enter the answer correct to four decimal places.</p>
+</blockquote>
+<p><strong>Part (i):</strong> Section 4 rule: $C=2,d=3$ → $(2-1)+2(3)=\boxed{7}$. One prior + six feature probabilities.</p>
+<p><strong>Part (ii), Step 1 — What is asked?</strong> Label 1 already given → $P(x=(1,1,1)\mid Y=1)$, <strong>posterior/joint nahi</strong>. Prior multiply nahi karna.</p>
+<p><strong>Step 2 — Smoothing se pehle class 1:</strong> Rows 4,5,6 have ones counts $(0,1,1)$, sample count 3.</p>
+<p><strong>Step 3 — Add class-1 all-ones row:</strong> Counts $(1,2,2)$, sample count 4:</p>
+<p>$$P(f_1=1\mid1)=\frac14,\quad P(f_2=1\mid1)=\frac24,\quad P(f_3=1\mid1)=\frac24.$$</p>
+<p><strong>Step 4 — Product:</strong></p>
+<p>$$P((1,1,1)\mid1)=\frac14\times\frac24\times\frac24=\boxed{0.0625}.$$</p>
+<p><strong>Formula trap:</strong> Standard add-one would produce $(1/5)(2/5)(2/5)=0.032$, but <strong>that is not the operation specified here</strong>. Do not substitute it for this answer.</p>
+<h3 id="topic-46">7.6 Q18 — Joint, augmented estimate, count</h3>
+<p><strong>Source:</strong> 2026 Apr 06 Quiz 2, Q18.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>You are provided with a training set of 5 observations, each consisting of four binary features $X=\{X_1,X_2,X_3,X_4\}$ and a binary target label $Y\in\{0,1\}$.</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>Sample ID</th>
+<th style="text-align:right">$X_1$</th>
+<th style="text-align:right">$X_2$</th>
+<th style="text-align:right">$X_3$</th>
+<th style="text-align:right">$X_4$</th>
+<th style="text-align:right">$Y$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td>2</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td>3</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td>4</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td>5</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">0</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>Based on the above data, answer the given subquestions.</p>
+<p>i. Using the Naive Bayes assumption and the data provided, calculate the joint probability $P(X,Y=1)$ for a new test instance $X=(1,0,1,1)$. Enter your answer correct to two decimal places.</p>
+<p>ii. To address zero-probability estimates using Laplace smoothing, the dataset is augmented with two synthetic observations: one sample with all features $(X_1,X_2,X_3,X_4)=1$ and $Y=1$, and one sample with all features $(X_1,X_2,X_3,X_4)=1$ and $Y=0$. Based on the new augmented dataset of 7 samples, calculate the updated conditional probability $P(X_2=1\mid Y=1)$.</p>
+<p>iii. For the Naive Bayes model with $n$ binary features and a binary class label, how many independent parameters are required to fully specify the model?</p>
+<p>(a) 5</p>
+<p>(b) 8</p>
+<p>(c) 9</p>
+<p>(d) 10</p>
+</blockquote>
+<p><strong>Part (i), Step 1 — Prior:</strong> Class 1 rows 1,3,4 → $P(Y=1)=3/5$.</p>
+<p><strong>Step 2 — Match test $(1,0,1,1)$ within these rows:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Required event</th>
+<th style="text-align:right">Matching count / class count</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$X_1=1$</td>
+<td style="text-align:right">$2/3$</td>
+</tr>
+<tr>
+<td>$X_2=0$</td>
+<td style="text-align:right">$2/3$</td>
+</tr>
+<tr>
+<td>$X_3=1$</td>
+<td style="text-align:right">$2/3$</td>
+</tr>
+<tr>
+<td>$X_4=1$</td>
+<td style="text-align:right">$3/3$</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Step 3 — Joint includes prior:</strong></p>
+<p>$$P(X=(1,0,1,1),Y=1)=\frac35\cdot\frac23\cdot\frac23\cdot\frac23\cdot1=\frac8{45}\approx\boxed{0.18}.$$</p>
+<p>No normalization, kyunki <strong>joint</strong> poochha hai. Smoothing part (ii) mein introduce hui hai; part (i) smoothing se pehle ke data se hai.</p>
+<p><strong>Part (ii), Step 1:</strong> Smoothing se pehle class 1 mein $X_2=1$ sirf row 3 → count 1.</p>
+<p><strong>Step 2:</strong> Class 1 ka all-ones synthetic row add hone par count $1+1=2$, class size $3+1=4$.</p>
+<p>$$P(X_2=1\mid Y=1)=\frac24=\boxed{0.5}.$$</p>
+<p><strong>Trap:</strong> Denominator 7 nahi; 7 complete augmented dataset size hai, class-conditional denominator 4 hai. Agar new prior poochhte, $P(Y=1)=4/7$ hota.</p>
+<p><strong>Part (iii), Step 1:</strong> General answer for <strong>$n$ features</strong> is $\boxed{2n+1}$.</p>
+<p><strong>Step 2:</strong> Is comprehension mein four features diye hain, so $2(4)+1=\boxed{9}$ → <strong>(c)</strong>, matching supplied key.</p>
+<p><strong>Source ambiguity:</strong> Wording generic $n$ bolti hai, options numerical hain. Option (c) ko <strong>given four-feature dataset</strong> ke context mein select karte hain; “any $n$ ke liye 9” statement galat hai.</p>
+<hr />
+<h2 id="topic-47">8. Bernoulli Naive Bayes ki decision function</h2>
+<h3 id="topic-48">8.1 Products ko logs mein kyun badalte hain?</h3>
+<p><strong>Short definition:</strong> Log-score same class ordering ko preserve karta hai aur probability products ko sums banata hai.</p>
+<p>Many small probabilities multiply karke computer representation mein zero ke close/underflow ho sakti hain. Log use karke stable calculation milti hai:</p>
+<p>$$\boxed{\ell_c(x)=\log\pi_c+\sum_{j=1}^d\left[x_j\log\theta_{jc}+(1-x_j)\log(1-\theta_{jc})\right]}.$$</p>
+<p>Biggest $\ell_c$ ka class predict karo. Positive scores ke liye log increasing hai, isliye ranking same.</p>
+<p><strong>Property:</strong> Log zero undefined/$-\infty$ issue zero-frequency se aata hai. Log transformation <strong>smoothing ka replacement nahi</strong>.</p>
+<h3 id="topic-49">8.2 Linear decision boundary: Result, unnecessary derivation nahi</h3>
+<p>For two classes, with $0&lt;\pi_1&lt;1$ and $0&lt;\theta_{jc}&lt;1$:</p>
+<p>$$g(x)=\log\frac{S_1(x)}{S_0(x)}=w^Tx+b.$$</p>
+<p>$$\boxed{w_j=\log\frac{\theta_{j1}(1-\theta_{j0})}{\theta_{j0}(1-\theta_{j1})}}$$</p>
+<p>$$\boxed{b=\log\frac{\pi_1}{\pi_0}+\sum_{j=1}^d\log\frac{1-\theta_{j1}}{1-\theta_{j0}}}.$$</p>
+<p>$g(x)&gt;0$ → class 1; $g(x)&lt;0$ → class 0. Equality par tie convention chahiye. Boundary $w^Tx+b=0$ hai; generally origin se pass nahi hoti.</p>
+<p><strong>Intuition:</strong> Har feature ek vote/weight contribute karta hai; prior aur absent-feature effects intercept mein aate hain. Bernoulli NB binary points par evaluate hota hai, par score ka algebra affine-linear hai.</p>
+<p><strong>Model family vs shape:</strong> Generative model ki boundary linear ho sakti hai. “Generative” ka matlab “curved boundary” nahi.</p>
+<h3 id="topic-50">8.3 Small illustration — Practice example</h3>
+<p><strong>Question:</strong> “A one-feature Bernoulli Naive Bayes classifier has equal class priors, $P(f=1\mid1)=0.8$ and $P(f=1\mid0)=0.2$. Classify $f=1$ and $f=0$.”</p>
+<p><strong>Step 1:</strong> For $f=1$, $S_1=0.5(0.8)=0.4$, $S_0=0.5(0.2)=0.1$ → label 1.</p>
+<p><strong>Step 2:</strong> For $f=0$, complements use karo: $S_1=0.5(0.2)=0.1$, $S_0=0.5(0.8)=0.4$ → label 0.</p>
+<p><strong>Step 3 — Linear-form check:</strong> $w=\log16$, $b=\log(1/4)=-\log4$. Boundary $x=\log4/\log16=0.5$. Actual binary points 0 and 1 opposite sides par hain.</p>
+<p><strong>Important limitation:</strong> Agar koi estimated probability 0 ya 1 ho, finite log coefficients above valid nahi. Direct product rule still use kar sakte ho, subject to zero-score issue; smoothing finite log probabilities help karta hai.</p>
+<hr />
+<h2 id="topic-51">9. Continuous features: Gaussian aur mixed Naive Bayes</h2>
+<h3 id="topic-52">9.1 Binary counts se continuous values tak</h3>
+<p>Ab tak word present/absent tha. Study hours = 2.7 ya height = 171.4 jaise continuous measurements ko Bernoulli formula se model nahi kar sakte.</p>
+<p><strong>Definition:</strong> Gaussian NB har feature ki <strong>class-conditional normal density</strong> model karta hai, with conditional independence.</p>
+<p>$$X_j\mid Y=c\sim\mathcal N(\mu_{jc},\sigma_{jc}^2).$$</p>
+<p><strong>Real life:</strong> Pass students ke study hours ek mean ke around, fail students ke hours doosre mean ke around distributed ho sakte hain.</p>
+<h3 id="topic-53">9.2 Normal density formula</h3>
+<p>$$\boxed{\phi(t;\mu,\sigma^2)=\frac1{\sqrt{2\pi\sigma^2}}\exp\left(-\frac{(t-\mu)^2}{2\sigma^2}\right)}.$$</p>
+<p>Mean $\mu$ curve ka centre; variance $\sigma^2$ spread. $\mathcal N(\mu,\sigma^2)$ ke second argument ko yahan <strong>variance</strong> maana hai.</p>
+<p>Gaussian NB likelihood:</p>
+<p>$$P(x\mid c)\ \text{(density notation)}\ =\prod_j\phi(x_j;\mu_{jc},\sigma_{jc}^2).$$</p>
+<p>$$S_c=\pi_c\prod_j\phi(x_j;\mu_{jc},\sigma_{jc}^2).$$</p>
+<p><strong>Density vs probability:</strong> Continuous variable ke exact point ki probability zero hoti hai; curve ki <strong>height density</strong> hai. Interval probability curve ke neeche area se milti hai. Density 1 se badi bhi ho sakti hai; probability nahi.</p>
+<p><strong>Counterexample:</strong> $\mathcal N(0,0.01)$ ki density at 0 approximately 3.989 hai; koi probability rule break nahi hua, total area still 1 hai.</p>
+<h3 id="topic-54">9.3 Gaussian MLE: Means aur variances</h3>
+<p>Per feature, per class:</p>
+<p>$$\hat\mu_{jc}=\frac1{N_c}\sum_{i:y_i=c}x_{ij}.$$</p>
+<p>$$\hat\sigma_{jc}^{2}=\frac1{N_c}\sum_{i:y_i=c}(x_{ij}-\hat\mu_{jc})^2.$$</p>
+<p><strong>MLE denominator $N_c$</strong>, unbiased sample-variance denominator $N_c-1$ nahi.</p>
+<p>Agar same feature ki variance all classes mein <strong>shared</strong> assume hai:</p>
+<p>$$\hat\sigma_j^2=\frac1N\sum_i(x_{ij}-\hat\mu_{j,y_i})^2.$$</p>
+<p><strong>Illustration, not PYQ:</strong> Class 0 values $(0,2)$ and class 1 values $(2,4)$.</p>
+<ol>
+<li>Means $\mu_0=1$, $\mu_1=3$.</li>
+<li>Each class squared deviations $(1,1)$ → MLE variances both 1.</li>
+<li>Shared variance $(1+1+1+1)/4=1$.</li>
+</ol>
+<p>Zero estimated variance par ordinary Gaussian density divide by zero karegi; real implementation mein variance floor/regularization ya data handling needed. Isko categorical Laplace smoothing se fix nahi karte.</p>
+<h3 id="topic-55">9.4 Gaussian NB vs GDA: Source terminology ko clear rakho</h3>
+<p>Concept slides “Gaussian Naive Bayes” ke under shared <strong>full covariance</strong> $\Sigma$ bhi introduce karti hain. Precise distinction:</p>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Class-conditional feature structure</th>
+<th>Covariance</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Gaussian Naive Bayes</td>
+<td>Independent Gaussian features given class</td>
+<td>Diagonal covariance</td>
+</tr>
+<tr>
+<td>General Gaussian discriminant analysis (GDA)</td>
+<td>Multivariate Gaussian; features may correlate within class</td>
+<td>May be full covariance</td>
+</tr>
+<tr>
+<td>Shared-covariance Gaussian classifier</td>
+<td>Same covariance in both classes</td>
+<td>Linear decision boundary</td>
+</tr>
+<tr>
+<td>Class-specific covariance Gaussian classifier</td>
+<td>Different class covariances</td>
+<td>Generally quadratic boundary</td>
+</tr>
+</tbody>
+</table>
+<p>For the shared-covariance GDA shown in slides:</p>
+<p>$$\hat p=\frac{N_1}{N},\quad\hat\mu_c=\frac1{N_c}\sum_{i:y_i=c}x_i,$$</p>
+<p>$$\boxed{\hat\Sigma=\frac1N\sum_{i=1}^{N}(x_i-\hat\mu_{y_i})(x_i-\hat\mu_{y_i})^T}.$$</p>
+<p><strong>Important:</strong> Deviations apni <strong>class mean</strong> se hain, global mean se nahi.</p>
+<p>Full multivariate density for invertible covariance:</p>
+<p>$$f(x;\mu_c,\Sigma_c)=\frac{\exp\left[-\frac12(x-\mu_c)^T\Sigma_c^{-1}(x-\mu_c)\right]}{(2\pi)^{d/2}|\Sigma_c|^{1/2}}.$$</p>
+<p>Zero off-diagonal covariance in a multivariate Gaussian gives conditional independence. Full non-diagonal covariance generally naive independence satisfy nahi karti.</p>
+<h3 id="topic-56">9.5 Decision boundaries: Equal vs unequal covariance</h3>
+<p><img src="assets/week8/04_gaussian_densities.png" loading="lazy" alt="Gaussian densities with equal and unequal variances" /></p>
+<p><strong>Left graph:</strong> $\mathcal N(0,1)$ vs $\mathcal N(2,1)$, equal priors. Density equality at $x=1$; left mein class 0, right mein class 1.</p>
+<p><strong>Right graph:</strong> $\mathcal N(0,1)$ vs $\mathcal N(0,4)$, equal priors. Narrow curve centre mein higher, broad curve tails mein higher. Crossings $x\approx\pm1.36$: unequal variances se ek threshold ke badle do thresholds aa sakte hain.</p>
+<p>Shared invertible $\Sigma$ ke liye class-1 vs class-0 log score difference:</p>
+<p>$$g(x)=w^Tx+b,$$</p>
+<p>$$\boxed{w=\Sigma^{-1}(\mu_1-\mu_0)}$$</p>
+<p>$$\boxed{b=-\frac12\mu_1^T\Sigma^{-1}\mu_1+\frac12\mu_0^T\Sigma^{-1}\mu_0+\log\frac{\pi_1}{\pi_0}}.$$</p>
+<p>Boundary $g(x)=0$. Is formula mein $1/2$ factors aur prior ratio ki direction important hai. Supplied slide p. 14 mein Gaussian expansion ke factors/signs inconsistent hain; yahan corrected log-score formula diya hai.</p>
+<p>For class-specific covariance, use full score:</p>
+<p>$$\ell_c(x)=\log\pi_c-\frac12\log|\Sigma_c|-\frac12(x-\mu_c)^T\Sigma_c^{-1}(x-\mu_c).$$</p>
+<p>Common $-d\log(2\pi)/2$ term comparison mein drop kar sakte hain. <strong>Different covariances par determinant terms cancel nahi hote.</strong> Quadratic terms generally remain.</p>
+<p><img src="assets/week8/05_gaussian_boundaries.png" loading="lazy" alt="Two-dimensional linear and curved Gaussian decision boundaries" /></p>
+<p><strong>Visual setup:</strong> Left: equal priors, means $(-1,-1)$ and $(1,1)$, both covariance $I$ → line $x_1+x_2=0$. Right: equal priors, both means $(0,0)$, class 0 covariance $I$, class 1 covariance $4I$ → circular boundary $x_1^2+x_2^2=8\log4/3$. These are conceptual illustrations, not given exam datasets.</p>
+<p><strong>Counterexample to “Gaussian NB always linear”:</strong> Right-hand case has diagonal covariances, so Gaussian NB valid hai, but variances differ → curved boundary. <strong>Shared covariance</strong> is the condition for the usual linear result.</p>
+<h3 id="topic-57">9.6 Mixed feature types aur parameter counting</h3>
+<p><strong>Definition:</strong> Same NB model mein binary feature ka Bernoulli likelihood aur continuous feature ka Gaussian density multiply kar sakte hain, conditional independence ke under.</p>
+<p>For one binary $f_1$ and one Gaussian $f_2$:</p>
+<p>$$\boxed{S_c=\pi_c\,\theta_{1c}^{x_1}(1-\theta_{1c})^{1-x_1}\,\phi(x_2;\mu_c,\sigma_c^2)}.$$</p>
+<p>Binary classes, one binary + one Gaussian:</p>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th style="text-align:right">Parameters</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Class prior</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td>Binary feature probabilities, one per class</td>
+<td style="text-align:right">2</td>
+</tr>
+<tr>
+<td>Gaussian means, one per class</td>
+<td style="text-align:right">2</td>
+</tr>
+<tr>
+<td>Variance if shared across classes</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td>Total with shared variance</td>
+<td style="text-align:right"><strong>6</strong></td>
+</tr>
+<tr>
+<td>Total with separate class variances</td>
+<td style="text-align:right"><strong>7</strong></td>
+</tr>
+</tbody>
+</table>
+<p>General Gaussian NB with $C$ classes, $d$ continuous features: class-specific means/variances → $(C-1)+2Cd$. Variances shared across classes, separately per feature → $(C-1)+Cd+d$.</p>
+<h3 id="topic-58">9.7 Q8 — Mixed model count</h3>
+<p><strong>Source:</strong> 2024 Dec 01 Quiz 2, Q8.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>Suppose you want to use a Naive Bayes classifier to predict whether a student will pass or fail an exam based on two features: the number of hours they studied and whether they attended review sessions. Assume that the features are conditionally independent given the exam outcome and that the variances of the study hours distributions are equal for both pass and fail categories.
+How many parameters are required to classify a new student using this Naive Bayes classifier?</p>
+</blockquote>
+<p><strong>Modelling interpretation:</strong> Study hours continuous Gaussian, attendance binary. Gaussian family question mein explicitly named nahi hai; supplied answer 6 Gaussian treatment ko indicate karta hai. Arbitrary continuous distributions ke liye sirf equal variance kehne se finite parameter count determine nahi hota.</p>
+<p><strong>Step 1 — Prior:</strong> $P(\mathrm{Pass})$ one; fail prior automatically $1-P(\mathrm{Pass})$.</p>
+<p><strong>Step 2 — Hours:</strong> $\mu_{\mathrm{Pass}},\mu_{\mathrm{Fail}}$ → two means; equal variance → one shared variance. Total 3.</p>
+<p><strong>Step 3 — Attendance:</strong> $P(\mathrm{Attend}=1\mid\mathrm{Pass})$ and $P(\mathrm{Attend}=1\mid\mathrm{Fail})$ → two.</p>
+<p><strong>Step 4:</strong> $1+3+2=\boxed{6}$.</p>
+<p><strong>Trap:</strong> Dono features binary maan kar $2d+1=5$ use mat karo. Feature distribution pehle identify karo.</p>
+<h3 id="topic-59">9.8 Q15 — Mixed likelihood aur prediction</h3>
+<p><strong>Source:</strong> 2025 Aug 03 Quiz 2, Q15.</p>
+<p><strong>Question:</strong></p>
+<blockquote>
+<p>Based on the above data, answer the given subquestions.
+Consider a 2-class Naive Bayes classifier with first feature $f_1$ as binary and the second feature $f_2$ as Gaussian. Following are the information that are provided to us:</p>
+<p>Estimate of $P(Y=1)$, $\hat p=0.4$</p>
+<p>Estimate of $P(f_1=1\mid y=0)$, $\hat p_1^0=0.4$</p>
+<p>Estimate of $P(f_1=1\mid y=1)$, $\hat p_1^1=0.5$</p>
+<p>$(f_2\mid y=0)\sim\mathcal N(0,1)$</p>
+<p>$(f_2\mid y=1)\sim\mathcal N(1,1)$</p>
+<p>i. If a test point has label 0, what will be the probability that the point is $x_{\mathrm{test}}=[0\ 0]^T$? Enter the answer correct to two decimal places.</p>
+<p>ii. For $x_{\mathrm{test}}=[0\ 1.5]^T$, what output would Naive Bayes model predict?</p>
+</blockquote>
+<p><strong>Part (i), Step 1 — Condition already given:</strong> Class 0 hai, so class-conditional likelihood chahiye; prior nahi.</p>
+<p><strong>Step 2 — Binary factor:</strong></p>
+<p>$$P(f_1=0\mid0)=1-0.4=0.6.$$</p>
+<p><strong>Step 3 — Gaussian density at 0:</strong></p>
+<p>$$\phi(0;0,1)=\frac1{\sqrt{2\pi}}e^0\approx0.398942.$$</p>
+<p><strong>Step 4 — Multiply:</strong></p>
+<p>$$L_0(0,0)=0.6\times0.398942\approx0.239365\to\boxed{0.24}.$$</p>
+<p><strong>Precision note:</strong> Paper “probability” bolta hai; expected answer <strong>mixed likelihood/density value</strong> 0.24 hai. Literally continuous $f_2$ exactly zero hone ki probability 0 hoti hai. Is distinction ko ignore karke density ko interval probability mat samajhna.</p>
+<p><strong>Part (ii), Step 1 — Priors:</strong> $\pi_0=0.6$, $\pi_1=0.4$.</p>
+<p><strong>Step 2 — Class 0 score:</strong> Binary zero probability 0.6; Gaussian distance from mean $1.5-0=1.5$:</p>
+<p>$$\phi(1.5;0,1)=\frac1{\sqrt{2\pi}}e^{-1.5^2/2}\approx0.129518.$$</p>
+<p>$$S_0=0.6\times0.6\times0.129518\approx0.046627.$$</p>
+<p><strong>Step 3 — Class 1 score:</strong> Binary zero probability $1-0.5=0.5$; Gaussian distance $1.5-1=0.5$:</p>
+<p>$$\phi(1.5;1,1)=\frac1{\sqrt{2\pi}}e^{-0.5^2/2}\approx0.352065.$$</p>
+<p>$$S_1=0.4\times0.5\times0.352065\approx0.070413.$$</p>
+<p><strong>Step 4:</strong> $S_1&gt;S_0$ → <strong>predicted label $\boxed{1}$</strong>.</p>
+<p><strong>Optional check:</strong> Posterior $P(1\mid x)=0.070413/(0.070413+0.046627)\approx0.6016$. Class 0 ka prior larger tha, lekin observed Gaussian value class 1 ko zyada support karta hai.</p>
+<hr />
+<h2 id="topic-60">10. Revision</h2>
+<h3 id="topic-61">10.1 One-page formula sheet</h3>
+<table>
+<thead>
+<tr>
+<th>Task</th>
+<th>Formula / rule</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Joint</td>
+<td>$P(x,c)=\pi_cP(x\mid c)$</td>
+</tr>
+<tr>
+<td>Posterior</td>
+<td>$P(c\mid x)=S_c/\sum_r S_r$</td>
+</tr>
+<tr>
+<td>Label</td>
+<td>$\arg\max_c S_c$ or $\arg\max_c\log S_c$</td>
+</tr>
+<tr>
+<td>Conditional independence</td>
+<td>$P(x\mid c)=\prod_jP(x_j\mid c)$</td>
+</tr>
+<tr>
+<td>Bernoulli likelihood</td>
+<td>$\prod_j\theta_{jc}^{x_j}(1-\theta_{jc})^{1-x_j}$</td>
+</tr>
+<tr>
+<td>Prior MLE</td>
+<td>$N_c/N$</td>
+</tr>
+<tr>
+<td>Binary feature MLE</td>
+<td>Ones in class / class size</td>
+</tr>
+<tr>
+<td>Binary NB free count</td>
+<td>$(C-1)+Cd$</td>
+</tr>
+<tr>
+<td>Full binary joint free count</td>
+<td>$C2^d-1$</td>
+</tr>
+<tr>
+<td>Categorical NB free count</td>
+<td>$(C-1)+C\sum_j(r_j-1)$</td>
+</tr>
+<tr>
+<td>Standard binary add-one</td>
+<td>$(s+1)/(N_c+2)$</td>
+</tr>
+<tr>
+<td>One all-ones sample added per class</td>
+<td>$(s+1)/(N_c+1)$</td>
+</tr>
+<tr>
+<td>General categorical smoothing</td>
+<td>$(N_{jvc}+\alpha)/(N_c+\alpha r_j)$</td>
+</tr>
+<tr>
+<td>Gaussian density</td>
+<td>$\exp[-(t-\mu)^2/(2\sigma^2)]/\sqrt{2\pi\sigma^2}$</td>
+</tr>
+<tr>
+<td>Gaussian mean MLE</td>
+<td>Within-class mean</td>
+</tr>
+<tr>
+<td>Gaussian variance MLE</td>
+<td>Within-class squared deviations / $N_c$</td>
+</tr>
+<tr>
+<td>Shared variance MLE</td>
+<td>Class-centred squared deviations summed over all data / $N$</td>
+</tr>
+<tr>
+<td>Bernoulli boundary</td>
+<td>Affine linear, for finite log parameters</td>
+</tr>
+<tr>
+<td>Gaussian shared covariance</td>
+<td>Linear boundary</td>
+</tr>
+<tr>
+<td>Gaussian different covariance</td>
+<td>Generally quadratic boundary</td>
+</tr>
+</tbody>
+</table>
+<h3 id="topic-62">10.2 Exam mein common mistakes</h3>
+<table>
+<thead>
+<tr>
+<th>Galti</th>
+<th>Sahi approach</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$X$ rows ko samples maan lena</td>
+<td>Shape $(d,N)$ ho toh columns samples</td>
+</tr>
+<tr>
+<td>Conditional probability mein total $N$ denominator</td>
+<td>Given class ka $N_c$ use karo</td>
+</tr>
+<tr>
+<td>Binary test 0 ko ignore karna</td>
+<td>$1-\theta_{jc}$ multiply karo</td>
+</tr>
+<tr>
+<td>Posterior mein prior bhoolna</td>
+<td>Likelihood × prior, then normalize</td>
+</tr>
+<tr>
+<td>Joint answer ko normalize kar dena</td>
+<td>Joint ke liye score hi answer</td>
+</tr>
+<tr>
+<td>Class already given phir prior multiply karna</td>
+<td>$P(x\mid c)$ mein prior nahi</td>
+</tr>
+<tr>
+<td>$S_0=S_1=0$ ko valid posterior kehna</td>
+<td>Evidence zero, normalization undefined</td>
+</tr>
+<tr>
+<td>Har question mein $+2$ smoothing denominator</td>
+<td>Explicit pseudo-sample instructions check karo</td>
+</tr>
+<tr>
+<td>Gaussian continuous point ko probability kehna</td>
+<td>It is a density; intervals have probability</td>
+</tr>
+<tr>
+<td>MLE variance mein $N_c-1$</td>
+<td>MLE uses $N_c$</td>
+</tr>
+<tr>
+<td>Gaussian NB ko always linear kehna</td>
+<td>Equal covariance/variance condition check karo</td>
+</tr>
+<tr>
+<td>All generative models nonlinear maan lena</td>
+<td>Model family aur boundary shape different ideas</td>
+</tr>
+<tr>
+<td>Different class feature probabilities ko complements kehna</td>
+<td>Complement same class ke 0/1 outcomes ka hai</td>
+</tr>
+<tr>
+<td>All stored priors ko free count karna</td>
+<td>$C$ class priors have $C-1$ degrees of freedom</td>
+</tr>
+</tbody>
+</table>
+<h3 id="topic-63">10.3 Last-minute solving checklist</h3>
+<ol>
+<li><strong>Data ka type:</strong> Binary, categorical, continuous, ya mixed?</li>
+<li><strong>Asked quantity:</strong> Likelihood, joint, posterior, label, ya parameter count?</li>
+<li><strong>Condition:</strong> No smoothing, standard add-one, ya specified synthetic samples?</li>
+<li><strong>Numbers:</strong> Correct class denominator; binary zeros ke complements.</li>
+<li><strong>Finish:</strong> Required normalization and rounding only at the end.</li>
+</ol>
+<p><strong>Flow yaad rakho:</strong> Generative story se $P(Y)$ aur $P(X\mid Y)$ aate hain. Naive assumption joint likelihood ko easy product banati hai. Counts/densities se scores milte hain. Bayes rule un scores ko posterior mein convert karta hai. Smoothing unseen outcomes handle karti hai; Gaussian model continuous features handle karta hai.</p>
+</article><nav class="next-prev" aria-label="Previous and next weeks"><a href="week7.html">← Week 7</a><a href="week9.html">Week 9 →</a></nav></main>
+<aside class="contents"><details open><summary>On this page</summary><nav aria-label="Topic index"><a class="level-h2" href="#topic-1">Topic index</a><a class="level-h2" href="#topic-2">1. Model kya seekh raha hai?</a><a class="level-h3" href="#topic-3">1.1 Training aur test ka connection</a><a class="level-h3" href="#topic-4">1.2 Generative model</a><a class="level-h3" href="#topic-5">1.3 Discriminative model</a><a class="level-h3" href="#topic-6">1.4 Q14 — Generative vs discriminative</a><a class="level-h2" href="#topic-7">2. Bayes rule: Features dekhkar belief update kaise karein?</a><a class="level-h3" href="#topic-8">2.1 Five quantities, ek hi story</a><a class="level-h3" href="#topic-9">2.2 Label vs probability: Sabse important distinction</a><a class="level-h3" href="#topic-10">2.3 Q20 — Joint se posterior</a><a class="level-h2" href="#topic-11">3. “Naive” assumption: Bade joint ko chhote products mein todna</a><a class="level-h3" href="#topic-12">3.1 Binary feature representation</a><a class="level-h3" href="#topic-13">3.2 Class-conditional independence</a><a class="level-h3" href="#topic-14">3.3 Conditional independence ≠ unconditional independence</a><a class="level-h3" href="#topic-15">3.4 Bernoulli likelihood: 0 feature ko ignore mat karna</a><a class="level-h3" href="#topic-16">3.5 Q6 — Assumption identify karo</a><a class="level-h3" href="#topic-17">3.6 Q19 — Bayes + naive assumption combine karo</a><a class="level-h2" href="#topic-18">4. Kitne parameters seekhne hain?</a><a class="level-h3" href="#topic-19">4.1 Free parameter ka meaning</a><a class="level-h3" href="#topic-20">4.2 Binary features: Naive Bayes vs full joint</a><a class="level-h3" href="#topic-21">4.3 Categorical features</a><a class="level-h3" href="#topic-22">4.4 Q2 — Five classes, three binary features</a><a class="level-h3" href="#topic-23">4.5 Q5 — With/without independence</a><a class="level-h3" href="#topic-24">4.6 Q10 — General number of classes</a><a class="level-h3" href="#topic-25">4.7 Q21 — Five-valued categorical attributes</a><a class="level-h2" href="#topic-26">5. Data se probabilities: Maximum Likelihood Estimation (MLE)</a><a class="level-h3" href="#topic-27">5.1 Counting rule</a><a class="level-h3" href="#topic-28">5.2 Matrix orientation aur notation</a><a class="level-h3" href="#topic-29">5.3 Q1 — Columns ko samples padho</a><a class="level-h3" href="#topic-30">5.4 Q17 — Same counting skill, new dataset</a><a class="level-h2" href="#topic-31">6. Parameters se prediction: Ab poora pipeline</a><a class="level-h3" href="#topic-32">6.1 Fixed solving recipe</a><a class="level-h3" href="#topic-33">6.2 Q7 — Given estimates, complement aur label</a><a class="level-h3" href="#topic-34">6.3 Q3 — A zero likelihood factor</a><a class="level-h3" href="#topic-35">6.4 Q12 — Zero factor, different class wins</a><a class="level-h3" href="#topic-36">6.5 Q4 — Shared dataset ka master calculation</a><a class="level-h3" href="#topic-37">6.6 Q9 — Same parameters reuse; changed parts solve</a><a class="level-h3" href="#topic-38">6.7 Categorical prediction: Binary se natural extension</a><a class="level-h3" href="#topic-39">6.8 Q13 — Tennis posterior</a><a class="level-h2" href="#topic-40">7. Zero-frequency problem aur smoothing</a><a class="level-h3" href="#topic-41">7.1 Problem kya hai?</a><a class="level-h3" href="#topic-42">7.2 Standard add-one Laplace smoothing</a><a class="level-h3" href="#topic-43">7.3 Paper ki pseudo-sample update: Isko standard formula se mix mat karna</a><a class="level-h3" href="#topic-44">7.4 Q11 — Smoothing ka purpose</a><a class="level-h3" href="#topic-45">7.5 Q16 — Parameter count + specified pseudo samples</a><a class="level-h3" href="#topic-46">7.6 Q18 — Joint, augmented estimate, count</a><a class="level-h2" href="#topic-47">8. Bernoulli Naive Bayes ki decision function</a><a class="level-h3" href="#topic-48">8.1 Products ko logs mein kyun badalte hain?</a><a class="level-h3" href="#topic-49">8.2 Linear decision boundary: Result, unnecessary derivation nahi</a><a class="level-h3" href="#topic-50">8.3 Small illustration — Practice example</a><a class="level-h2" href="#topic-51">9. Continuous features: Gaussian aur mixed Naive Bayes</a><a class="level-h3" href="#topic-52">9.1 Binary counts se continuous values tak</a><a class="level-h3" href="#topic-53">9.2 Normal density formula</a><a class="level-h3" href="#topic-54">9.3 Gaussian MLE: Means aur variances</a><a class="level-h3" href="#topic-55">9.4 Gaussian NB vs GDA: Source terminology ko clear rakho</a><a class="level-h3" href="#topic-56">9.5 Decision boundaries: Equal vs unequal covariance</a><a class="level-h3" href="#topic-57">9.6 Mixed feature types aur parameter counting</a><a class="level-h3" href="#topic-58">9.7 Q8 — Mixed model count</a><a class="level-h3" href="#topic-59">9.8 Q15 — Mixed likelihood aur prediction</a><a class="level-h2" href="#topic-60">10. Revision</a><a class="level-h3" href="#topic-61">10.1 One-page formula sheet</a><a class="level-h3" href="#topic-62">10.2 Exam mein common mistakes</a><a class="level-h3" href="#topic-63">10.3 Last-minute solving checklist</a></nav></details></aside></div>
+<footer>MLT Notes <span>Learn one concept at a time.</span></footer>
+</body></html>
