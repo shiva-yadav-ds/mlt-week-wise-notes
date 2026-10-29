@@ -12,6 +12,8 @@
 | 4. Network architecture | Layers, output choice, weights and biases | Q3, Q7, Q8 |
 | 5. Forward pass | Regression, binary probabilities, squared loss | Q4, Q5, Q6 |
 | 6. Learning | Backpropagation, gradients, parameter update | Worked continuation of Q6 |
+| Additional loss varieties | Correct-label penalties; regularizer/data-loss distinction | Q9, Q10; graph/update references |
+| Additional network variety | Parameter count plus final sigmoid and BCE | Q11 |
 | 7. Revision | Formulas, common mistakes, solving checklist | — |
 
 ---
@@ -158,6 +160,10 @@ $\eta=1$ gives familiar perceptron rule. Bias included ho toh $b\leftarrow b+\et
 
 **Important counterexample:** $w=0,b=0$ se sabhi margins zero, so perceptron loss zero on all examples! Lekin negative labels ko $+1$ tie prediction misclassify karegi. Isliye zero perceptron loss ko strict separation ka certificate mat samjho; boundary handling matter karti hai.
 
+**Same update connection appears as an exam question:** Week 12 — Solve With Instructors, Q6 asks which objective produces $w_{t+1}=w_t+xy$ on a mistake, using SGD with learning rate 1. Options: (A) $w^Txy$, (B) $-w^Txy$, (C) $w^Tx+y$, (D) $-w^Tx+y$.
+
+SGD gives $w_{t+1}=w_t-\nabla_wL$, hence required gradient is $-xy$. **Answer (B)**, because $\nabla_w(-yw^Tx)=-yx$. This is the **active mistake branch** of perceptron loss, not the full objective on all points. Full loss remains $\max(0,-yw^Tx)$; always minimizing $-yw^Tx$ would update correctly classified points too. Gradient here is with respect to weights w, not the input x, despite the source's generic wording.
+
 ### 2.5 Graphs aur quick comparison
 
 ![Four losses as functions of signed margin](images/loss_functions.png)
@@ -245,6 +251,96 @@ $$\boxed{\text{Correct option: (a)}}.$$
 
 ---
 
+**Same graph-identification variety:** Week 12 — Solve With Instructors, Q1 uses lettered panels instead of Q2's numbered curves:
+
+![Supplied A–D loss-function panels](images/new_loss_panels.png)
+
+| Panel | Identifying feature | Loss |
+|---|---|---|
+| A | Parabola, minimum at margin 1 | Squared |
+| B | Smooth decreasing curve | Logistic |
+| C | Corner at margin 1, then zero | Hinge |
+| D | Corner at margin 0, then zero | Perceptron |
+
+Source choices are (a) A→Perceptron, B→Logistic; (b) A→Logistic, D→Perceptron; (c) C→Hinge, B→Perceptron; (d) D→Perceptron, C→Hinge; (e) B→Logistic, A→Hinge; (f) C→Squared, D→Perceptron. **Only (d) has both matches correct.** Q2 already explains the full shape-identification method, so that solution is not repeated.
+
+### 2.6 Q9 — A correct label can still incur training loss
+
+**Source:** Week 12 — Solve With Instructors, Q5.
+
+**Question:**
+
+Which losses penalize some data points that are correctly classified?
+
+(A) SVM Loss
+
+(B) Squared Loss
+
+(C) Logistic Loss
+
+(D) Perceptron Loss
+
+**Solution:**
+
+**Step 1 — Translate “correct”:** For a non-boundary binary example, signed margin $u=yf(x)>0$ means correct side. It does not force $u=1$ or high confidence.
+
+**Step 2 — Use one concrete correct point:** Let $u=0.5$.
+
+| Loss | Calculation | Positive penalty? |
+|---|---|---|
+| Hinge/SVM | $\max(0,1-0.5)=0.5$ | Yes |
+| Squared | $(0.5-1)^2=0.25$ | Yes |
+| Logistic | $\ln(1+e^{-0.5})\approx0.474077$ | Yes |
+| Perceptron | $\max(0,-0.5)=0$ | No |
+
+**Step 3:** “Some” ke liye this single positive-margin example enough hai.
+
+$$\boxed{\text{A, B, C}}.$$
+
+**Properties:** Hinge correct points ko only $0<u<1$ par penalize karti hai. Squared loss $u=1$ except all other positive margins par positive hai. Logistic finite positive margin par always positive hai. Perceptron positive margin par always zero hai. Isliye 100% training accuracy ka matlab cross-entropy zero hona nahi; loss measures more than the label alone.
+
+### 2.7 Q10 — Regularizer versus empirical data loss
+
+**Definition:** Data-loss term training examples par prediction quality measure karta hai. Regularizer parameters ki size/complexity penalize karta hai, without explicitly summing over examples.
+
+**Real-life connection:** Good fit chahiye, but unnecessarily large coefficients ki extra cost bhi rakhni hai. Dono terms model selection ko influence karte hain.
+
+**Source:** Week 12 — Solve With Instructors, Q7.
+
+**Question:**
+
+Look at an equivalent formulation of soft-margin SVM, printed as
+
+$$\frac{\|w\|^2}{2}+C\sum_{i=1}^n\max(0,(w^Tx_i)y_i).$$
+
+Match the following; more than one match could be correct.
+
+(A) Regularizer
+
+(B) Loss
+
+(C) Data Dependent
+
+(D) Model Dependent
+
+(i) $\|w\|^2/2$
+
+(ii) $C\sum_i\max(0,(w^Tx_i)y_i)$
+
+**Step 1 — Correct the source formula before learning it:** Printed term is missing **$1-$**. Standard soft-margin SVM is
+
+$$\boxed{J(w)=\underbrace{\frac12\|w\|^2}_{R(w)}+\underbrace{C\sum_i\max(0,1-y_iw^Tx_i)}_{\text{weighted empirical hinge loss}}}.$$
+
+**Counterexample to the printed expression:** At signed margin −2, printed $\max(0,-2)=0$ gives no penalty to a wrong point; correct hinge is $\max(0,1-(-2))=3$. At margin +2, printed expression penalizes the confident correct point by 2, whereas hinge is 0. It is not an equivalent SVM objective as printed.
+
+**Step 2 — Match roles:** A→(i), B→(ii), C→(ii). Regularizer depends directly on w; empirical loss uses both data $(x_i,y_i)$ and current model w.
+
+**Step 3 — Interpret “model dependent”:** Source lists **D→(i)** to contrast a parameter-only regularizer with data loss. Literally, **both (i) and (ii) depend on w**, so D→(i),(ii) if “model dependent” means any dependence on model parameters.
+
+**Source intended mapping:** A→i, B→ii, C→ii, D→i. **Precise distinction:** regularizer is parameter-only; data loss is parameter-and-data dependent. “Data dependent” does not mean “model independent”.
+
+**Property:** Changing labels while holding w fixed leaves $R(w)$ unchanged but can change the loss. Changing w can change both terms. With a nonlinear neural network, adding a convex regularizer does not make the entire training objective convex.
+
 ## 3. Artificial neuron: Weighted sum ke baad activation
 
 ### 3.1 Linear model se neural network tak
@@ -299,6 +395,8 @@ Properties:
 
 **Counterexample:** ReLU probability nahi hai: input 4 gives output 4, jo probability range se bahar hai.
 
+**Same ReLU-evaluation variety:** Week 12 — Solve With Instructors, Q4 asks for ReLU on $(-2.7,3.9,-1.0,4.2,6.4,-7.3)$. Apply the rule above entry by entry: negatives become 0, positives stay unchanged. Result **$(0,3.9,0,4.2,6.4,0)$, option (e)**. ReLU does not replace every positive input by 1; that would be a step activation.
+
 ### 3.4 Sigmoid activation
 
 $$\boxed{\sigma(z)=\frac1{1+e^{-z}}}.$$
@@ -317,6 +415,8 @@ Properties:
 **Counterexample:** Activation 1.5 sigmoid se nahi aa sakti. Also exact mathematical sigmoid finite input par exactly 0 or 1 nahi deti; rounded display alag baat hai.
 
 ![ReLU and sigmoid activation curves](images/activations.png)
+
+**Same sigmoid-properties variety:** Week 12 — Solve With Instructors, Q2 asks whether sigmoid is (a) continuously differentiable, (b) monotonic, (c) maximal as $z\to-\infty$, and (d) bounded between 0 and 1. **Answers: (a), (b), (d)**. Since $\sigma'(z)=\sigma(z)(1-\sigma(z))>0$ for finite z, it is smooth and strictly increasing. At negative infinity its limit is 0, not 1. Source wording “attains maximum 1” should be read as a limit: on finite real inputs, 1 is a supremum, not an attained maximum.
 
 ### 3.5 Hidden layers mein nonlinearity kyun?
 
@@ -648,6 +748,48 @@ $$a=\operatorname{ReLU}(Wx+b),\qquad s=v^Ta+c,$$
 $$\boxed{p=\sigma(s),\quad P(1\mid x)=p,\quad P(0\mid x)=1-p}.$$
 
 **Connection:** Q4 mein output weighted sum final regression prediction tha. Ab wahi weighted sum **score** hai; probability ke liye sigmoid additionally apply karna hai.
+
+### Q11 — Count a 3→3→3→1 network and calculate its cross-entropy
+
+**Source:** Week 12 — Solve With Instructors, Q3.
+
+**Question:**
+
+The diagram shows a classification neural network with two hidden layers and one output layer. Input is a column vector $x\in\mathbb R^3$. Each hidden layer contains 3 neurons; the output layer contains 1 neuron. Each neuron is connected to every neuron in the next layer. Each non-input neuron has a bias. The true output is 1.
+
+All hidden and output neurons use sigmoid activation. The network uses cross-entropy loss with natural logarithms.
+
+![Supplied network and final-layer weights](images/new_network_source.png)
+
+(i) How many parameters are there in the network?
+
+(ii) The second hidden layer's output, after activation, is $(0.2,0.5,0.8)^T$. Find cross-entropy loss when the corresponding output weights are $(2,1,-1)^T$ and output bias is 1. Give two decimal places.
+
+**Solution — (i), Step 1: Count each layer separately.**
+
+| Connection | Weights | Biases | Total |
+|---|---:|---:|---:|
+| Input 3 → hidden 1 with 3 neurons | $3\times3=9$ | 3 | 12 |
+| Hidden 1 with 3 → hidden 2 with 3 | $3\times3=9$ | 3 | 12 |
+| Hidden 2 with 3 → output 1 | $3\times1=3$ | 1 | 4 |
+
+**Step 2:** $21$ weights + $7$ biases = $\boxed{28}$ learnable parameters. Input values and activations are not additional learnable parameters.
+
+**Solution — (ii), Step 1: Use given hidden activations directly.** They are already sigmoid outputs; do not apply sigmoid again before multiplying output weights.
+
+$$z=2(0.2)+1(0.5)+(-1)(0.8)+1=0.4+0.5-0.8+1=1.1.$$
+
+**Step 2 — Output activation:**
+
+$$p=\sigma(1.1)=\frac1{1+e^{-1.1}}\approx0.750260.$$
+
+**Step 3 — True label 1:**
+
+$$L=-1\ln p-(1-1)\ln(1-p)=-\ln p.$$
+
+$$\boxed{L=\ln(1+e^{-1.1})\approx0.287335\approx0.29}.$$
+
+**Checks/properties:** At threshold 0.5, predicted class is 1 and is correct, but loss is positive, connecting to Q9. To evaluate this one output from supplied hidden activations, earlier-layer weights are unnecessary; to count the full network parameters, all layers still matter. Preserve intermediate precision and round loss at the end.
 
 ### Q5 — ReLU hidden layer followed by sigmoid probabilities
 

@@ -14,6 +14,8 @@
 | 6. Entropy | Purity, proportions, maximum impurity | Q10, Q11, Q14, Q22 |
 | 7. Information gain | Weighted child entropy, split comparison, properties | Q8, Q19, Q12, Q25, Q2 |
 | 8. Tree geometry | Path conditions, probability, thresholds, boxes, XOR | Q3, Q6, Q16, Q5, Q21 |
+| Additional KNN varieties | Manhattan plot, metric ties, forced large-k majority | Q26–Q28 |
+| Additional tree varieties | Leaf count, boundary complexity, branch weights, zero gain | Q29–Q32 |
 | 9. Revision | Formula sheet, common mistakes, checklist | — |
 
 ---
@@ -95,6 +97,78 @@ $$\boxed{\hat y=\arg\max_c\sum_{i\in N_k(x)}\mathbf1[y_i=c]}.$$
 Binary class mein odd $k$ majority-vote tie avoid karta hai, **distance tie nahi**. Equal-distance candidates at the $k$th position ke liye tie rule needed ho sakta hai.
 
 Workflow: distances → sort → first $k$ points → labels count → majority. Raw numerical feature values ka majority nahi lena.
+
+### Q26 — Manhattan 1-NN from a plotted dataset
+
+**Source:** Week 7 — Solve with us, Q1.
+
+**Question:**
+
+Consider the following binary classification task for which we use the Manhattan distance. All points are located at integer coordinates. If the test point (blue) is at $(3,2)$, what is the predicted label for $k=1$? The label is 1 for the positive class and −1 for the negative class.
+
+![Supplied integer-coordinate points and test query](images/new_manhattan_source.png)
+
+**Solution:**
+
+**Step 1:** Manhattan distance is $|x_1-3|+|x_2-2|$. Read coordinates and labels from the plot.
+
+| Point | Label | Manhattan distance to $(3,2)$ |
+|---|---:|---:|
+| $(1,1)$ | +1 | $2+1=3$ |
+| $(1,2)$ | −1 | $2+0=2$ |
+| $(1,3)$ | −1 | $2+1=3$ |
+| $(2,1)$ | −1 | $1+1=2$ |
+| $(2,2)$ | +1 | $1+0=1$ |
+| $(2,3)$ | −1 | $1+1=2$ |
+| $(4,1)$ | +1 | $1+1=2$ |
+| $(4,3)$ | +1 | $1+1=2$ |
+
+**Step 2:** Unique nearest neighbour $(2,2)$ hai, distance 1.
+
+**Step 3:** $k=1$ mein usi ka label copy hoga:
+
+$$\boxed{\hat y=+1}.$$
+
+### 2.3A Equal-distance contours: Diamond versus circle
+
+**Definition:** Query se same distance wale points ek distance contour banate hain. Origin ke around Manhattan radius r ka contour $|x_1|+|x_2|=r$ diamond hai; Euclidean contour $x_1^2+x_2^2=r^2$ circle hai.
+
+**Real-life connection:** Grid roads par walking distance Manhattan jaisi hoti hai; straight-line distance Euclidean hai. Same points ka nearest-neighbour order metric change karne se change ho sakta hai.
+
+### Q27 — Odd k still allows a distance tie
+
+**Source:** Week 7 — Solve with us, Q4.
+
+**Question:**
+
+Consider a KNN classifier for a binary classification problem with $k=3$. A test point at $(0,0)$ is to be classified. The training dataset is as follows:
+
+- Three negative-class data points are fixed and occupy three vertices of the diamond.
+- Three positive-class data points can be anywhere on the edges of the diamond except the vertices.
+
+![Supplied diamond, negative vertices and positive edge points](images/new_diamond_source.png)
+
+(i) If the Manhattan distance metric is used, what is the predicted label?
+
+(ii) If the Euclidean distance metric is used, what is the predicted label?
+
+Enter the answer as comma-separated values.
+
+**Solution:**
+
+**Step 1 — Manhattan:** Har edge/vertex par $|x_1|+|x_2|=1$. Thus **all six training points distance 1** par hain. First three choose karne ke liye tie rule chahiye.
+
+Three positive select hon toh prediction +; three negative select hon toh −. Mixed selections ka majority bhi selection par depend karega.
+
+**Step 2 — Euclidean:** Negative vertices ka distance 1 hai. Nonvertex edge point ke liye $a=|x_1|>0$, $b=|x_2|>0$, and $a+b=1$:
+
+$$d_2^2=a^2+b^2=(a+b)^2-2ab=1-2ab<1.$$
+
+All three positive edge points strictly nearer hain than every negative vertex. So nearest three positive hain.
+
+$$\boxed{\text{Undetermined without tie-breaking},\ +}.$$
+
+**Property/counterexample:** Odd k binary **vote-count** tie avoid karta hai, but tied distances par neighbour selection ambiguity nahi. Also “except vertices” important hai: positive point vertex par hota toh strict Euclidean inequality fail ho sakti thi.
 
 ### Q7 — 3-NN classification in three dimensions
 
@@ -223,6 +297,30 @@ These are standard trends, har individual dataset par strict monotonic theorem n
 
 **Counterexample:** Training error minimum hone se best k choose nahi hota. Self-neighbour 1-NN data memorize kar sakta hai, but unseen noisy sample par wrong prediction still possible.
 
+### 3.1A Very large k can force the global majority everywhere
+
+**Definition:** Kabhi minority class ke total examples hi itne kam hote hain ki kisi bhi k-neighbour set mein majority nahi bana sakte. Tab coordinates calculate kiye bina prediction known hoti hai.
+
+### Q28 — Guaranteed prediction with k = 900
+
+**Source:** Week 7 — Solve with us, Q2.
+
+**Question:**
+
+Suppose a binary classification dataset has 1000 data points, with 600 belonging to class 0 and 400 belonging to class 1. If a k-nearest neighbour model uses $k=900$ to predict a test point's class, what will k-NN predict?
+
+**Solution:**
+
+**Step 1 — Worst case for class 0:** Selected 900 neighbours mein all 400 class-1 points aa bhi jaayein, class-0 points at least $900-400=500$ honge.
+
+**Step 2 — Compare votes:** Class 0 has at least 500, class 1 at most 400. Hence strict class-0 majority guaranteed.
+
+$$\boxed{\hat y=0\text{ for every query}}.$$
+
+**Step 3 — General rule:** Binary ordinary unweighted KNN mein other class ke total count m ho toh $k>2m$ ensures selected majority us other class ki nahi ho sakti. At $k=2m$, worst-case vote tie possible hai; strict inequality matters.
+
+**Counterexample:** Same class counts but $k=5$ mein nearest five all class 1 ho sakte hain. Global majority alone normally prediction determine nahi karti. Distance-weighted KNN ke liye count argument sufficient nahi—fewer, much closer minority neighbours higher total weight la sakte hain.
+
 ### 3.2 Self-neighbour: What is and is not guaranteed?
 
 Training evaluation mein sample itself included ho toh distance zero hai. Distinct feature vectors ke case mein 1-NN returns its own label, giving zero training error.
@@ -230,6 +328,8 @@ Training evaluation mein sample itself included ho toh distance zero hai. Distin
 For 3-NN, self vote sirf one of three hai. Two other neighbours opposite class ke hon toh training point misclassified ho sakta hai.
 
 **Example:** Labels $0,1,1$ for self plus two closest others → prediction 1, so class-0 self wrong. However class-separated clusters mein all three same label ho sakte hain → zero training error possible.
+
+**Same training-error concept also appears:** Week 7 — Solve with us, Q3 has 100 training points, 50 positive, and self-including 1-NN. It asks whether (S1) training mistakes are zero and (S2) this proves the classifier is very good. Intended answers **True, False**: own point selected as nearest gives its own label, but training memorization unseen performance prove nahi karti. Class balance 50/50 is irrelevant. Equal-coordinate contradictory labels still need the tie/consistency caveat discussed here; self being an eligible neighbour alone does not specify which zero-distance tied point is selected.
 
 ### Q1 — Minimum errors and increasing k
 
@@ -512,6 +612,68 @@ Stump has depth 1; root-only leaf depth 0. Number of internal splits across enti
 
 **Advantages:** Small trees interpretable; nonlinear axis-aligned regions possible. **Limits:** Deep trees unstable; a small data perturbation can change early splits and entire structure. Trees universally weak predictors nahi—capacity chosen complexity par depend karti hai.
 
+### 5.3A Leaf count, depth and total nodes
+
+**Definition:** Perfect binary tree mein every internal node has two children aur all leaves same depth par hote hain. Root depth 0 count karte hain.
+
+- At level j, perfect tree has $2^j$ nodes.
+- Depth d par perfect tree has $L=2^d$ leaves, $I=2^d-1$ internal nodes and $2^{d+1}-1$ total nodes.
+- Any binary tree of maximum depth d has **at most** $2^d$ leaves.
+- Full binary tree (each internal node has two children) satisfies $L=I+1$, even if all leaves same depth par nahi hain.
+
+**Counterexample:** Root ke two children hon, left leaf ho aur right child ke two leaf children hon. Depth 2, leaves 3, not 4. “Two children per internal node” alone $L=2^d$ guarantee nahi karta.
+
+### Q29 — Leaves in a depth-five balanced binary tree
+
+**Source:** Week 7 — Solve with us, Q5.
+
+**Question:**
+
+For a decision tree, each node has exactly two child nodes (balanced tree). If the tree has a depth of 5, how many leaf nodes are there?
+
+**Solution:**
+
+**Step 1 — Interpret wording:** Leaf ke zero children hote hain, so “each node” means each **internal** node. Supplied solution assumes every level fully filled, i.e. a perfect binary tree, and depth counts edges.
+
+**Step 2 — Double each level:**
+
+| Depth from root | Nodes at that level |
+|---:|---:|
+| 0 | 1 |
+| 1 | 2 |
+| 2 | 4 |
+| 3 | 8 |
+| 4 | 16 |
+| 5 | 32 |
+
+**Step 3:** Last level ke all nodes leaves hain:
+
+$$\boxed{L=2^5=32}.$$
+
+Internal nodes 31 aur total nodes 63 hain; requested number only leaves ka hai. Generic “balanced” condition alone exact 32 force nahi karti; **32 supplied solution's perfect-tree interpretation hai**, otherwise depth 5 se maximum 32 conclude hota hai.
+
+### Q30 — Which pictured tree is likely to generalize better?
+
+**Source:** Week 7 — Solve with us, Q6.
+
+**Question:**
+
+Consider a training dataset for a binary classification problem. Two decision trees are trained on the same dataset. Which of the two trees is likely to perform better on the test data?
+
+![Supplied simple and finely partitioned decision-tree boundaries](images/new_tree_complexity_source.png)
+
+**Solution:**
+
+**Step 1:** Tree-1 larger, simpler regions banata hai. Tree-2 central region ko many tiny rectangles mein subdivide karke individual training labels ko follow karta hai.
+
+**Step 2:** Agar isolated opposite labels noise/sample-specific fluctuations hain, Tree-2 unhe fit karke high variance aur overfitting la sakta hai.
+
+**Step 3:** Is depicted comparison ka intended answer:
+
+$$\boxed{\text{Tree-1 is likely to perform better}}.$$
+
+**Limit/counterexample:** Simpler tree always better nahi. Agar true population boundary genuinely tiny alternating rectangles wali hai, sufficiently supported complex tree better ho sakta hai. Figure se actual test accuracy calculate nahi hoti; validation/CV se choice confirm karte hain. “Likely” ko guarantee mat banao.
+
 ### Q4 — Which models can memorize the training data?
 
 **Source:** 2024 Aug 04 Quiz 2, Q4.
@@ -707,6 +869,28 @@ Weights sum to 1. Equal half-half weighting tabhi valid jab children same size k
 
 **Algorithm:** Candidate splits form karo → each split ka IG compute karo → maximum IG split choose karo → child nodes par repeat. This is greedy: local maximum gain globally best whole tree ki guarantee nahi.
 
+### Q31 — Child-size weighting factor gamma
+
+**Source:** Week 7 — Solve with us, Q7.
+
+**Question:**
+
+The dataset at node Q has 1000 points. After asking question Q, it splits into two parts: 250 in node L (Yes) and 750 in node R (No). What is the value of $\gamma$?
+
+**Solution:**
+
+**Step 1 — Fix meaning:** Usual split-entropy notation mein $\gamma=|D_{Yes}|/|D|$, left/Yes branch ka sample fraction hai.
+
+**Step 2:**
+
+$$\boxed{\gamma=250/1000=0.25},\qquad 1-\gamma=0.75.$$
+
+**Step 3 — Put weights in the formula:**
+
+$$IG=H(Q)-[0.25H(L)+0.75H(R)].$$
+
+Gamma class-1 probability nahi hai: branch membership and class membership different quantities hain. Yahan class counts nahi diye, so numerical entropies or IG calculate nahi kar sakte. Agar another source gamma ko right branch fraction define kare, value 0.75 hogi; formula mein coefficient kis child ka hai check karo.
+
 ### 7.2 Properties worth remembering
 
 1. Standard empirical entropy gain for a partition satisfies $0\le IG\le H(D)$.
@@ -750,6 +934,46 @@ $$H_{\mathrm{after}}=\frac{100}{200}(1)+\frac{100}{200}(0)=0.5.$$
 $$\boxed{IG=0.811278-0.5=0.311278\approx0.311}.$$
 
 **Counterexample established:** Left child entropy 1 exceeds parent entropy 0.811278, but weighted average decreases. “Every child must be purer” false hai.
+
+### Q32 — Reconstruct counts and recognize a zero-gain split
+
+**Source:** Week 7 — Solve with us, Q8 (image-based question).
+
+**Question:**
+
+Set D has x data points. All points in D answer question Q, whose answer can be YES or NO. $D_Y$ contains points answering YES and $D_N$ contains points answering NO. There are two labels: 0 and 1.
+
+There are 60 points with label 1 in D and 36 points with label 1 in $D_Y$. There are 12 points with label 0 in $D_Y$ and 8 points with label 0 in $D_N$.
+
+Find the information gain for question Q. Use $\log_2$ for calculations.
+
+**Solution:**
+
+**Step 1 — Fill missing class counts:**
+
+Label-1 points in $D_N=60-36=24$. Total label-0 points $=12+8=20$. Therefore unknown parent size $x=60+20=80$.
+
+| Node | Label 1 | Label 0 | Total | Label-1 fraction |
+|---|---:|---:|---:|---:|
+| D | 60 | 20 | 80 | $60/80=0.75$ |
+| $D_Y$ | 36 | 12 | 48 | $36/48=0.75$ |
+| $D_N$ | 24 | 8 | 32 | $24/32=0.75$ |
+
+**Step 2 — Entropies:** Har node ka class proportion same hai, so:
+
+$$H(D)=H(D_Y)=H(D_N)=-0.75\log_2(0.75)-0.25\log_2(0.25)\approx0.811278.$$
+
+**Step 3 — Branch weights:**
+
+$$\gamma=48/80=0.6,\qquad1-\gamma=32/80=0.4.$$
+
+**Step 4 — Subtract weighted child entropy:** Let common entropy be h; rounding ki zaroorat nahi:
+
+$$IG=h-(0.6h+0.4h)=\boxed{0\text{ bits}}.$$
+
+**Property:** Split ne sample sizes change kiye, class proportions nahi. Yes/No answer jaanne ke baad label uncertainty unchanged hai. Zero gain ka matlab children empty/pure hona nahi: both children nonempty and mixed hain. Nor does zero immediate gain mean further child splits cannot help; XOR caveat Section 5.3 mein hai.
+
+**PDF notation correction:** No-child fraction $24/32$ hai; solution slide us line par $36/48$ repeats. Numerical value 0.75 aur final gain 0 still correct hain. Both entropy terms must use base-2 logs.
 
 ### Q19 — Parent entropy, right-child entropy and gain
 

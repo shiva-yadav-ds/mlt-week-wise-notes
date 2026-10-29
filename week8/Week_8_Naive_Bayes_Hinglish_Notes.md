@@ -15,6 +15,8 @@
 | 7. Smoothing | Zero-frequency issue, standard vs specified pseudo data | Q11, Q16, Q18 |
 | 8. Bernoulli decision function | Log scores, linear boundary, limitations | Small labelled illustration |
 | 9. Gaussian and mixed Naive Bayes | Density, MLE, covariance, boundaries, mixed features | Q8, Q15 |
+| Added Bayes/MLE varieties | Missing priors, constant feature | Q22, Q23 |
+| Added prediction varieties | Conditional likelihood, spam posterior, categorical non-memorization | Q24–Q26 |
 | 10. Revision | Formula sheet, mistakes, solving checklist | — |
 
 ---
@@ -126,6 +128,44 @@ $$P(1\mid x)=\frac{S_1}{S_0+S_1},\qquad P(0\mid x)=\frac{S_0}{S_0+S_1}.$$
 **Counterexample:** $S_1=0.02$, $S_0=0.03$ ho toh posterior $0.02$ nahi, $0.02/0.05=0.4$ hai. Scores ka sum 1 hona zaroori nahi; posterior class probabilities ka sum 1 hona chahiye.
 
 > Concept slides pp. 7–8 mein denominator drop karne ke baad posterior ke saath equality likhi hai. Correct relation $P(y\mid x)\propto P(x\mid y)P(y)$ hai. Equality sirf normalization ke baad.
+
+### 2.2A Q22 — Likelihoods alone do not determine the label
+
+**Source:** Week 8 — Solve with us, Q2.
+
+**Question:**
+
+A Gaussian naive Bayes model is trained on a given dataset. For an unseen data point x, the following values are calculated:
+
+$$P(x\mid y=0)=0.4,\qquad P(x\mid y=1)=0.6.$$
+
+What will be the predicted label for x?
+
+(a) 0
+
+(b) 1
+
+(c) Insufficient information to make prediction
+
+**Solution:**
+
+**Step 1:** Likelihood and posterior different hain. Prediction scores $S_0=0.4\pi_0$ and $S_1=0.6\pi_1$ hain; priors given nahi hain.
+
+**Step 2 — Counterexamples:** Equal priors par scores 0.2 and 0.3 → label 1. But $\pi_0=0.9,\pi_1=0.1$ par scores 0.36 and 0.06 → label 0. Same likelihoods, different predictions.
+
+$$\boxed{\text{(c) Insufficient information}}.$$
+
+**Step 3 — Exact prior threshold:** Let $q=P(y=1)$, so $P(y=0)=1-q$. Class 1 wins when
+
+$$0.6q>0.4(1-q)\iff q>0.4.$$
+
+At $q=0.4$ scores tie; below it class 0 wins.
+
+**Property:** For positive likelihoods, posterior odds = likelihood ratio × prior odds:
+
+$$\boxed{\frac{P(1\mid x)}{P(0\mid x)}=\frac{p(x\mid1)}{p(x\mid0)}\frac{P(1)}{P(0)}}.$$
+
+Gaussian x continuous hai, so displayed likelihoods technically **density values** hain. They need not sum to 1 across classes; yahan 0.4+0.6=1 coincidence hai, posterior hone ka evidence nahi.
 
 ### 2.3 Q20 — Joint se posterior
 
@@ -310,6 +350,8 @@ $$\text{Total}=15+4=\boxed{19}.$$
 
 **Source key:** “19 to 20”. Standard **free-parameter answer 19** hai. Agar saari 5 priors explicitly store karein toh 20 entries hongi, par ek redundant hai. Numerical acceptance range ko free-parameter definition mat samajhna.
 
+**Exact repeat:** Week 8 — Solve with us, Q1 has the same five classes and three binary features as Q2 above. Answer **19 free parameters**; same question dobara solve nahi kiya.
+
 ### 4.5 Q5 — With/without independence
 
 **Source:** 2024 Aug 04 Quiz 2, Q5.
@@ -403,6 +445,28 @@ $$\boxed{\hat\pi_c=\frac{N_c}{N}},\qquad \boxed{\hat\theta_{jc}=\frac{N_{jc}^{(1
 Binary prior $\hat p=P(Y=1)=N_1/N$.
 
 **Important:** Feature likelihood ka denominator **class count** hai; total dataset count nahi. $N_c=0$ ho toh unsmoothed estimate defined nahi; yahan exam datasets mein required classes present hain.
+
+### 5.1A Q23 — A feature that is zero in every training example
+
+**Source:** Week 8 — Solve with us, Q3.
+
+**Question:**
+
+A binary classification dataset contains n examples belonging to $\{0,1\}^3$ such that the first feature values for all n examples are 0. Assume no Laplacian smoothing is done. What will be the value of $\hat p_1^0$? The labels are 0 and 1.
+
+**Solution:**
+
+**Step 1 — Read the parameter:** $\hat p_1^0$ estimates $P(f_1=1\mid y=0)$, not $P(f_1=0\mid y=0)$.
+
+**Step 2:** All first-feature values zero hain, so class-0 ones count bhi zero hai.
+
+**Step 3:** Assuming class 0 has $N_0>0$ training samples:
+
+$$\boxed{\hat p_1^0=0/N_0=0}.$$
+
+Its complement $P(f_1=0\mid0)=1$. If class 0 absent ho, unsmoothed conditional MLE $0/0$ undefined hai; intended question assumes represented classes.
+
+**Property:** Both classes present hon toh first-feature parameters dono 0 hain. Test feature $f_1=0$ par factor 1 in both classes, so this feature comparison ko affect nahi karta. But $f_1=1$ par both likelihoods zero ho jaati hain: posterior normalization undefined. Constant training feature ko blindly harmless samajhna wrong hai when its unseen value arrives; smoothing section explains the remedy.
 
 ### 5.2 Matrix orientation aur notation
 
@@ -570,6 +634,86 @@ $$S_1=\frac12\times\frac13\times1\times\frac23=\frac19.$$
 $$P(0\mid x)=\frac{0}{0+1/9}=\boxed{0}.$$
 
 **Property:** Ek zero factor poori class likelihood zero kar deta hai. Lekin doosri class ka positive score check karo; dono zero ho toh $0/0$ hoga, posterior 0 nahi.
+
+**Related matrix variant:** Week 8 — Solve with us, Q4 gives
+
+$$X=\begin{bmatrix}1&0&0&0\\0&1&0&0\\0&1&1&0\end{bmatrix},\qquad y=(1,0,1,0)^T.$$
+
+It asks (i) $\hat p_3^0$ without smoothing, and (ii) the label of $(1,0,0)^T$. Same class-wise counting and zero-factor method as Q1/Q3 above applies:
+
+- Class-0 columns 2,4 have feature-3 values 1,0 → $\hat p_3^0=1/2$.
+- Both priors $1/2$. Class-1 feature-one parameters $(1/2,0,1/2)$; class-0 parameters $(0,1/2,1/2)$.
+- At query $(1,0,0)$, $S_1=(1/2)(1/2)(1)(1/2)=1/8$ and $S_0=(1/2)(0)(1/2)(1/2)=0$ → **label 1**.
+- If posterior requested, $P(1\mid x)=1$; **1/8 is the joint score**, not posterior. This dataset differs from Q1's matrix/labels, so reuse the method, not its numerical estimates.
+
+### 6.3A Q24 — Class given: Calculate feature likelihood only
+
+**Source:** Week 8 — Solve with us, Q5.
+
+**Question:**
+
+A naive Bayes model is trained on the data matrix X of shape $(d,n)$ and label vector y:
+
+$$X=\begin{bmatrix}1&1&0\\0&1&0\end{bmatrix},\qquad y=[0,1,0]^T.$$
+
+Let $\hat p$ and $\hat p_j^{y_i}$ estimate $P(y=1)$ and $P(f_j=1\mid y=y_i)$, respectively. Here $f_i$, $i=1,2$, is the ith feature. These parameters are estimated using MLE. If a test point has label 0, what is the probability that the point is $[0,0]^T$?
+
+**Solution:**
+
+**Step 1 — Identify requested conditional:** Label already given hai. Required quantity $P(x=(0,0)\mid y=0)$ hai, not $P(y=0\mid x)$.
+
+**Step 2 — Select class-0 samples:** Columns 1 and 3: $(1,0)$ and $(0,0)$.
+
+$$P(f_1=0\mid0)=1/2,\qquad P(f_2=0\mid0)=2/2=1.$$
+
+**Step 3 — Multiply conditional factors:**
+
+$$\boxed{P((0,0)\mid0)=\tfrac12\times1=0.5}.$$
+
+**Comparison of three different questions:** Prior $P(0)=2/3$.
+
+- Conditional feature likelihood just found: $1/2$.
+- Joint $P(x=(0,0),y=0)=(1/2)(2/3)=1/3$.
+- Class-1 sample $(1,1)$ gives zero likelihood for $(0,0)$, so posterior $P(0\mid(0,0))=(1/3)/(1/3+0)=1$.
+
+Same data se answers **0.5, 1/3, 1** aa sakte hain—question mein conditioning ka direction carefully read karo.
+
+### 6.3B Q25 — Spam posterior from two observed words
+
+**Source:** Week 8 — Solve with us, Q6.
+
+**Question:**
+
+You are working on a text classification problem using a naive Bayes classifier to determine whether an email is “Spam” or “Not Spam”. You trained the model on 1000 emails: 600 Spam and 400 Not Spam. The occurrence probabilities of two words are:
+
+| Keyword | Email class | Conditional probability |
+|---|---|---:|
+| Won | Spam | 0.45 |
+| Won | Not Spam | 0.05 |
+| Money | Spam | 0.30 |
+| Money | Not Spam | 0.02 |
+
+A new email contains both “Won” and “Money”. Use Naive Bayes to calculate the probability that the new email is classified as Spam. Assume these are the only two possible words, i.e. only two features.
+
+**Solution:**
+
+**Step 1 — Priors:** $P(S)=600/1000=0.6$, $P(N)=0.4$. Word-presence vector $(1,1)$ hai.
+
+**Step 2 — Class likelihoods:** Under conditional independence:
+
+$$P(x\mid S)=0.45(0.30)=0.135,\qquad P(x\mid N)=0.05(0.02)=0.001.$$
+
+**Step 3 — Joint scores:**
+
+$$S_S=0.6(0.135)=0.081,\qquad S_N=0.4(0.001)=0.0004.$$
+
+**Step 4 — Normalize because probability is asked:**
+
+$$\boxed{P(S\mid x)=\frac{0.081}{0.081+0.0004}=\frac{405}{407}\approx0.995086\approx99.51\%}.$$
+
+**Step 5 — Label and check:** $P(N\mid x)=2/407\approx0.004914$, total 1. Standard maximum-posterior rule predicts **Spam**.
+
+**Connection:** Prior odds $0.6/0.4=1.5$; likelihood ratio $0.135/0.001=135$; posterior odds $202.5$. Words ne initial preference ko strongly increase kiya. 0.081 is not the posterior. Model posterior confidence hai; deterministic classifier ka random execution probability nahi.
 
 ### 6.4 Q12 — Zero factor, different class wins
 
@@ -757,6 +901,55 @@ $$P(\mathrm{Yes}\mid x)=\frac{1/30}{1/30+3/160}=\frac{16}{25}=\boxed{0.640}.$$
 **Trap:** $0.033333$ joint score hai, final posterior nahi. Smoothing not specified, so raw class frequencies use ki hain.
 
 ---
+
+### 6.9 Q26 — Categorical prediction can disagree with a training label
+
+**Source:** Week 8 — Solve with us, Q7. Counting method Q13 jaisa hai; this example additionally shows that NB does not memorize training rows.
+
+**Question:**
+
+The following table represents 10 objects with attributes color, type and origin:
+
+| S.No. | Color | Type | Origin | Satisfied |
+|---:|---|---|---|---|
+| 1 | Red | Casual | Domestic | Yes |
+| 2 | Red | Casual | Domestic | No |
+| 3 | Red | Formal | Domestic | Yes |
+| 4 | Yellow | Casual | Domestic | No |
+| 5 | Yellow | Casual | Imported | Yes |
+| 6 | Yellow | Formal | Imported | No |
+| 7 | Yellow | Formal | Imported | Yes |
+| 8 | Yellow | Formal | Domestic | No |
+| 9 | Red | Formal | Imported | No |
+| 10 | Red | Casual | Imported | Yes |
+
+Classify a new object with Color = Red, Type = Formal, Origin = Domestic using Naive Bayes.
+
+**Solution:**
+
+**Step 1 — Class groups:** Yes rows 1,3,5,7,10; No rows 2,4,6,8,9. Both priors $5/10=1/2$.
+
+**Step 2 — Count the observed categories:**
+
+| Condition | Yes count / 5 | No count / 5 |
+|---|---:|---:|
+| Red | 3/5 | 2/5 |
+| Formal | 2/5 | 3/5 |
+| Domestic | 2/5 | 3/5 |
+
+**Step 3 — Multiply with priors:**
+
+$$S_Y=\frac12\frac35\frac25\frac25=\frac6{125}=0.048.$$
+
+$$S_N=\frac12\frac25\frac35\frac35=\frac9{125}=0.072.$$
+
+**Step 4 — Compare:** $S_N>S_Y$, hence $\boxed{\text{No}}$.
+
+Optional posterior check: $P(Y\mid x)=6/(6+9)=0.4$, $P(N\mid x)=0.6$. PDF compares likelihoods $12/125$ and $18/125$; equal priors make that valid for the label, but those are not normalized posteriors.
+
+**New property/counterexample:** Query exactly matches row 3, whose observed label is Yes, yet NB predicts No. NB uses class-wise feature frequencies, not lookup memorization. Training error need not be zero. Rows 1/2 also have identical features but opposite labels, so no deterministic feature-only classifier can correctly label both.
+
+**Encoding check:** Red=1, Casual=1, Domestic=1 encode karo toh query $(1,0,1)$ hai. Formal ko Casual probability ka complement use karke same result milega; category coding change karne se correctly computed model prediction change nahi hoti.
 
 ## 7. Zero-frequency problem aur smoothing
 

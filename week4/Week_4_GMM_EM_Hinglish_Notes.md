@@ -16,6 +16,8 @@
 | 8. E-step | Responsibilities, conditional probabilities | Q4, Q11 |
 | 9. M-step and EM | Weighted updates, Jensen bound, convergence, K-means | Q8, Q13, Q14 |
 | 10. Revision | Formulas, mistakes, solving checklist | — |
+| Added MLE/Bayesian types | Weibull scale; Binomial-count update; Gamma–Exponential posterior | Q23, Section 5.1 extension, Q24 |
+| Added GMM/EM types | Unequal priors; responsibility matrix; mean and weight; convexity graphs | Q25–Q28 |
 
 ---
 
@@ -267,6 +269,73 @@ $$\boxed{\hat\lambda=0.286}.$$
 
 Left graph success fraction 0.4 par peak dikhata hai; right graph Q1 ki exponential estimate par log-likelihood peak.
 
+### 3.1A Weibull model: Shape fixed, scale unknown
+
+**Definition:** Weibull nonnegative lifetime model hai. Known shape $k>0$ distribution ka shape control karta hai; unknown scale $\lambda>0$ lifetime scale control karta hai.
+
+**Real life:** Machine lifetimes ko exponential se more flexible shape chahiye ho toh Weibull useful ho sakta hai. Is question mein $k$ estimate nahi karna.
+
+$$f(x\mid\lambda)=\frac{k}{\lambda}\left(\frac{x}{\lambda}\right)^{k-1}e^{-(x/\lambda)^k}.$$
+
+**Parameter trap:** Yahan $\lambda$ **scale** hai. Previous exponential section ka $\lambda$ **rate** tha. Symbol same hone se meaning same nahi ho jaata.
+
+### Q23 — Weibull scale ka MLE
+
+**Question:** Let the probability density function be defined as
+
+$$f(x\mid\lambda)=\frac{k}{\lambda}\left(\frac{x}{\lambda}\right)^{k-1}e^{-(x/\lambda)^k},\qquad x\ge0,\ \lambda,k>0,$$
+
+where $k$ is some constant and $\lambda$ is the parameter that we want to estimate using Maximum Likelihood Estimation. Choose the option which has the correct MLE form of $\lambda$.
+
+(i) $\left(\sum_{i=1}^n x_i^k\right)^{1/k}$
+
+(ii) $\left(\frac1n\sum_{i=1}^n x_i^k\right)^k$
+
+(iii) $\left(\frac1n\sum_{i=1}^n x_i^k\right)^{1/k}$
+
+(iv) $\frac1n\sum_{i=1}^n x_i^k$
+
+`Week 4.pdf`, Q1, pp. 2–7; options column-wise transcribed. Standard derivation assumes IID positive observations, so log terms are finite.
+
+**Step 1 — Separate parameter powers:**
+
+$$f(x_i\mid\lambda)=k x_i^{k-1}\lambda^{-k}\exp(-x_i^k/\lambda^k).$$
+
+Let $S=\sum_i x_i^k$. Then
+
+$$L(\lambda)=k^n\left(\prod_i x_i^{k-1}\right)\lambda^{-nk}e^{-S/\lambda^k}.$$
+
+**Step 2 — Take log:**
+
+$$\ell(\lambda)=n\ln k+(k-1)\sum_i\ln x_i-nk\ln\lambda-S\lambda^{-k}.$$
+
+Only last two terms depend on $\lambda$; first two can be ignored for maximization.
+
+**Step 3 — Differentiate:**
+
+$$\ell'(\lambda)=-\frac{nk}{\lambda}+kS\lambda^{-k-1}.$$
+
+**Step 4 — Solve:** Multiply $\ell'(\lambda)=0$ by $\lambda^{k+1}/k$:
+
+$$-n\lambda^k+S=0\Rightarrow\boxed{\hat\lambda=\left(\frac1n\sum_i x_i^k\right)^{1/k}}.$$
+
+Correct option **(iii)**.
+
+**Step 5 — Check maximum, not just stationary point:**
+
+$$\ell'(\lambda)=\frac{k}{\lambda^{k+1}}(S-n\lambda^k).$$
+
+For $S>0$, derivative positive below $\hat\lambda$ and negative above it. Hence this is the unique maximum on $\lambda>0$ for the regular positive-data case.
+
+**Properties and quick checks:**
+
+- $k=1$: $\hat\lambda=\bar x$—exponential **scale**, reciprocal of exponential rate MLE.
+- $k=2$: $\hat\lambda=\sqrt{\frac1n\sum_i x_i^2}$, root mean square, not ordinary mean. For $x=(1,3)$, result $\sqrt5$, whereas mean is 2.
+- Rescale all observations by $c>0$: estimated scale becomes $c\hat\lambda$.
+- Formula giving 0 for all-zero data does not supply an allowed positive-scale estimate. Exact zero observations for $k\ne1$ need care because density at the support boundary may vanish or diverge; do not blindly take $\ln0$.
+
+---
+
 ### 3.2 Poisson distribution: Counts per interval
 
 **Short definition:** Poisson nonnegative integer counts model karta hai:
@@ -342,6 +411,12 @@ $$\sum_i x_i=0(1)+1(4)+2(6)+3(9)+4(5)=0+4+12+27+20=63.$$
 $$\boxed{\hat\lambda=63/25=2.52}.$$
 
 Five distinct table rows nahi, 25 observations hain. Simple mean of $0,1,2,3,4$ wrong hai. If every count were zero and allowed range were strictly $\lambda>0$, best value would be approached at $0^+$ rather than attained; this dataset has an interior maximum.
+
+**Same Poisson type:** `Week 4.pdf`, first question labelled Q6 (pp. 16–18), asks for the general likelihood and MLE. Existing Q6 above covers the method. Its compact full likelihood is
+
+$$\boxed{L(\lambda)=\frac{e^{-n\lambda}\lambda^{\sum_i x_i}}{\prod_i x_i!}},\qquad\hat\lambda=\bar x.$$
+
+No second derivative calculation needs repeating. Do not confuse this Poisson mean parameter with the previous exponential rate or Weibull scale.
 
 ### 3.3 Pareto distribution: Heavy-tailed values
 
@@ -538,6 +613,30 @@ Short connection: Prior exponent $\alpha-1$ mein success likelihood exponent s a
 
 **No minus-one mistake:** Posterior parameters are $\alpha+s,\beta+f$, not $\alpha+s-1,\beta+f-1$. Minus ones appear in density exponents and interior mode formula.
 
+#### Same update with a Binomial count
+
+`Week 4.pdf`, Q2 (pp. 8–9), uses an aggregated count rather than individual Bernoulli outcomes.
+
+**Question:** Suppose that $Y$ follows a binomial distribution with parameters $n$ and $p=\theta$, so that
+
+$$P(Y=y;\theta)=\binom ny\theta^y(1-\theta)^{n-y},\qquad y=0,1,\ldots,n.$$
+
+Suppose that the prior p.d.f. of $\theta$ is the beta$(\alpha,\beta)$ p.d.f., that is $h(\theta)=\theta^{\alpha-1}(1-\theta)^{\beta-1}$ for $0\le\theta\le1$. Find the posterior p.d.f. of $\theta$ using Bayesian estimation.
+
+**Step 1:** Same Section 5.1 update: successes $s=y$, failures $f=n-y$. $\binom ny$ does not depend on $\theta$.
+
+**Step 2:** Multiply kernels and combine powers:
+
+$$p(\theta\mid y)\propto\theta^{\alpha+y-1}(1-\theta)^{\beta+n-y-1}.$$
+
+**Step 3 — Full normalized density, since PDF is asked:**
+
+$$\boxed{p(\theta\mid y)=\frac{\theta^{\alpha+y-1}(1-\theta)^{\beta+n-y-1}}{B(\alpha+y,\beta+n-y)}},\quad0<\theta<1.$$
+
+Thus $\boxed{\theta\mid y\sim\operatorname{Beta}(\alpha+y,\beta+n-y)}$, with $\alpha,\beta>0$.
+
+Source prior expression omits $1/B(\alpha,\beta)$: it is a **density kernel**, not generally a normalized PDF. For parameter updates constant can be omitted, but final full PDF needs its normalizer. Observing count $y$ or a specific Bernoulli sequence with $y$ successes produces the same posterior in this model.
+
 ### 5.2 Three estimates ko distinguish karo
 
 | Estimate | Formula | Uses |
@@ -680,6 +779,75 @@ Note:
 $$\boxed{E[p\mid D]=\frac{70}{150}=0.466666\ldots\approx0.467}.$$
 
 **Connection:** Prior mean 0.2, data fraction 0.6. Prior weight $50/150=1/3$, data weight $100/150=2/3$, so posterior mean $(1/3)(0.2)+(2/3)(0.6)=0.466667$. Same prior ka influence smaller dataset par more visible hai.
+
+---
+
+### 5.3 Gamma prior for an exponential rate
+
+**Definition:** Gamma distribution supports positive parameters, so it is a natural prior for an exponential rate. A conjugate prior keeps the posterior in the same distribution family.
+
+**Real life:** Before seeing service waiting times, we have an uncertain belief about the arrival/service rate; observed waits update that belief.
+
+Use **shape–rate** notation throughout:
+
+$$\lambda\sim\operatorname{Gamma}(\alpha,\beta),\qquad
+p(\lambda)=\frac{\beta^\alpha}{\Gamma(\alpha)}\lambda^{\alpha-1}e^{-\beta\lambda},\quad\lambda>0.$$
+
+$$E[\lambda]=\alpha/\beta,\qquad\operatorname{Var}(\lambda)=\alpha/\beta^2.$$
+
+If a source instead uses shape–scale $s$, mean is $\alpha s$ and $s=1/\beta$. PDF formula, not just parameter names, identifies the convention.
+
+### Q24 — Gamma–Exponential posterior and posterior mean
+
+**Question:** We have $n$ iid samples from exponential distribution with $\lambda$ as parameter. $\lambda$ is said to follow a gamma distribution with $\alpha$ and $\beta$ as parameters. Find the posterior distribution.
+
+Hint: The PDF of exponential distribution is $f(x)=\lambda e^{-\lambda x}$. The PDF of gamma distribution is
+
+$$f(\lambda)=\frac{\beta^\alpha}{\Gamma(\alpha)}\lambda^{\alpha-1}e^{-\beta\lambda}.$$
+
+Find the posterior mean for $\alpha=6$ and $\beta=2$. The data points are $\{2,1,1,0.75,1.25,1\}$.
+
+`Week 4.pdf`, Q8, pp. 25–27.
+
+**Step 1 — Likelihood:** Put $S=\sum_i x_i$:
+
+$$L(\lambda)=\prod_i\lambda e^{-\lambda x_i}=\lambda^n e^{-S\lambda}.$$
+
+**Step 2 — Multiply by prior:**
+
+$$p(\lambda\mid D)\propto\lambda^n e^{-S\lambda}\lambda^{\alpha-1}e^{-\beta\lambda}
+=\lambda^{\alpha+n-1}e^{-(\beta+S)\lambda}.$$
+
+**Step 3 — Identify and normalize:**
+
+$$\boxed{\lambda\mid D\sim\operatorname{Gamma}(\alpha+n,\beta+S)\quad\text{(shape–rate)}}.$$
+
+$$p(\lambda\mid D)=\frac{(\beta+S)^{\alpha+n}}{\Gamma(\alpha+n)}\lambda^{\alpha+n-1}e^{-(\beta+S)\lambda},\quad\lambda>0.$$
+
+**Step 4 — Data summary:** $n=6$ and
+
+$$S=2+1+1+0.75+1.25+1=7.$$
+
+PDF ki ek line sum ko 2 print karti hai; correct sum 7 hai, which its next calculation also uses.
+
+**Step 5 — Posterior parameters and answer:**
+
+$$\alpha'=6+6=12,\qquad\beta'=2+7=9,$$
+
+$$\boxed{E[\lambda\mid D]=12/9=4/3\approx1.3333}.$$
+
+![Gamma prior and posterior for the exponential rate](images/new_gamma_posterior.png)
+
+**Properties from this question:**
+
+- New observations increase shape by their **count**, rate by their **sum**. Do not swap the updates.
+- For $S>0$, posterior mean is a weighted average of prior mean and exponential-rate MLE:
+
+$$\frac{\alpha+n}{\beta+S}=\frac{\beta}{\beta+S}\frac\alpha\beta+\frac{S}{\beta+S}\frac nS.$$
+
+- Here prior mean 3, MLE $6/7$, posterior mean $4/3$ lies between them.
+- Posterior mean is not MAP. With shape 12, the interior mode is $(12-1)/9=11/9$. Next section explains this distinction generally.
+- Inverse expected rate is not expected waiting time: $1/E[\lambda\mid D]=3/4$, but $E[1/\lambda\mid D]=9/11$ for this Gamma posterior. Generally the latter is $\beta'/(\alpha'-1)$ for $\alpha'>1$.
 
 ---
 
@@ -981,6 +1149,36 @@ Other responsibility $r_{12}=1-r_{11}\approx0.119203$, so row sum 1. The unnorma
 
 ---
 
+### Q25 — Component selection with unequal mixture weights
+
+**Question:** A GMM is used to model a dataset with 3 components. For a given data point $x=6$, the likelihoods for each component are as follows:
+
+$$P(x\mid z=1)=0.2,\quad P(x\mid z=2)=0.3,\quad P(x\mid z=3)=0.5.$$
+
+The mixture probabilities are $\pi_1=0.4$, $\pi_2=0.3$, $\pi_3=0.3$. Which component is most likely to have generated the data point? Hint: Use posterior probability.
+
+`Week 4.pdf`, Q4, pp. 13–15. Continuous GMM mein these are component **density values**, despite the source's $P$ notation.
+
+**Step 1 — Prior-weighted scores:** Unlike Q11, priors unequal hain, so cancel nahi kar sakte.
+
+| Component | $\pi_k$ | Component density | Product |
+|---|---:|---:|---:|
+| 1 | 0.4 | 0.2 | 0.08 |
+| 2 | 0.3 | 0.3 | 0.09 |
+| 3 | 0.3 | 0.5 | 0.15 |
+
+**Step 2 — Evidence:** $p(x)=0.08+0.09+0.15=0.32$.
+
+**Step 3 — Normalize:**
+
+$$r_1=0.08/0.32=0.25,\quad r_2=0.09/0.32=0.28125,\quad r_3=0.15/0.32=0.46875.$$
+
+**Answer:** $\boxed{\text{Component 3}}$; its posterior is largest, even though below 0.5. Multiclass winner need not have a majority probability.
+
+**Property and counterexample:** Winner can be found from unnormalized products because denominator is shared. Comparing raw densities alone is not reliable: densities $(0.6,0.5)$ with weights $(0.1,0.9)$ give products $(0.06,0.45)$, so second component wins despite lower density.
+
+---
+
 ## 9. M-step and full EM: Soft assignments se parameters update
 
 ### 9.1 Effective count and weighted formulas
@@ -1055,6 +1253,82 @@ $$\boxed{\mu_k^{\mathrm{new}}=6.72/4.3=1.5627907\approx1.56}.$$
 
 This matches the paper's expected range. It is a valid weighted average of the supplied positive weights, but not evidence that those numbers form valid responsibilities. A corrected E-step result would require corrected source data.
 
+### Q26 — Fill responsibility rows, then update all three means
+
+**Question:** Consider a 1D dataset $X=[-3,-1,1,3]$ with $K=3$ mixture of Gaussian. Using EM algorithm, we try to estimate the mean and variance of the Gaussian component. Suppose the output of E-step in an iteration is
+
+$$R_{n\times K}=\begin{bmatrix}0.3&a&0.5\\b&1&b\\c&0.5&c\\0.1&0.4&d\end{bmatrix},$$
+
+where each $R_{ij}$ entry corresponds to the probability of $X_i$ belonging to component $K_j$. Let $\hat\mu_1,\hat\mu_2,\hat\mu_3$ be the updated means in the M-step after the E-step. Calculate $\hat\mu_1+\hat\mu_2+\hat\mu_3$.
+
+`Week 4.pdf`, Q3, pp. 10–12.
+
+**Step 1 — Each row sums to one:**
+
+- $0.3+a+0.5=1\Rightarrow a=0.2$.
+- $b+1+b=1\Rightarrow b=0$.
+- $c+0.5+c=1\Rightarrow c=0.25$.
+- $0.1+0.4+d=1\Rightarrow d=0.5$.
+
+$$R=\begin{bmatrix}0.3&0.2&0.5\\0&1&0\\0.25&0.5&0.25\\0.1&0.4&0.5\end{bmatrix}.$$
+
+**Step 2 — Column sums (effective counts):**
+
+$$N_1=0.65,\quad N_2=2.1,\quad N_3=1.25,\quad N_1+N_2+N_3=4.$$
+
+**Step 3 — Weighted numerators:**
+
+$$T_1=0.3(-3)+0(-1)+0.25(1)+0.1(3)=-0.35,$$
+
+$$T_2=0.2(-3)+1(-1)+0.5(1)+0.4(3)=0.1,$$
+
+$$T_3=0.5(-3)+0(-1)+0.25(1)+0.5(3)=0.25.$$
+
+**Step 4 — Divide by each component's own count:**
+
+$$\hat\mu_1=-0.35/0.65=-7/13,\quad\hat\mu_2=0.1/2.1=1/21,\quad\hat\mu_3=0.25/1.25=1/5.$$
+
+**Step 5 — Sum before rounding:**
+
+$$\boxed{-\frac7{13}+\frac1{21}+\frac15=-\frac{397}{1365}\approx-0.29084249}.$$
+
+Two-decimal answer **−0.29**. PDF's intermediate −0.53 and 0.04 are truncated; retain fractions until the end.
+
+**Consistency properties:**
+
+- Row sums 1, but column sums need not be 1.
+- If weights also updated, $\pi^{\rm new}=(0.1625,0.525,0.3125)$; they sum to 1.
+- $\sum_k N_k\hat\mu_k=\sum_i x_i=0$, so $\sum_k\pi_k\hat\mu_k=\bar x=0$. Unweighted sum of component means need not equal data mean.
+- The row $(0,1,0)$ is a valid probability row abstractly. With finite means, positive weights and strictly positive Gaussian variances, exact E-step responsibilities are all strictly positive. Treat these exact zeros as supplied/rounded exercise inputs, not an exactly attainable ordinary nondegenerate Gaussian E-step.
+
+### Q27 — One component's mean and mixture weight from the same column
+
+**Question:** We are trying to fit a GMM ($K=3$) for the following data points:
+
+$$\{2,1,3,2,1,2,0,-3,0,2\}.$$
+
+At the $t$-th round of the EM algorithm, the following were observed:
+
+$$\lambda_3=(0.2,0.3,0.1,0.6,0.1,0.5,0.4,0.7,0.1,0.2).$$
+
+The $i$-th element of this vector represents $P(z_i=3\mid x_i)$. What will $\mu_3$ and $\pi_3$ be after the maximization step in the $t$-th round?
+
+`Week 4.pdf`, Q7, pp. 22–24.
+
+**Step 1 — Effective count:**
+
+$$N_3=0.2+0.3+0.1+0.6+0.1+0.5+0.4+0.7+0.1+0.2=3.2.$$
+
+**Step 2 — Weighted products in data order:**
+
+$$T_3=0.4+0.3+0.3+1.2+0.1+1+0-2.1+0+0.4=1.6.$$
+
+**Step 3 — Mean:** $\boxed{\mu_3=1.6/3.2=0.5}$.
+
+**Step 4 — Mixture weight:** Total observations $n=10$, so $\boxed{\pi_3=3.2/10=0.32}$.
+
+**Denominator check:** $T_3/N_3$ gives location; $N_3/n$ gives population weight. Dividing numerator 1.6 by 10 would give neither requested mean nor mixture weight. Other component columns are unnecessary for these two updates.
+
 ### 9.2 What EM actually alternates
 
 Start with valid initial weights, means and positive variances. Then repeat:
@@ -1096,6 +1370,58 @@ You are presented with a dataset that has latent variables that influences your 
 $$\boxed{\text{(a)}}.$$
 
 Precise version: E-step posterior responsibilities; M-step expected complete-data log-likelihood Q maximize. K in a standard GMM EM run fixed hota hai; choosing K separate model-selection problem hai.
+
+### 9.2A Convexity: One chord test versus every chord
+
+**Definition:** Convex function ka graph any two graph points ko join karne wali chord ke neeche/on hota hai, throughout the connecting interval:
+
+$$\boxed{f(tx+(1-t)y)\le tf(x)+(1-t)f(y)},\quad0\le t\le1.$$
+
+**Real-life intuition:** Bowl-shaped cost mein two choices ko average karne ka cost, unke costs ke weighted average se higher nahi hota. Domain bhi convex hona chahiye, so intermediate input allowed ho.
+
+- Left side: pehle inputs mix, phir function apply.
+- Right side: pehle function values, phir mix—chord height.
+- Convexity requires **all** input pairs and all weights. One passing pair is not a proof; one failing pair disproves it.
+- Linear function mein equality holds, so it is both convex and concave. Strictly convex hona different condition hai.
+
+### Q28 — Which graphs satisfy Jensen, and which are convex?
+
+**Question:** Look at the following graphs.
+
+![Four supplied graphs with their selected endpoints](images/new_convexity_source.png)
+
+(i) Select the option(s) which satisfy the following inequality for $\lambda_1,\lambda_2\in[0,1]$ and $\lambda_1+\lambda_2=1$:
+
+$$f(\lambda_1x_1+\lambda_2x_2)\le\lambda_1f(x_1)+\lambda_2f(x_2).$$
+
+(ii) Select the graph(s) from above that represent convex functions.
+
+`Week 4.pdf`, second question labelled Q6, pp. 19–21. Source left side prints $\lambda x_1$; the stated two weights make $\lambda_1x_1$ the intended expression.
+
+**Step 1 — Draw chords for the marked pairs:**
+
+![Supplied chord comparison for the selected endpoints](images/new_convexity_chords.png)
+
+**Step 2 — Compare curve with its chord over the marked interval:**
+
+- (a): Despite its bumps, curve stays below the chord for **this marked pair**. Passes part (i).
+- (b): Bowl-shaped curve stays below the chord. Passes part (i).
+- (c): Curve rises above the chord somewhere between the marked endpoints. Fails.
+- (d): Concave arch lies above the chord internally. Fails.
+
+$$\boxed{\text{Part (i): (a), (b)}}.$$
+
+**Step 3 — Change endpoints to test global convexity:**
+
+![A different endpoint pair disproves convexity of graph a](images/new_convexity_counterexample.png)
+
+For (a), new endpoints produce a chord below an interior bump. Therefore “passes one chord” does not mean convex. (b) is the intended convex curve; (c),(d) already fail.
+
+$$\boxed{\text{Part (ii): only (b)}}.$$
+
+**Numerical counterexample for the principle:** $f(x)=(x^2-1)^2$ on $[-2,2]$. Endpoints $\pm2$ both have value 9; whole graph is below that chord. But endpoints $\pm1$ have value 0 while midpoint $f(0)=1>0$. Hence not convex despite the first passing test.
+
+**Connection to EM:** Log is **concave**, so next section's Jensen sign reverses. Convex-function graph question aur concave-log lower bound ko mix mat karo.
 
 ### 9.3 Jensen inequality: Log-sum problem ka useful lower bound
 
@@ -1190,6 +1516,10 @@ $$\boxed{\text{Paper's intended answer: (b), (d), (e)}}.$$
 | Bernoulli MLE | $s/n$ |
 | Exponential rate MLE | $n/\sum_i x_i$, for positive sum |
 | Poisson MLE | $\sum_i x_i/n$, with allowed boundary considered |
+| Weibull scale MLE, known shape $k$ | $(\sum_i x_i^k/n)^{1/k}$, regular positive-data case |
+| Gamma–Exponential posterior | Shape $\alpha+n$, rate $\beta+\sum_i x_i$ |
+| Gamma posterior mean | $(\alpha+n)/(\beta+\sum_i x_i)$ |
+| Convexity | Graph below every chord; one passing pair is insufficient |
 | Pareto shape candidate, scale 1 | $n/\sum_i\ln x_i$; check shape constraint |
 | Bayesian posterior | Prior × likelihood / evidence |
 | Beta prior → posterior | Beta($\alpha,\beta$) → Beta($\alpha+s,\beta+f$) |

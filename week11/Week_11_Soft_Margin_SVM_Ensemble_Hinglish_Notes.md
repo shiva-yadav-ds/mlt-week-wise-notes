@@ -13,6 +13,8 @@
 | 5. Random forest | Feature subsampling, probability averaging | Q13, Q14 |
 | 6. Boosting and comparison | Sequential learning, bias reduction | Q4, Q7, Q16 |
 | 7. AdaBoost | Weighted error, learner weights, normalized sample updates | Q6, Q11, Q15, Q3 |
+| Added SVM varieties | Mixed-label slack graph; equality traps; support/slack counterexamples | Q20–Q22 |
+| Added ensemble varieties | Stump criterion, unnormalized versus sampling weights, claim review | Q23–Q25 |
 | 8. Revision | Formula sheet, common mistakes, solving checklist | — |
 
 ---
@@ -162,6 +164,47 @@ $$\boxed{\min_{w,b}\frac12\|w\|^2+C\sum_i\max(0,1-y_if_i)}.$$
 
 ---
 
+### 1.8 Q20 — Count violations and add the total slack
+
+**Source:** Week 11 — Solve With Instructors, Q1.
+
+**Question:**
+
+Based on the following graph, answer:
+
+![Supplied soft-margin graph with score levels](images/new_slack_source.png)
+
+(i) How many points exhibit margin violations but are still classified on the correct side of the linear classifier?
+
+(ii) How many points are misclassified?
+
+(iii) What is the total bribe (penalty)?
+
+**Solution:** Green points are positive and red points negative, as used in the supplied solution. Write $f=w^Tx$ and compute **signed** margin $m=yf$ before slack.
+
+**Step 1 — Locate the four points with nonzero slack:**
+
+| Point | Label | Score f | Signed margin | Minimum slack $\max(0,1-m)$ |
+|---|---:|---:|---:|---:|
+| Green on $f=-4$ | +1 | −4 | −4 | 5 |
+| Red on decision boundary | −1 | 0 | 0 | 1 |
+| Green on $f=0.5$ | +1 | 0.5 | 0.5 | 0.5 |
+| Red on $f=1$ | −1 | 1 | −1 | 2 |
+
+Other points satisfy their required margin and have slack 0.
+
+**Step 2 — Correct-side strict margin violation:** Only green at $f=0.5$ satisfies $0<m<1$. Answer **1**. A boundary point is not strictly on either side.
+
+**Step 3 — Misclassification count:** Green at −4 and red at +1 are definitely wrong. Red at 0 is wrong if zero score predicts +1. Thus **source answer 3 assumes zero → +1 (or counts a boundary point as an error)**. If zero predicts −1, it is correct and the error count is **2**. Graph alone does not specify the tie rule.
+
+**Step 4 — Total slack:**
+
+$$\boxed{\sum_i\xi_i=5+1+0.5+2=8.5}.$$
+
+Slack total unaffected by boundary tie rule. If asked for the objective's weighted penalty, it is **$8.5C$**, not necessarily 8.5; full objective additionally contains $\frac12\|w\|^2$.
+
+**Property:** Classification mistakes count labels; hinge loss measures margin shortfalls. A correctly predicted inside-margin point can pay slack, and a boundary point has slack 1 whichever label tie rule is used.
+
 ## 2. Dual, KKT and soft-margin support vectors
 
 ### 2.1 Lagrangian: Two constraints per point
@@ -217,6 +260,83 @@ Yeh two equations, $\alpha_i+\beta_i=C$, aur minimum-slack formula se saare regi
 **Counterexample:** Correctly classified point with $m=0.5$ has $\xi=0.5$ and $\alpha=C$. Thus “$\alpha=C$ means misclassified” is false.
 
 **On-margin subtlety:** $m=1$ can have $\alpha=0$ in degenerate/redundant cases; graph position alone does not always establish strict positivity.
+
+### 2.3A Q21 — Strict versus non-strict margin inequalities
+
+**Source:** Week 11 — Solve With Instructors, Q5.
+
+**Question:**
+
+Assume $w^*,\xi^*$ are primal optimal solutions and $\alpha^*,\beta^*$ are dual optimal solutions of the soft-margin SVM. Choose the correct options.
+
+(A) If $y_iw^{*T}x_i\ge1$, the ith point pays positive bribe $\xi_i^*$.
+
+(B) If $y_iw^{*T}x_i\ge1$, the ith point pays no bribe.
+
+(C) If $y_iw^{*T}x_i\le1$, the ith point pays positive bribe.
+
+(D) If $y_iw^{*T}x_i\le1$, the ith point pays no bribe.
+
+**Solution:** Assume standard $C>0$, so $\xi_i^*=\max(0,1-m_i)$.
+
+**Step 1:** For $m_i\ge1$, $1-m_i\le0$, hence slack 0. A false, B true.
+
+**Step 2:** For $m_i\le1$, split the equality case from strict inequality:
+
+- At $m_i=1$, slack 0: counterexample to C.
+- At $m_i=0.5$, slack 0.5: counterexample to D.
+
+$$\boxed{\text{B only}}.$$
+
+**Rule:** Positive slack iff **$m_i<1$**, not $m_i\le1$, at an optimum with $C>0$.
+
+### 2.3B Q22 — Support vectors may have zero slack
+
+**Source:** Week 11 — Solve With Instructors, Q6 and Q7.
+
+**Question — Q6:**
+
+Assume primal and dual optimal solutions of soft-margin SVM. Choose the correct options.
+
+(A) A support vector does not pay any bribe.
+
+(B) A support vector may or may not pay any bribe.
+
+(C) A support vector definitely pays positive bribe.
+
+(D) If a point pays bribe, it is not a support vector.
+
+(E) If a point pays bribe, it may or may not be a support vector.
+
+(F) If a point pays bribe, it is a support vector.
+
+**Solution:** With $C>0$ and support criterion $\alpha_i>0$:
+
+**Step 1:** Support point at $m_i=1$ can have zero slack; support point with $m_i<1$ has positive slack. Hence B true; A/C are false universal claims.
+
+**Step 2:** Positive slack implies $\beta_i\xi_i=0\Rightarrow\beta_i=0$. Since $\alpha_i+\beta_i=C$, we get $\alpha_i=C>0$. Thus F true, D/E false.
+
+$$\boxed{\text{B, F}}.$$
+
+**Question — Q7:**
+
+Under the same optimal-solution setup, choose the correct options.
+
+(A) It is possible that $\alpha_i^*>0$ and $\xi_i^*=0$.
+
+(B) It is possible that $\alpha_i^*=C$ and $\xi_i^*=0$.
+
+(C) Both A and B.
+
+(D) None.
+
+**Step 1 — Concrete example:** Inputs $-1,+1$, labels $-1,+1$, use free bias and $C=0.5$. A primal/dual optimum is $w=1,b=0$, both slacks 0, and $\alpha_1=\alpha_2=0.5=C$.
+
+**Step 2 — Check:** Both signed margins 1, $w=\sum\alpha_i y_ix_i=1$, dual balance holds, and complementary slackness holds. Thus A and B genuinely possible.
+
+**Answer:** If single choice, **C (both A and B)**. If all true options must be selected, **A, B, C**, as the supplied key lists.
+
+**Property:** $\xi_i>0\Rightarrow\alpha_i=C$; its converse is false. Upper-bound coefficient does not prove a mistake or positive slack. At $C=0$, positive slack need not imply a positive-coefficient support vector, since every alpha is zero.
 
 ### 2.4 Q17 — Interior dual coefficient
 
@@ -410,6 +530,22 @@ $$\xi_3=\max(0,1-4)=\boxed0.$$
 
 **Supported answers: (b), (d). Supplied key lists only (b), omitting the explicitly present slack constraints in (d).** Don't memorize that there are only $n$ inequalities in this primal formulation.
 
+**Related claim check:** Week 11 — Solve With Instructors, Q2 asks which statements are **incorrect**:
+
+(a) Violating points farther from the correct support plane suffer greater penalty.
+
+(b) Correct points beyond the margin suffer no penalty.
+
+(c) Small $\|w\|$ means small margin.
+
+(d) Large $\|w\|$ means small margin.
+
+(e) Very small C encourages wider margin.
+
+(f) Strict margin violators have $\alpha_i^*=C$.
+
+**Answer: (c).** Width $2/\|w\|$ decreases with nonzero weight norm. For fixed w, slack is $\|w\|$ times the required geometric distance toward the correct support plane, so (a) concerns that fixed model. For (f), use **$y_if_i<1$**, not $f_i<1$ without the label; the positive-slack KKT argument is given above. Small positive C encourages a wide nominal margin, but $w=0$ has no meaningful separating hyperplane.
+
 ### 2.9 Q12 — Support-vector counts at extreme C
 
 **Source:** 2025 Aug 31 ET (QDF4), Q12.
@@ -440,6 +576,8 @@ $$\xi_3=\max(0,1-4)=\boxed0.$$
 **Answer expected: (a), (d).**
 
 **No-bias degeneracy detail:** The displayed model has no bias. Its two active margin constraints at $x=1$ and $x=-1$ are algebraically identical ($w\ge1$), so the optimal dual contribution can be split between them or assigned to only one. Hence **2 geometric margin points**, but positive-dual-coefficient count may be 1 or 2 depending on the chosen optimum. The key uses the usual geometric count for this limit. With a free bias, dual balance requires both positive coefficients here.
+
+**Same extreme-C variety:** Week 11 PDF, Practice Assignment Q6–7, uses positives $\{1,2,3,4\}$ and negatives $\{-3,-2,-1\}$. Additional faraway positives do not change the nearest opposite inputs ±1. Intended answers: **2 support vectors as $C\to\infty$; 0 at $C=0$**. Q12's same distinction applies: two geometric margin points, but a no-bias dual can assign positive mass to only one redundant active constraint. With free bias both are required. At C=0 slack is unpenalized, not uniquely fixed, although the no-bias optimum w=0 requires every slack at least 1.
 
 ### 2.10 Q18 — Missing coordinate, but weight is recoverable
 
@@ -753,6 +891,8 @@ $$\bar P(-1)=\frac{0.3+0.6+0.2}{3}=\frac{1.1}{3}\approx0.366667.$$
 **Answer: (b), (c).** Correlation reduction in (b) is a statistical tendency; the phrase “any two trees” is not a deterministic guarantee for every dataset/random seed.
 
 ---
+
+**Same feature-subsampling variety:** Week 11 PDF, Practice Assignment Q1, calls the number of candidate features **p** and total features d. Its options are: (A) increasing p reduces correlation, (B) decreasing p reduces correlation, (C) increasing p improves individual-tree performance, (D) decreasing p improves individual-tree performance. Intended **B, C** express the usual diversity-versus-tree-strength trade-off. Increasing p offers more split candidates and can strengthen individual fits, while smaller p usually reduces shared split choices. These are tendencies, not guaranteed test-accuracy improvements or deterministic correlation inequalities; Q14 explains the same trade-off.
 
 ## 6. Boosting: Next learner ko previous mistakes par focus karna
 
@@ -1163,6 +1303,94 @@ $$D'(x_2)=1-\frac12-\frac14=\frac14.$$
 
 **Answer: $\boxed{0.25}$.** This part is consistent with the supplied key. Do not carry the 15-point graph's weights into this separate three-sample table.
 
+### 7.8A Q23 — Choose a first-feature stump, then keep weights unnormalized
+
+**Source:** Week 11 — Solve With Instructors, Q3.
+
+**Question:**
+
+AdaBoost is trained on the following binary classification dataset:
+
+| $X_1$ | $X_2$ | Label |
+|---:|---:|---|
+| 2 | 5 | true |
+| 2.5 | 6 | false |
+| 3 | 5 | true |
+| 4 | 3 | false |
+| 4 | 4 | false |
+
+Split according to the first feature $X_1$ to create the first stump. Assign equal initial sample weights.
+
+(i) How many points are misclassified by the trained stump?
+
+(ii) What weight is assigned to the first example for creating the next stump? Do not normalize. Give two decimal places.
+
+**Solution:**
+
+**Step 1 — Candidate splits:** Distinct $X_1$ values are 2,2.5,3,4. Midpoint thresholds 2.25,2.75,3.5 represent every nontrivial partition. Equal $X_1=4$ samples must stay together.
+
+**Step 2 — Compare splits:** Source uses maximum information gain, with majority leaf predictions. Parent has 2 true and 3 false labels.
+
+| Threshold, left is $X_1<t$ | Left labels | Right labels | Best error count | Information gain (bits) |
+|---:|---|---|---:|---:|
+| 2.25 | T | F,T,F,F | 1 | 0.321928 |
+| 2.75 | T,F | T,F,F | 2 | 0.019973 |
+| 3.5 | T,F,T | F,F | 1 | **0.419973** |
+
+Therefore source chooses partition $X_1<4$: predict true on the left, false on the right. Threshold 3.5 and strict threshold 4 give the same training partition, but can differ on new inputs between them.
+
+**Step 3 — Mistakes:** Only row 2, $(2.5,6)$, is wrong. Thus **1 mistake**, $\epsilon=1/5=0.2$.
+
+**Step 4 — Learner weight:**
+
+$$a=\frac12\ln\frac{0.8}{0.2}=\ln2,\quad e^{-a}=1/2,\quad e^a=2.$$
+
+**Step 5 — First sample is correct:**
+
+$$\boxed{\tilde D_2(1)=\frac15\cdot\frac12=0.10}.$$
+
+Question explicitly says **do not normalize**. All unnormalized weights are $(0.1,0.4,0.1,0.1,0.1)$, sum 0.8. Normalized first weight would be 0.125, not the requested answer.
+
+**Selection caveat:** If base learner minimizes only misclassification error, thresholds 2.25 and 3.5 tie. Both classify row 1 correctly and make one error, so both requested answers stay the same, though the identity of the misclassified point can differ. Do not assume information-gain and error rankings always coincide.
+
+### 7.8B Q24 — Thirty mistakes: Sampling weights require normalization
+
+**Source:** Week 11 PDF, Practice Assignment Q5.
+
+**Question:**
+
+The first AdaBoost decision stump wrongly classifies 30 out of 100 points. What weights are assigned to the incorrectly classified points for sampling data to train the second stump? Error is the proportion of incorrectly classified examples.
+
+(A) $\sqrt{7/3}/100$
+
+(B) $\sqrt{3/7}/100$
+
+(C) $\dfrac{\sqrt{7/3}}{30\sqrt{7/3}+70\sqrt{3/7}}$
+
+(D) $\dfrac{\sqrt{7/3}}{30\sqrt{3/7}+70\sqrt{7/3}}$
+
+**Solution:**
+
+**Step 1:** Uniform initial weights $D_1(i)=1/100$; $\epsilon=30/100=0.3$.
+
+**Step 2:**
+
+$$a=\frac12\ln\frac{0.7}{0.3},\quad e^a=\sqrt{7/3},\quad e^{-a}=\sqrt{3/7}.$$
+
+**Step 3:** Each wrong point has unnormalized weight $\sqrt{7/3}/100$; each correct point has $\sqrt{3/7}/100$.
+
+**Step 4 — Sum all weights:**
+
+$$Z=\frac{30\sqrt{7/3}+70\sqrt{3/7}}{100}.$$
+
+**Step 5 — Divide each wrong weight by Z:**
+
+$$\boxed{D_2(\text{wrong point})=\frac{\sqrt{7/3}}{30\sqrt{7/3}+70\sqrt{3/7}}=\frac1{60}\approx0.016667\quad\text{(C)}}.$$
+
+Each correct point gets $1/140$. Check $30/60+70/140=1$. Wrong group total 0.5; **each wrong point** is not assigned 0.5.
+
+**Source correction:** Solution's starting $1/1000$ is a typo for $1/100$. The square roots in its coefficient/options matter: $\ln\sqrt{7/3}=\frac12\ln(7/3)$, not $\ln(7/3)$. Use visual formula, not faulty extracted text.
+
 ### 7.9 Training-error bound: What it actually guarantees
 
 For standard binary AdaBoost with $0<\epsilon_t<1/2$, define edge:
@@ -1184,6 +1412,54 @@ $$\widehat R(H_T)\le e^{-2T\gamma^2}.$$
 **Two limits:** This is a training-error bound, not a test-accuracy guarantee. A decreasing upper bound also does not prove the actual zero-one training error decreases on every individual round. The round index sum is over $t=1,\ldots,T$, not over the number of training samples.
 
 ---
+
+### 7.10 Q25 — Ensemble properties and AdaBoost conventions
+
+**Source:** Week 11 — Solve With Instructors, Q4.
+
+**Question:** Select all true statements about ensemble techniques.
+
+(a) A weak learner does slightly better than a random model.
+
+(b) Ensembles aggregate or combine multiple models to arrive at a decision.
+
+(c) Bagging tries to reduce variance.
+
+(d) A point's probability of appearing at least once in a bootstrap bag for a very large dataset is around 36%.
+
+(e) Bagging can be done in parallel.
+
+(f) Bagging always uses decision trees as base learners.
+
+(g) Random forest uses all features at each split of each tree.
+
+(h) Boosting trains sequentially, each new model focusing on previous errors.
+
+(i) Mistakes in boosting are boosted by $e^a$, where $a=\frac12\ln((1-\epsilon)/\epsilon)$.
+
+(j) A boosting classifier with higher error receives a lower final-ensemble weight.
+
+(k) Boosting's final prediction combines individual models with weights depending on their training performance.
+
+**Solution — Apply the earlier concepts:**
+
+| Option | Evaluation |
+|---|---|
+| a | True in the intended weak-learning sense: better than the appropriate chance baseline/current weighted distribution. |
+| b | True: predictions are combined. |
+| c | True: variance reduction is the main bagging motivation. |
+| d | False: for N replacement draws from N points, inclusion probability is $1-(1-1/N)^N\to1-e^{-1}\approx63.2\%$. About 36.8% is exclusion. |
+| e | True: base bag fits are independent. |
+| f | False: other base learner types are allowed. |
+| g | False for standard feature-subsampled RF: each split considers a random subset. Choosing subset size d is a possible special setting, not the defining general rule. |
+| h | True as the intended boosting principle. |
+| i | True for the **unnormalized discrete AdaBoost** update. Final normalized multiplier is $e^a/Z$. |
+| j | True for AdaBoost: $a(\epsilon)$ decreases as weighted error increases in $0<\epsilon<1/2$. |
+| k | True for the AdaBoost weighted-vote model being discussed. |
+
+$$\boxed{\text{a, b, c, e, h, i, j, k}}.$$
+
+**Scope:** The exact exponential update and vote coefficient are AdaBoost rules, not formulas shared by every boosting algorithm. “Training performance” here means current **weighted** error, not necessarily raw error count divided by N. Earlier sections already develop the bootstrap and update calculations, so they are not repeated here.
 
 ## 8. Revision
 

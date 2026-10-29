@@ -3,7 +3,9 @@
 <title>Week 2 · Kernel PCA | MLT Notes</title>
 <script src="theme.js"></script>
 <link rel="stylesheet" href="style.css">
-<script>window.MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']],processEscapes:true},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']},svg:{fontCache:'global'}};</script>
+<script>window.MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']],processEscapes:true},startup:{typeset:false, pageReady:() => window.renderNotesMath()},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']},svg:{fontCache:'global'}};</script>
+<script defer src="navigation.js"></script>
+<script defer src="math.js"></script>
 <script defer src="vendor/tex-svg.js"></script></head>
 <body><a class="skip" href="#notes">Skip to notes</a>
 <header><a class="brand" href="index.html"><span class="brand-mark">m</span> MLT <span class="brand-muted">/ study notes</span></a><label class="theme-control">Theme <select id="theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label></header>
@@ -83,6 +85,7 @@ C=\begin{bmatrix}1&amp;-2&amp;1\\2&amp;5&amp;-2\\1&amp;-2&amp;2\end{bmatrix}.$$<
 \boxed{\alpha_j^TG\alpha_j=1},\qquad\boxed{\|w_j\|=1}.$$</p>
 <p>PDF mein $\alpha^T\alpha=1$ written hai; general correct condition <strong>kernel-weighted norm</strong> $\alpha^TG\alpha=1$ hai.</p>
 <p>If covariance eigenvalue $\lambda_j$ given ho, $\mu_j=n\lambda_j$, so denominator $\sqrt{n\lambda_j}$. Symbols se nahi, matrix ki definition se scale decide karo.</p>
+<p><strong>Same question:</strong> <code>Week 2.pdf</code>, Q5 (pp. 14–15), isi Q2 ke three subparts repeat karta hai. Trace option <strong>(b)</strong> hai; supplied new PDF bhi PC2 variance <strong>8</strong> deta hai. Upar ka centered-rank caveat phir bhi apply hota hai.</p>
 <h3 id="topic-9">Q3 — Coefficient normalization with inconsistent printed data</h3>
 <p><strong>Question:</strong> For $d&gt;n$, a principal direction is written as $w=\sum_i\alpha_i x_i$. The eigenvalue of $X^TX$ is 10, and the corresponding vector, described as a unit eigenvector, is $(2,3,4,6)^T/\sqrt{54}$. Find $\alpha_2$.</p>
 <p><strong>Step 1 — Unit check:</strong> Squared norm $(4+9+16+36)/54=65/54\ne1$. Given vector is not unit; PDF also reuses $\alpha$ for both the eigenvector and reconstruction coefficients.</p>
@@ -105,15 +108,25 @@ C=\begin{bmatrix}1&amp;-2&amp;1\\2&amp;5&amp;-2\\1&amp;-2&amp;2\end{bmatrix}.$$<
 <p><strong>Step 3:</strong> Gram eigendecomposition se $e_i\in\mathbb R^n$ milta hai, so $Xe_i$ dimensionally valid. Then divide by $\sqrt{\lambda_i}$, where $\lambda_i$ here <strong>Gram</strong> eigenvalue hai.</p>
 <p><strong>Correct flow:</strong> Center → points as columns → $X^TX$ → positive eigenpairs → $Xe_i/\sqrt{\lambda_i}$.</p>
 <p>$XX^T$ ordinary PCA ke liye inherently wrong nahi. But is stated dual algorithm mein expensive bhi hai aur step 4 ke dimensions se incompatible bhi: its eigenvector has length $d$, while $X$ needs a length-$n$ multiplier.</p>
-<h3 id="topic-11">Q5 — Projection using a unit Gram eigenvector</h3>
+<h4 id="topic-11">Q4 ka extra error — Eigenvalue versus square-root eigenvalue</h4>
+<p><code>Week 2.pdf</code>, Q7 (p. 19), mein same algorithm hai, lekin last line mein ek additional error hai.</p>
+<p><strong>Question:</strong> “The $i^{th}$ principal component is given by $Xe_i/l_i$.” Find the error.</p>
+<p><strong>Step 1 — Correct matrix first:</strong> Upar Q4 ke according centered $X$ se $K=X^TX$ banao; $Ke_i=l_i e_i$, $l_i&gt;0$, aur $\|e_i\|=1$ use karo.</p>
+<p><strong>Step 2 — Actual length check:</strong></p>
+<p>$$\|Xe_i\|^2=e_i^TX^TXe_i=l_i,\qquad\|Xe_i\|=\sqrt{l_i}.$$</p>
+<p><strong>Step 3 — Unit direction:</strong></p>
+<p>$$\boxed{w_i=\frac{Xe_i}{\sqrt{l_i}}}.$$</p>
+<p>$l_i$ se divide karne par length $1/\sqrt{l_i}$ hogi, generally 1 nahi. Example: $l_i=4$ ho toh $Xe_i$ ki length 2; divide by 4 gives length $1/2$, divide by 2 gives length 1.</p>
+<p><strong>Three errors to catch together:</strong> missing centering; $XX^T$ instead of smaller $X^TX$ for this dual algorithm; $l_i$ instead of $\sqrt{l_i}$.</p>
+<h3 id="topic-12">Q5 — Projection using a unit Gram eigenvector</h3>
 <p>January 2025 question pattern in the supplied notes.</p>
 <p><strong>Question:</strong> Let $X\in\mathbb R^{d\times n}$ contain centered points, with $d&gt;n$. Let $\lambda&gt;0$ be the $k$-th largest eigenvalue of $X^TX$ and let $a_k$ be its unit eigenvector. Find the scalar projection of $x_i$ onto PC $k$.</p>
 <p><strong>Step 1:</strong> Actual unit PC is $w_k=Xa_k/\sqrt\lambda$.</p>
 <p><strong>Step 2:</strong> Dot product gives coordinate:</p>
 <p>$$\boxed{z_{ik}=x_i^Tw_k=\frac{x_i^TXa_k}{\sqrt\lambda}}.$$</p>
 <p>Scalar coordinate aur projection <strong>vector</strong> different hain; vector $z_{ik}w_k$ hoga. If $\alpha_k=a_k/\sqrt\lambda$ already defined ho, answer $x_i^TX\alpha_k$; double normalization mat karo.</p>
-<h2 id="topic-12">3. Kernel trick: Nonlinear data ko linear feature-space problem banana</h2>
-<h3 id="topic-13">3.1 Feature map and implicit dot product</h3>
+<h2 id="topic-13">3. Kernel trick: Nonlinear data ko linear feature-space problem banana</h2>
+<h3 id="topic-14">3.1 Feature map and implicit dot product</h3>
 <p><strong>Definition:</strong> Feature map $\phi(x)$ input se new coordinates banati hai. Kernel directly their dot product calculate karta hai:</p>
 <p>$$\boxed{k(x,y)=\langle\phi(x),\phi(y)\rangle}.$$</p>
 <p><strong>Real life:</strong> Housing price raw area ke saath nonlinear relation rakh sakti hai; area squared aur interaction features useful ho sakte hain. Kernel method aise feature interactions ke dot products directly compute karta hai.</p>
@@ -121,13 +134,13 @@ C=\begin{bmatrix}1&amp;-2&amp;1\\2&amp;5&amp;-2\\1&amp;-2&amp;2\end{bmatrix}.$$<
 <p><strong>Example intuition:</strong> Raw points $(t,t^2)$ parabola par hain. Features $(x_1,x_2,x_1^2)$ mein relation $\phi_2=\phi_3$ linear hai. Transformation relation linear bana sakti hai, but data always one-dimensional <strong>linear</strong> subspace mein collapse honge, aisi guarantee nahi.</p>
 <p><img src="assets/week2/02_feature_lift.png" loading="lazy" alt="A curved relation becomes a linear constraint after lifting" /></p>
 <p>Without trick: construct $\phi(x),\phi(y)$ → dot product. With trick: evaluate $k(x,y)$ directly. “Kernel matrix” $K_{ij}=k(x_i,x_j)$ still $n\times n$, chahe feature-space dimension $D$ finite ho ya infinite.</p>
-<h3 id="topic-14">Q6 — Scalar feature map and coefficient square root</h3>
+<h3 id="topic-15">Q6 — Scalar feature map and coefficient square root</h3>
 <p><strong>Question:</strong> For scalar inputs, find a feature map for $k(x,y)=10x^2y^2$.</p>
 <p><strong>Step 1:</strong> Desired same-input feature term $x^2$ hai. Coefficient 10 ko both factors mein split karo.</p>
 <p><strong>Step 2:</strong> Choose $\boxed{\phi(x)=\sqrt{10}\,x^2}$.</p>
 <p><strong>Step 3:</strong> Product $(\sqrt{10}x^2)(\sqrt{10}y^2)=10x^2y^2$. Choosing $10x^2$ would produce coefficient 100, wrong.</p>
 <p>General rule: for $c\geq0$, $k(x,y)=cf(x)f(y)$ admits $\phi(x)=\sqrt c\,f(x)$.</p>
-<h3 id="topic-15">Q7 — Normalized kernel and its feature map</h3>
+<h3 id="topic-16">Q7 — Normalized kernel and its feature map</h3>
 <p><strong>Question:</strong> Let $k(x,y)=\phi(x)^T\phi(y)$ be valid, and define</p>
 <p>$$k_1(x,y)=\frac{100k(x,y)}{\sqrt{k(x,x)}\sqrt{k(y,y)}}.$$</p>
 <p>Find a feature map for $k_1$.</p>
@@ -136,8 +149,8 @@ C=\begin{bmatrix}1&amp;-2&amp;1\\2&amp;5&amp;-2\\1&amp;-2&amp;2\end{bmatrix}.$$<
 <p>$$\boxed{\phi_1(x)=10\frac{\phi(x)}{\|\phi(x)\|}}.$$</p>
 <p><strong>Step 3:</strong> Dot product exactly given $k_1$ reproduce karta hai. Diagonal $k_1(x,x)=100$.</p>
 <p><strong>Condition:</strong> $k(x,x)&gt;0$ required. Zero feature vector par division undefined; without an explicit convention formula apply nahi hoti. General multiplier $c\geq0$ ho toh map $\sqrt c\,\phi(x)/\|\phi(x)\|$.</p>
-<h2 id="topic-16">4. Polynomial kernels: Feature count and actual map</h2>
-<h3 id="topic-17">4.1 Brackets placement matters</h3>
+<h2 id="topic-17">4. Polynomial kernels: Feature count and actual map</h2>
+<h3 id="topic-18">4.1 Brackets placement matters</h3>
 <p>For $x\in\mathbb R^d$, integer degree $p\geq1$:</p>
 <table>
 <thead>
@@ -162,7 +175,7 @@ C=\begin{bmatrix}1&amp;-2&amp;1\\2&amp;5&amp;-2\\1&amp;-2&amp;2\end{bmatrix}.$$<
 </table>
 <p>These are ambient feature-map dimensions, not data rank. Samples can occupy a smaller subspace. Number of points $n$ dimension formula mein nahi aata.</p>
 <p>Higher degree more feature interactions represent karta hai, so nonlinear flexibility can increase. Higher degree automatically better fit/generalization guarantee nahi. $d=100,p=3$ already $\binom{103}{3}=176851$ standard features: implicit kernel evaluation ka benefit clear hai.</p>
-<h3 id="topic-18">Q8 — Feature dimension: All distinct source cases</h3>
+<h3 id="topic-19">Q8 — Feature dimension: All distinct source cases</h3>
 <p><strong>Question:</strong> Find the feature-space dimensions for the inhomogeneous polynomial kernel $k(x,y)=(x^Ty+1)^p$ in these cases: (a) $d=4,p=3$; (b) $d=3,p=2$; (c) two-dimensional data with a quadratic relationship, using degree 2; (d) 1000 points in $\mathbb R^{20}$ with degree 3. Does increasing the degree increase the possible nonlinear interactions?</p>
 <p><strong>Step 1:</strong> Same formula $D=\binom{d+p}{p}$ use karo; sample count ignore for this calculation.</p>
 <table>
@@ -198,9 +211,12 @@ C=\begin{bmatrix}1&amp;-2&amp;1\\2&amp;5&amp;-2\\1&amp;-2&amp;2\end{bmatrix}.$$<
 </table>
 <p><strong>Step 2:</strong> Case (c) features can be $1,x_1,x_2,x_1^2,x_1x_2,x_2^2$, with suitable kernel coefficient weights. Relation $x_2=x_1^2$ creates a dependency on this dataset; ambient count remains 6.</p>
 <p><strong>Step 3:</strong> Yes, higher degree allows higher-order interactions. In case (d), $n=1000,d=20,D=1771$ are three different quantities. Another source revision case $d=2,p=3$ gives $\binom53=10$.</p>
-<h3 id="topic-19">4.2 Expand → match → square-root coefficients</h3>
+<p><strong>Same feature-count types:</strong> <code>Week 2.pdf</code>, Q11 (p. 23), mein <strong>200 examples, 3 features, degree 2</strong> hai: Q8(b) ka same $\binom52=10$. Q9 (p. 23) Q8(c) ka graph-based version hai; naya numerical solve repeat nahi karna.</p>
+<p><img src="assets/week2/08_source_quadratic_dataset.png" loading="lazy" alt="Week 2 PDF Q9: the supplied curved two-dimensional dataset" /></p>
+<p><strong>Graph ko kaise read karein:</strong> Points approximately U-shaped quadratic trend par hain. Degree 2 ka inhomogeneous kernel six monomial coordinates deta hai. Figure se exact $x_2=x_1^2$ equation ya exact zero reconstruction error infer nahi karna—scale aur scatter bhi matter karte hain. Ambient dimension <strong>6</strong> hai; points ka actual rank alag quantity hai.</p>
+<h3 id="topic-20">4.2 Expand → match → square-root coefficients</h3>
 <p>Feature maps need not be unique. Coordinate reordering or an orthogonal transformation gives the same dot products. Valid map check ka best method: $\phi(x)^T\phi(y)$ expand karke compare karo.</p>
-<h3 id="topic-20">Q9 — Three similar-looking kernels, three maps</h3>
+<h3 id="topic-21">Q9 — Three similar-looking kernels, three maps</h3>
 <p><strong>Question:</strong> For $x=(a,b)^T$ and $y=(c,d)^T$, construct feature maps for:</p>
 <ol>
 <li>$k_A(x,y)=(x^Ty+1)^2$.</li>
@@ -219,7 +235,37 @@ C=\begin{bmatrix}1&amp;-2&amp;1\\2&amp;5&amp;-2\\1&amp;-2&amp;2\end{bmatrix}.$$<
 <p>$$\boxed{\phi_C(x)=(1,a,b,a^2,b^2,ab)^T}.$$</p>
 <p>No $\sqrt2$ needed. Six entries, but kernel differs from A: same feature count does not mean same inner product.</p>
 <p><strong>Numerical check:</strong> $x=(1,2),y=(3,4)$ has dot product 11. Thus $k_A=144$, $k_B=122$, while $k_C=1+3+8+9+64+24=109$. Distinct answers catch bracket/coefficient mistakes.</p>
-<h3 id="topic-21">Q10 — Hyperbola becomes a linear constraint</h3>
+<h3 id="topic-22">Q9A — Homogeneous quadratic kernel: Constant feature bhi remove hota hai</h3>
+<p><strong>Connection:</strong> Q9 mein $(x^Ty+1)^2$ aur $(x^Ty)^2+1$ dekhe. Ab third bracket pattern $(x^Ty)^2$ ko compare karo: ismein linear aur constant terms dono absent hain.</p>
+<p><strong>Question:</strong> Consider the following kernel</p>
+<p>$$k:\mathbb R^2\times\mathbb R^2\to\mathbb R,\qquad k(x,y)=(x^Ty)^2,$$</p>
+<p>where $x=(x_1,x_2)$ and $y=(y_1,y_2)$. Which of the following transformation $\phi$ may corresponds to $k$?</p>
+<p>(i) $\phi([x_1,x_2]^T)=[x_1,x_1x_2,x_2]^T$</p>
+<p>(ii) $\phi([x_1,x_2]^T)=[x_1^2,x_1+x_2,x_2^2]^T$</p>
+<p>(iii) $\phi([x_1,x_2]^T)=[x_1,\sqrt2x_1^2x_2^2,x_2]^T$</p>
+<p>(iv) $\phi([x_1,x_2]^T)=[x_1^2,\sqrt2x_1x_2,x_2^2]^T$</p>
+<p><code>Week 2.pdf</code>, Q2, pp. 6–7; options source order mein hain.</p>
+<p><strong>Step 1 — Dot product expand karo:</strong></p>
+<p>$$x^Ty=x_1y_1+x_2y_2.$$</p>
+<p>$$k(x,y)=x_1^2y_1^2+2x_1x_2y_1y_2+x_2^2y_2^2.$$</p>
+<p><strong>Step 2 — Har product ki feature identify karo:</strong></p>
+<ul>
+<li>$x_1^2y_1^2$ ke liye coordinate $x_1^2$.</li>
+<li>$2x_1x_2y_1y_2$ ke liye coordinate $\sqrt2x_1x_2$.</li>
+<li>$x_2^2y_2^2$ ke liye coordinate $x_2^2$.</li>
+</ul>
+<p><strong>Step 3 — Verify:</strong></p>
+<p>$$\phi(x)^T\phi(y)=x_1^2y_1^2+(\sqrt2x_1x_2)(\sqrt2y_1y_2)+x_2^2y_2^2=k(x,y).$$</p>
+<p>$$\boxed{\text{Option (iv)},\quad D=\binom{2+2-1}{2}=3}.$$</p>
+<p><strong>Step 4 — Wrong options ka short check:</strong></p>
+<ul>
+<li>(i) $x=y=(2,0)$ par map norm squared 4, required kernel value 16.</li>
+<li>(ii) $x=y=(1,0)$ par map norm squared 2, required 1.</li>
+<li>(iii) $x=y=(2,0)$ par map norm squared 4, required 16.</li>
+</ul>
+<p><strong>Property:</strong> Same degree 2 hone se same feature count nahi hota: $(x^Ty)^2$ has <strong>3</strong>, $(x^Ty)^2+1$ has <strong>4</strong>, and $(x^Ty+1)^2$ has <strong>6</strong> standard features in $\mathbb R^2$.</p>
+<p><code>Week 2.pdf</code>, Q10 (p. 23), exactly Q9 Part C ka six-term kernel hai; uska map aur calculation wahin covered hai.</p>
+<h3 id="topic-23">Q10 — Hyperbola becomes a linear constraint</h3>
 <p><strong>Question:</strong> All points satisfy $x_1^2/a^2-x_2^2/b^2=1$, where $a,b\ne0$. For</p>
 <p>$$\phi(x)=(x_1^2,\sqrt2x_1x_2,\sqrt2x_1,x_2^2,\sqrt2x_2,1)^T,$$</p>
 <p>find a vector orthogonal to every mapped point.</p>
@@ -228,20 +274,64 @@ C=\begin{bmatrix}1&amp;-2&amp;1\\2&amp;5&amp;-2\\1&amp;-2&amp;2\end{bmatrix}.$$<
 <p>$$\boxed{u=(1/a^2,0,0,-1/b^2,0,-1)^T}.$$</p>
 <p><strong>Step 3:</strong> $u^T\phi(x)=x_1^2/a^2-x_2^2/b^2-1=0$. Hence all mapped points normal $u$ ke perpendicular subspace mein hain.</p>
 <p>Unit direction requested ho toh $u/\sqrt{a^{-4}+b^{-4}+1}$ use karo. Nonzero scalar multiple bhi orthogonal vector hai. Nonlinear raw relation ka linear feature-space constraint mil gaya.</p>
-<h2 id="topic-22">5. Valid kernels: Symmetry plus PSD</h2>
-<h3 id="topic-23">5.1 What must hold for every dataset?</h3>
+<h3 id="topic-24">4.3 Reverse connection: Feature-space normal se raw-space curve</h3>
+<p><strong>Definition:</strong> $u^T\phi(x)=0$ feature space ka linear constraint hai. $\phi(x)$ substitute karne par original coordinates mein nonlinear equation mil sakti hai.</p>
+<p><strong>Real-life connection:</strong> Raw measurements curved pattern follow karein, toh squared/interaction features mein woh same relation ek linear equation ban sakta hai. Ab Q10 ka direction reverse karenge: curve se normal nahi, normal se curve nikaalenge.</p>
+<p><strong>Property:</strong> Coordinate order fixed rakhna. $\phi(x)$ reorder karoge toh $u$ bhi same order mein reorder karna padega. “Nullspace of vector $u$” ka precise meaning yahan $\ker(u^T)$ hai.</p>
+<h3 id="topic-25">Q10A — Shifted ellipse from a feature-space constraint</h3>
+<p><strong>Question:</strong> Every element in a dataset $D$ is a vector of $\mathbb R^3$. $k:D\times D\to\mathbb R$ is defined as follows:</p>
+<p>$$k(x,x&#x27;)=(x^Tx&#x27;+1)^2.$$</p>
+<p>Every data point in a dataset is an element of $\mathbb R^2$. Every column vector is a data point. Using $\phi:\mathbb R^2\to\mathbb R^6$, we map every data point to $\mathbb R^6$.</p>
+<p>The following observation is made:</p>
+<p>$$\phi(x)^T\phi(y)=k(x,y),$$</p>
+<p>where $k(x,y)=(x^Ty+1)^2$ for every $x$ and $y$ in the data set.</p>
+<p>Every data point in the mapped space is in the nullspace of vector $u$, where</p>
+<p>$$u=\left(\frac1{a^2},\frac{-\sqrt2h}{a^2},\frac1{b^2},\frac{-\sqrt2k}{b^2},0,\frac{h^2}{a^2}+\frac{y^2}{k^2}-r^2\right)^T,\quad a,b,k,h\in\mathbb R.$$</p>
+<p>(i) What could possibly be $\phi(x)$, if $x=(x_1,x_2)$?</p>
+<p>(ii) What could possibly be the relationship between the features of every data point in $\mathbb R^2$?</p>
+<p><code>Week 2.pdf</code>, Q6, pp. 16–18. Upar printed question preserve kiya hai; PDF ke handwritten corrections mein first $\mathbb R^3$ ko $\mathbb R^2$ aur last coordinate ke $y^2/k^2$ ko $k^2/b^2$ kiya gaya hai. Neeche <strong>isi corrected interpretation</strong> ko solve kar rahe hain. Printed $y$ otherwise unspecified hai; silently usse $k$ assume nahi karna. Require $a,b\ne0$, and take real $r$.</p>
+<p><strong>Step 1 — Map ko $u$ ke order se match karo:</strong></p>
+<p>$$\boxed{\phi(x)=(x_1^2,\sqrt2x_1,x_2^2,\sqrt2x_2,\sqrt2x_1x_2,1)^T}.$$</p>
+<p>Yeh Q9 Part A ka reordered map hai. Its dot product:</p>
+<p>$$x_1^2y_1^2+2x_1y_1+x_2^2y_2^2+2x_2y_2+2x_1x_2y_1y_2+1=(x^Ty+1)^2.$$</p>
+<p><strong>Step 2 — Corrected normal likho:</strong></p>
+<p>$$u_c=\left(\frac1{a^2},\frac{-\sqrt2h}{a^2},\frac1{b^2},\frac{-\sqrt2k}{b^2},0,\frac{h^2}{a^2}+\frac{k^2}{b^2}-r^2\right)^T.$$</p>
+<p><strong>Step 3 — $u_c^T\phi(x)=0$ term by term:</strong></p>
+<p>$$\frac{x_1^2}{a^2}-\frac{2hx_1}{a^2}+\frac{x_2^2}{b^2}-\frac{2kx_2}{b^2}+\frac{h^2}{a^2}+\frac{k^2}{b^2}-r^2=0.$$</p>
+<p>Cross term absent hai because $u_c$ ka fifth coordinate zero hai. $\sqrt2\times\sqrt2=2$ linear coefficients mein use hua.</p>
+<p><strong>Step 4 — Complete squares:</strong></p>
+<p>$$\frac{x_1^2-2hx_1+h^2}{a^2}+\frac{x_2^2-2kx_2+k^2}{b^2}=r^2.$$</p>
+<p>$$\boxed{\frac{(x_1-h)^2}{a^2}+\frac{(x_2-k)^2}{b^2}=r^2}.$$</p>
+<p><strong>Step 5 — Geometry read karo:</strong></p>
+<ul>
+<li>$r\ne0$: ellipse centered at $(h,k)$.</li>
+<li>Horizontal semi-axis $|ar|$; vertical semi-axis $|br|$.</li>
+<li>$r=1$: familiar form with right-hand side 1.</li>
+<li>$r=0$: equation sirf single point $(h,k)$ deti hai; nondegenerate ellipse nahi.</li>
+</ul>
+<p>PDF ki printed solution mein $x_2$ ki jagah $y_1$, aur general $r^2$ ki jagah 1 aa gaya hai. Right-hand side 1 sirf $r^2=1$ par valid hai; handwritten correction bhi $r^2$ retain karti hai.</p>
+<p><img src="assets/week2/09_shifted_ellipse.png" loading="lazy" alt="Shifted ellipse in raw space and its linear relation after transformation" /></p>
+<p><strong>Step 6 — Concrete check:</strong> Figure ke liye $a=2,b=1,h=1,k=-1,r=1$ choose kiya. Point $(3,-1)$ par</p>
+<p>$$\frac{(3-1)^2}{4}+(-1+1)^2=1.$$</p>
+<p>Corrected normal aur map ka dot product bhi zero milta hai. Is tarah equation aur feature-space constraint independently match kar sakte hain.</p>
+<p><strong>Printed expression ko literally use karne par:</strong> Last coordinate ko fixed constant $c$ likho. Same steps se</p>
+<p>$$\frac{(x_1-h)^2}{a^2}+\frac{(x_2-k)^2}{b^2}=\frac{h^2}{a^2}+\frac{k^2}{b^2}-c.$$</p>
+<p>Thus fixed $c=h^2/a^2+y^2/k^2-r^2$ ho toh RHS $r^2+k^2/b^2-y^2/k^2$ hai, automatically $r^2$ nahi. Agar $y$ varying input hai, $u$ fixed normal hi nahi rahega.</p>
+<p><strong>Same question:</strong> <code>Week 2.pdf</code>, Q8 (pp. 20–22), Q10 ka hyperbola-to-normal direction repeat karta hai; usko dobara solve nahi kiya.</p>
+<h2 id="topic-26">5. Valid kernels: Symmetry plus PSD</h2>
+<h3 id="topic-27">5.1 What must hold for every dataset?</h3>
 <p><strong>Definition:</strong> Real kernel valid hai if every finite input set ki Gram matrix symmetric PSD ho. Course mein is criterion ko Mercer condition kaha jaata hai.</p>
 <p>$$k(x,y)=k(y,x),\qquad\sum_{i,j}c_ic_jk(x_i,x_j)\geq0\quad\text{for all real }c_i.$$</p>
 <p>Ek sample matrix PSD milna universal validity prove nahi karta; ek non-PSD counterexample invalidity prove kar deta hai. Explicit feature map dena validity establish karne ka direct method hai.</p>
 <p><strong>Useful rules:</strong> If $k_1,k_2$ valid, then $ak_1+bk_2$ valid for $a,b\geq0$; product $k_1(x,y)k_2(x,y)$ valid; $f(x)f(y)k_1(x,y)$ valid. Constant $c\geq0$ kernel valid. Thus $(k_1+k_2)^2$ is valid as a <strong>pointwise</strong> square, not an ambiguous matrix operation.</p>
 <p>Subtraction <strong>not guaranteed</strong>. Counterexample: $k_1=1,k_2=2$ both valid constant kernels, but $k_1-k_2=-1$ has negative diagonal. Some subtractions can be valid, e.g. $k_1-k_1=0$.</p>
-<h3 id="topic-24">Q11 — Different factors on x and y</h3>
+<h3 id="topic-28">Q11 — Different factors on x and y</h3>
 <p><strong>Question:</strong> If $k$ is a valid kernel, is $k&#x27;(x,y)=\sin(x)\cos(y)k(x,y)$ necessarily valid?</p>
 <p><strong>Step 1:</strong> Swap inputs: multiplier becomes $\sin(y)\cos(x)$, generally different.</p>
 <p><strong>Step 2 — Explicit counterexample:</strong> Choose valid $k(x,y)=1$, $x=0,y=\pi/2$. Then $k&#x27;(x,y)=0$, but $k&#x27;(y,x)=1$.</p>
 <p>$$\boxed{\text{Not necessarily valid}}.$$</p>
 <p>Special zero kernel could make it valid; general construction guarantee fail hoti hai. By contrast $\sin(x)\sin(y)k(x,y)$ uses same factor on both sides and is valid.</p>
-<h3 id="topic-25">Q12 — Feature-sum kernels</h3>
+<h3 id="topic-29">Q12 — Feature-sum kernels</h3>
 <p>September 2024 pattern.</p>
 <p><strong>Question:</strong> For $x=(x_1,x_2)^T$, $y=(y_1,y_2)^T$, determine which are valid:</p>
 <p>$$k_1=x_1y_1+x_2y_2+(x_1+x_2)(y_1+y_2),$$</p>
@@ -249,14 +339,14 @@ C=\begin{bmatrix}1&amp;-2&amp;1\\2&amp;5&amp;-2\\1&amp;-2&amp;2\end{bmatrix}.$$<
 <p><strong>Step 1:</strong> For $k_1$, choose $\phi(x)=(x_1,x_2,x_1+x_2)$. Its dot product exactly $k_1$, so valid.</p>
 <p><strong>Step 2:</strong> For $k_2$, take $x=(1,0),y=(0,0)$: $k_2(x,y)=4$, $k_2(y,x)=3$. Not symmetric.</p>
 <p>$$\boxed{k_1\text{ valid},\quad k_2\text{ invalid}}.$$</p>
-<h3 id="topic-26">Q13 — Product feature and constant feature</h3>
+<h3 id="topic-30">Q13 — Product feature and constant feature</h3>
 <p>May 2024 pattern.</p>
 <p><strong>Question:</strong> Are both $k_1(x,y)=x_1y_1+x_2y_2+x_1x_2y_1y_2$ and $k_2(x,y)=k_1(x,y)+1$ valid kernels?</p>
 <p><strong>Step 1:</strong> $\phi_1(x)=(x_1,x_2,x_1x_2)$ gives $k_1$.</p>
 <p><strong>Step 2:</strong> Append constant feature: $\phi_2(x)=(x_1,x_2,x_1x_2,1)$ gives $k_2$.</p>
 <p>$$\boxed{\text{Both valid}}.$$</p>
 <p>Adding 1 is adding a nonnegative constant kernel; it does not break PSD.</p>
-<h3 id="topic-27">Q14 — RBF, polynomial, distance and exponential distance</h3>
+<h3 id="topic-31">Q14 — RBF, polynomial, distance and exponential distance</h3>
 <p>October 2025 pattern.</p>
 <p><strong>Question:</strong> Which are valid kernels, for $\sigma&gt;0$, $c\geq0$ and integer $p\geq1$?</p>
 <p>A. $e^{-\|x-y\|^2/(2\sigma^2)}$</p>
@@ -269,13 +359,14 @@ C=\begin{bmatrix}1&amp;-2&amp;1\\2&amp;5&amp;-2\\1&amp;-2&amp;2\end{bmatrix}.$$<
 <p><strong>D:</strong> Exponential Euclidean-distance kernel, valid. Squared and unsquared distances here produce different kernels, but both A,D are valid.</p>
 <p>$$\boxed{A,B,D}.$$</p>
 <p>Distance being symmetric is not enough to make it a valid dot-product kernel.</p>
-<h3 id="topic-28">Q15 — Asymmetric polynomial expression</h3>
+<h3 id="topic-32">Q15 — Asymmetric polynomial expression</h3>
 <p><strong>Question:</strong> For scalar inputs, is $k(x,y)=xy+x^2y+y^2x^3+1$ a valid kernel?</p>
 <p><strong>Step 1:</strong> Swap: $k(y,x)=xy+y^2x+x^2y^3+1$.</p>
 <p><strong>Step 2:</strong> Concrete check $x=1,y=2$: $k(1,2)=2+2+4+1=9$, $k(2,1)=2+4+8+1=15$.</p>
 <p>$$\boxed{\text{Invalid: symmetry fails}}.$$</p>
 <p>No eigendecomposition needed after finding this counterexample.</p>
-<h3 id="topic-29">Q16 — Kernel validity plus matrix properties</h3>
+<p><strong>Same symmetry-test type:</strong> <code>Week 2.pdf</code>, Q3 (pp. 8–9), mein expression $k(s,t)=st+s^2t^2+s^3t+1$ hai. Q15 ka swap-input method directly apply hota hai: $k(1,2)=9$ aur $k(2,1)=15$, so <strong>No</strong>. Formula different hai, lekin solution technique same—alag full worked question ki zarurat nahi.</p>
+<h3 id="topic-33">Q16 — Kernel validity plus matrix properties</h3>
 <p><strong>Question:</strong> Which statements are true?</p>
 <p>A. $k(x,y)=(x^Ty)^3$ is a valid kernel.</p>
 <p>B. $k(x,y)=e^{-\|x-y\|^2}$ is a valid kernel.</p>
@@ -285,20 +376,20 @@ C=\begin{bmatrix}1&amp;-2&amp;1\\2&amp;5&amp;-2\\1&amp;-2&amp;2\end{bmatrix}.$$<
 <p><strong>Step 2:</strong> C true: both traces sum all squared data entries.</p>
 <p><strong>Step 3:</strong> D false in general: vector dimensions differ; only nonzero eigenvalues guaranteed shared.</p>
 <p>$$\boxed{A,B,C}.$$</p>
-<h2 id="topic-30">6. Gaussian/RBF and mixed kernels</h2>
-<h3 id="topic-31">6.1 Distance-to-similarity intuition</h3>
+<h2 id="topic-34">6. Gaussian/RBF and mixed kernels</h2>
+<h3 id="topic-35">6.1 Distance-to-similarity intuition</h3>
 <p>$$\boxed{k(x,y)=\exp\left[-\frac{\|x-y\|^2}{2\sigma^2}\right]},\qquad\sigma&gt;0.$$</p>
 <p>Close points: similarity near 1. Far points: near 0. For finite inputs, $0&lt;k\leq1$, and raw RBF diagonal $k(x,x)=1$.</p>
 <p>Small $\sigma$: narrow neighbourhood, similarity drops quickly. Large $\sigma$: even distant points look similar. For distinct fixed samples, $\sigma\to0$ makes raw $K\to I$; $\sigma\to\infty$ makes $K\to\mathbf1\mathbf1^T$. After centering the latter tends to zero, so variance disappears. Duplicate points keep similarity 1 even as $\sigma\to0$.</p>
 <p><img src="assets/week2/03_rbf_bandwidth.png" loading="lazy" alt="RBF similarity as distance and bandwidth vary" /></p>
 <p>RBF has an infinite-dimensional feature-space representation on the continuous Euclidean domain; a finite dataset still yields a finite $n\times n$ kernel matrix and finite-rank scores. Polynomial has finite standard feature dimension.</p>
-<h3 id="topic-32">Q17 — Direct RBF value</h3>
+<h3 id="topic-36">Q17 — Direct RBF value</h3>
 <p><strong>Question:</strong> Using the Gaussian kernel with $\sigma=1$, calculate $k((0,1),(1,0))$.</p>
 <p><strong>Step 1:</strong> Difference $(-1,1)$.</p>
 <p><strong>Step 2:</strong> Squared distance $1+1=2$.</p>
 <p><strong>Step 3:</strong> $k=e^{-2/(2\cdot1^2)}=e^{-1}=\boxed{0.3679\approx0.37}$.</p>
 <p>Square, sum, divide by $2\sigma^2$, then exponentiate. Do not put plain distance $\sqrt2$ into squared-distance formula.</p>
-<h3 id="topic-33">Q18 — Mixed kernel entries</h3>
+<h3 id="topic-37">Q18 — Mixed kernel entries</h3>
 <p><strong>Question:</strong> Let $k=k_{mathrm{RBF}}+3k_{mathrm{poly}}$, where $k_{mathrm{poly}}(x,y)=(x^Ty+1)^3$. If $x_1^Tx_1=5$, find $k(x_1,x_1)$. Explain how to calculate other entries and whether an off-diagonal entry can be negative.</p>
 <p><strong>Step 1:</strong> Self RBF value 1.</p>
 <p><strong>Step 2:</strong> Polynomial part $(5+1)^3=216$, weighted contribution $648$.</p>
@@ -307,18 +398,75 @@ C=\begin{bmatrix}1&amp;-2&amp;1\\2&amp;5&amp;-2\\1&amp;-2&amp;2\end{bmatrix}.$$<
 <p>$$K_{ij}=e^{-\|x_i-x_j\|^2/(2\sigma^2)}+3(x_i^Tx_j+1)^3.$$</p>
 <p>Negative off-diagonal possible: if $x_i^Tx_j=-3$, polynomial contribution $3(-2)^3=-24$, plus positive RBF contribution. For a distant pair, total can be close to $-24$ without violating PSD.</p>
 <p>PDF quotes $k(x_2,x_4)\approx-24$ but does not give the needed pair coordinates/bandwidth there; that particular entry cannot be independently recomputed. Weighted sum kernel is valid because both components valid and weights nonnegative.</p>
-<h2 id="topic-34">7. Kernel centering: Mean feature vector subtract karna</h2>
-<h3 id="topic-35">7.1 Raw centering is not feature-space centering</h3>
+<h3 id="topic-38">Q18A — Full four-point mixed-kernel matrix</h3>
+<p><strong>Connection:</strong> Q18 mein diagonal aur individual entries ka method covered hai. Naye PDF ne complete coordinates aur exact Gaussian exponent de diya hai; ab missing full matrix determine ho sakti hai.</p>
+<p><strong>Question:</strong> Suppose $k_1(x,y)=\exp(-\|x-y\|^2)$ is a Gaussian (RBF) kernel and $k_2(x,y)=(x^Ty+1)^3$ is a polynomial kernel of degree 3. If a new kernel function $k$ is defined as</p>
+<p>$$k(x,y)=k_1(x,y)+3k_2(x,y),$$</p>
+<p>then find the kernel matrix $K$ for the following dataset:</p>
+<p>$$\left\{\begin{bmatrix}1\\2\end{bmatrix},\begin{bmatrix}-1\\2\end{bmatrix},\begin{bmatrix}1\\-2\end{bmatrix},\begin{bmatrix}-1\\-2\end{bmatrix}\right\}.$$</p>
+<p><code>Week 2.pdf</code>, Q4, pp. 10–12.</p>
+<p><strong>Step 1 — Label and read the exponent:</strong></p>
+<p>$$x_1=(1,2)^T,\quad x_2=(-1,2)^T,\quad x_3=(1,-2)^T,\quad x_4=(-1,-2)^T.$$</p>
+<p>Given Gaussian is $e^{-\|x-y\|^2}$, so extra $1/2$ mat insert karo. Standard $e^{-\|x-y\|^2/(2\sigma^2)}$ notation mein $\sigma=1/\sqrt2$.</p>
+<p><strong>Step 2 — All diagonals:</strong> Har point ki squared norm 5; Q18 ki same diagonal calculation gives $K_{ii}=649$.</p>
+<p><strong>Step 3 — Horizontal pair $(1,2)$:</strong></p>
+<p>$$x_1^Tx_2=1(-1)+2(2)=3,\qquad\|x_1-x_2\|^2=2^2+0^2=4.$$</p>
+<p>$$K_{12}=e^{-4}+3(3+1)^3=\boxed{192+e^{-4}\approx192.01831564}.$$</p>
+<p>Pair $(3,4)$ ki geometry same, so $K_{34}=K_{12}$.</p>
+<p><strong>Step 4 — Vertical pair $(1,3)$:</strong></p>
+<p>$$x_1^Tx_3=1(1)+2(-2)=-3,\qquad\|x_1-x_3\|^2=0^2+4^2=16.$$</p>
+<p>$$K_{13}=e^{-16}+3(-3+1)^3=\boxed{-24+e^{-16}\approx-23.99999989}.$$</p>
+<p>Similarly $K_{24}=K_{13}$. This supplies the previously missing data behind Q18's $k(x_2,x_4)\approx-24$.</p>
+<p><strong>Step 5 — Opposite-corner pair $(1,4)$:</strong></p>
+<p>$$x_1^Tx_4=1(-1)+2(-2)=-5,\qquad\|x_1-x_4\|^2=2^2+4^2=20.$$</p>
+<p>$$K_{14}=e^{-20}+3(-5+1)^3=\boxed{-192+e^{-20}\approx-191.999999998}.$$</p>
+<p>Similarly $K_{23}=K_{14}$.</p>
+<p><strong>Step 6 — Fill using symmetry:</strong> Define $A=192+e^{-4}$, $B=-24+e^{-16}$, $C=-192+e^{-20}$.</p>
+<p>$$\boxed{K=\begin{bmatrix}
+649&amp;A&amp;B&amp;C\\
+A&amp;649&amp;C&amp;B\\
+B&amp;C&amp;649&amp;A\\
+C&amp;B&amp;A&amp;649
+\end{bmatrix}}.$$</p>
+<p>Two-decimal representation:</p>
+<p>$$\boxed{K\approx\begin{bmatrix}
+649.00&amp;192.02&amp;-24.00&amp;-192.00\\
+192.02&amp;649.00&amp;-192.00&amp;-24.00\\
+-24.00&amp;-192.00&amp;649.00&amp;192.02\\
+-192.00&amp;-24.00&amp;192.02&amp;649.00
+\end{bmatrix}}.$$</p>
+<p>PDF prints <strong>192.01</strong>; correct rounding of $192+e^{-4}$ to two decimals is <strong>192.02</strong>. Keep exponentials until the final step.</p>
+<p><img src="assets/week2/10_mixed_kernel_matrix.png" loading="lazy" alt="The four data points and their mixed-kernel matrix" /></p>
+<p><strong>Checks and properties:</strong></p>
+<ul>
+<li>$K=K^T$ and all diagonal entries equal 649.</li>
+<li>Negative off-diagonals valid hain; PSD ka matlab entry-wise positive nahi.</li>
+<li>Kernel valid hai because it is a nonnegative weighted sum of two valid kernels.</li>
+<li>Yeh <strong>raw</strong> kernel matrix hai. Raw points ka mean zero hone ke bawajood nonlinear feature mean generally zero nahi—next section mein isi difference ko center karenge.</li>
+</ul>
+<h2 id="topic-39">7. Kernel centering: Mean feature vector subtract karna</h2>
+<h3 id="topic-40">7.1 Raw centering is not feature-space centering</h3>
 <p><strong>Counterexample:</strong> Raw scalar data $\{-1,1\}$ have mean zero. Map $\phi(x)=x^2$ gives $\{1,1\}$, mean 1. So centered raw input does not imply centered nonlinear features.</p>
 <p>Let $\Phi=[\phi(x_1)\ \cdots\ \phi(x_n)]$, mean $m=\frac1n\sum_i\phi(x_i)$. Centered features $\tilde\phi_i=\phi(x_i)-m$.</p>
 <p>Kernel PCA uses their Gram matrix, without explicitly constructing $m$:</p>
 <p>$$\boxed{K_c=HKH},\qquad\boxed{H=I-\frac1n\mathbf1\mathbf1^T}.$$</p>
-<h3 id="topic-36">7.2 Entry-wise calculation</h3>
+<h4 id="topic-41">PDF Q1 ka hint — Mean subtraction se centering formula</h4>
+<p><code>Week 2.pdf</code>, Q1 (pp. 2–5), exactly Q20 ka matrix poochhta hai. Uska hint feature-space centering se formula obtain karne ko kehta hai; numerical solve Q20 mein ek hi baar rahega.</p>
+<p><strong>Question:</strong> “First try to find how to center $\phi(X)$ using above hint and apply that idea to $K=\phi(X)^T\phi(X)$.” The hint gives the mean vector as $X\mathbf1/n$.</p>
+<p><strong>Step 1 — Mean ki repeated columns:</strong> Put $\Phi=\phi(X)$ and $J=\mathbf1\mathbf1^T/n$. Then $\Phi J$ ki every column feature mean $m=\Phi\mathbf1/n$ hai.</p>
+<p><strong>Step 2 — Subtract from every feature vector:</strong></p>
+<p>$$\Phi_c=\Phi-\Phi J=\Phi(I-J)=\Phi H.$$</p>
+<p><strong>Step 3 — Centered inner products lo:</strong> $J^T=J$, hence $H^T=H$.</p>
+<p>$$K_c=\Phi_c^T\Phi_c=H\Phi^T\Phi H=HKH.$$</p>
+<p><strong>Step 4 — Expand only the required identity:</strong></p>
+<p>$$\boxed{K_c=(I-J)K(I-J)=K-KJ-JK+JKJ}.$$</p>
+<p>$KJ$ row means repeat karta hai, $JK$ column means, aur $JKJ$ grand mean. Isi identity ka entry-wise version next subsection mein hai.</p>
+<h3 id="topic-42">7.2 Entry-wise calculation</h3>
 <p>For symmetric $K$, row means $r_i=\frac1n\sum_jK_{ij}$ and grand mean $g=\frac1{n^2}\sum_{i,j}K_{ij}$:</p>
 <p>$$\boxed{(K_c)_{ij}=K_{ij}-r_i-r_j+g}.$$</p>
 <p>Subtract row and column averages, add grand average once because it was removed twice. Different row means ko same number assume mat karo.</p>
 <p>Properties: $K_c$ symmetric PSD, $K_c\mathbf1=0$, row/column sums zero, rank $\leq n-1$. Negative entries allowed. Raw RBF diagonal 1 hoti hai; <strong>centered</strong> RBF diagonal generally 1 nahi hoti.</p>
-<h3 id="topic-37">Q19 — Two-point polynomial centering</h3>
+<h3 id="topic-43">Q19 — Two-point polynomial centering</h3>
 <p><strong>Question:</strong> Let $X=\begin{bmatrix}1&amp;0\\0&amp;1\\0&amp;0\end{bmatrix}$ contain two points as columns, and use $k(x,y)=(1+x^Ty)^2$. Find the centered kernel matrix.</p>
 <p><strong>Step 1:</strong> $x_1=(1,0,0)$, $x_2=(0,1,0)$; self dot products 1, cross dot 0.</p>
 <p>$$K=\begin{bmatrix}4&amp;1\\1&amp;4\end{bmatrix}.$$</p>
@@ -326,7 +474,7 @@ C=\begin{bmatrix}1&amp;-2&amp;1\\2&amp;5&amp;-2\\1&amp;-2&amp;2\end{bmatrix}.$$<
 <p><strong>Step 3:</strong> Diagonal $4-2.5-2.5+2.5=1.5$; off-diagonal $1-2.5-2.5+2.5=-1.5$.</p>
 <p>$$\boxed{K_c=\begin{bmatrix}1.5&amp;-1.5\\-1.5&amp;1.5\end{bmatrix}}.$$</p>
 <p><strong>Check:</strong> Row sums zero, eigenvalues $3,0$ nonnegative. Source calculation drops the all-zero third coordinate; kernel values remain the same, but original matrix has $d=3,n=2$.</p>
-<h3 id="topic-38">Q20 — Three-point centering with unequal means</h3>
+<h3 id="topic-44">Q20 — Three-point centering with unequal means</h3>
 <p><strong>Question:</strong> Center the kernel matrix</p>
 <p>$$K=\begin{bmatrix}1&amp;0.8&amp;0.5\\0.8&amp;1&amp;0.6\\0.5&amp;0.6&amp;1\end{bmatrix}.$$</p>
 <p><strong>Step 1:</strong> Row means $r=(23/30,4/5,7/10)$.</p>
@@ -340,8 +488,8 @@ C=\begin{bmatrix}1&amp;-2&amp;1\\2&amp;5&amp;-2\\1&amp;-2&amp;2\end{bmatrix}.$$<
 <p>$$\approx\begin{bmatrix}0.222222&amp;-0.011111&amp;-0.211111\\-0.011111&amp;0.155556&amp;-0.144444\\-0.211111&amp;-0.144444&amp;0.355556\end{bmatrix}.$$</p>
 <p><strong>Check:</strong> Numerator row sums $20-1-19=0$, $-1+14-13=0$, $-19-13+32=0$. PDF's entries $0.2,-0.1889,0.4$ in the lower block are arithmetic errors; corrected values above follow the same stated $K$.</p>
 <p><img src="assets/week2/04_centering_heatmap.png" loading="lazy" alt="Raw and centered kernel matrices with exact centering checks" /></p>
-<h2 id="topic-39">8. Kernel PCA eigenvalues, normalization and scores</h2>
-<h3 id="topic-40">8.1 One consistent notation</h3>
+<h2 id="topic-45">8. Kernel PCA eigenvalues, normalization and scores</h2>
+<h3 id="topic-46">8.1 One consistent notation</h3>
 <p>For positive eigenpairs of the <strong>centered</strong> Gram matrix:</p>
 <p>$$K_c\beta_j=\mu_j\beta_j,\qquad\|\beta_j\|=1,\qquad\mu_1\geq\mu_2\geq\cdots&gt;0.$$</p>
 <p>Feature covariance $C_\phi=\Phi_c\Phi_c^T/n$ has eigenvalues $\boxed{\lambda_j=\mu_j/n}$.</p>
@@ -352,13 +500,13 @@ w_j=\Phi_c\alpha_j,\qquad\boxed{\alpha_j^TK_c\alpha_j=1}.$$</p>
 \boxed{z_{ij}=\sum_\ell(\alpha_j)_\ell (K_c)_{\ell i}}.$$</p>
 <p>Use <strong>centered</strong> kernel values for centered scores. Raw $K\alpha$ generally has a constant offset. Even if $\sum_i\alpha_i=0$, raw and centered projections need not coincide.</p>
 <p><strong>Variance check:</strong> $\frac1n\sum_i z_{ij}^2=\mu_j/n=\lambda_j$. Explained fractions can directly use $\mu_j/\sum_\ell\mu_\ell$: common $1/n$ cancels.</p>
-<h3 id="topic-41">Q21 — Kernel eigenvalue versus covariance eigenvalue</h3>
+<h3 id="topic-47">Q21 — Kernel eigenvalue versus covariance eigenvalue</h3>
 <p><strong>Question:</strong> Kernel PCA is performed on 100 data points. The largest eigenvalue of the centered kernel matrix is 10. Find the largest feature-space covariance eigenvalue using the $1/n$ convention.</p>
 <p><strong>Step 1:</strong> Identify: given 10 belongs to $K_c$, not $K_c/n$.</p>
 <p><strong>Step 2:</strong> $\boxed{\lambda_{\max}=10/100=0.1}$.</p>
 <p>Same scaling ka source variation: $n=100$ aur kernel eigenvalues $30,20,10$ ho toh PC variances $0.3,0.2,0.1$.</p>
 <p>This exact example recurs in the supplied PDF's eigenvalue section, algorithm and numerical discussion. One calculation covers all occurrences. If eigenvalue already belonged to normalized $K_c/n$, do not divide again.</p>
-<h3 id="topic-42">Q22 — Can the number of kernel PCs exceed d?</h3>
+<h3 id="topic-48">Q22 — Can the number of kernel PCs exceed d?</h3>
 <p><strong>Question:</strong> There are 1000 data points in $\mathbb R^{20}$. Can Kernel PCA produce 50 nonzero components? Can it produce 1001? What is the upper bound after centering?</p>
 <p><strong>Step 1:</strong> Raw linear PCA has at most $\min(d,n-1)=20$ nonzero PCs.</p>
 <p><strong>Step 2:</strong> Feature-space dimension $D$ can exceed 20. Kernel PCA can have 50 nonzero PCs if feature data rank is at least 50; e.g. degree-three polynomial ambient dimension 1771 permits that rank.</p>
@@ -366,7 +514,8 @@ w_j=\Phi_c\alpha_j,\qquad\boxed{\alpha_j^TK_c\alpha_j=1}.$$</p>
 <p>$$\boxed{k\leq\operatorname{rank}(K_c)\leq\min(D,n-1)}.$$</p>
 <p>Here upper bound 999 (or lower if feature rank smaller). <strong>50 possible, 1001 impossible.</strong> Source's $k\leq n$ is a loose bound; the sharper centered bound is $n-1$.</p>
 <p>For the final three-point master example, $n-1=2$, so $k&gt;2$ nonzero PCs impossible even though feature space is 6D.</p>
-<h3 id="topic-43">8.2 Complete training pipeline</h3>
+<p><strong>Same question:</strong> <code>Week 2.pdf</code>, Q12 (p. 24), asks whether the first $k$ kernel PCs can exceed raw dimension $d$ for 1000 points. Q22 answers <strong>Yes, if transformed rank permits it</strong>. Naye PDF ke solution ka initial “No” standard PCA ke liye hai; Kernel PCA ke final answer ko “No” mat read karna. Centering ke baad sharper sample limit $999$ hai.</p>
+<h3 id="topic-49">8.2 Complete training pipeline</h3>
 <ol>
 <li>Choose kernel and parameters; form $K_{ij}=k(x_i,x_j)$.</li>
 <li>Store training row means and grand mean; compute $K_c=HKH$.</li>
@@ -376,7 +525,7 @@ w_j=\Phi_c\alpha_j,\qquad\boxed{\alpha_j^TK_c\alpha_j=1}.$$</p>
 </ol>
 <p>Zero eigenvalues cannot be normalized by this formula. Tiny numerical negatives near zero may be roundoff; substantial negative eigenvalues signal a kernel/calculation problem. Full kernel storage $O(n^2)$ and dense eigendecomposition $O(n^3)$ can be expensive for large $n$; kernel trick avoids huge $D$, not all computation.</p>
 <p><img src="assets/week2/05_pipeline.png" loading="lazy" alt="Kernel PCA training and new-point flow" /></p>
-<h3 id="topic-44">Q23 — Fully worked two-point eigensystem</h3>
+<h3 id="topic-50">Q23 — Fully worked two-point eigensystem</h3>
 <p><strong>Question:</strong> Given centered $K_c=\begin{bmatrix}1&amp;-1\\-1&amp;1\end{bmatrix}$, find its eigenvalues, a unit first eigenvector, normalized coefficients, feature covariance eigenvalue and training scores.</p>
 <p><strong>Step 1:</strong> Characteristic equation $(1-\mu)^2-1=\mu(\mu-2)=0$, so eigenvalues $2,0$.</p>
 <p><strong>Step 2:</strong> For 2, eigenvector direction $(1,-1)$; unit $\beta=(1,-1)/\sqrt2$.</p>
@@ -387,20 +536,20 @@ w_j=\Phi_c\alpha_j,\qquad\boxed{\alpha_j^TK_c\alpha_j=1}.$$</p>
 <p>$$z_2=(-1)(1/2)+1(-1/2)=-1.$$</p>
 <p>$$\boxed{z=(1,-1)^T}.$$</p>
 <p>Check mean zero and variance $(1+1)/2=1$. Here $\|\alpha\|^2=1/2$, not 1; $\alpha^TK_c\alpha=1$.</p>
-<h2 id="topic-45">9. New-point projection and the linear-kernel check</h2>
-<h3 id="topic-46">9.1 Center a new point using the training mean</h3>
+<h2 id="topic-51">9. New-point projection and the linear-kernel check</h2>
+<h3 id="topic-52">9.1 Center a new point using the training mean</h3>
 <p><strong>Definition:</strong> New point must be measured relative to the same feature-space origin used during training. Training set mein new point add karke mean/eigenvectors recompute karna prediction nahi, refitting hoga.</p>
 <p>Let $q_i=k(x_i,x_*)$, training row means $r_i$, training grand mean $g$, and $\bar q=\frac1n\sum_iq_i$. Centered cross-kernel vector:</p>
 <p>$$\boxed{q_i^c=q_i-r_i-\bar q+g},\qquad
 \boxed{z_{*j}=\alpha_j^Tq^c}.$$</p>
 <p>Using training centering is necessary even if $x_*$ raw input is centered. For positive-eigenvalue components, $\mathbf1^T\alpha_j=0$, so score can simplify to $\alpha_j^T(q-r)$; keeping full formula is safer in hand calculations.</p>
-<h3 id="topic-47">Q24 — Weighted kernel values: What is actually determined?</h3>
+<h3 id="topic-53">Q24 — Weighted kernel values: What is actually determined?</h3>
 <p><strong>Question:</strong> Given coefficients $\alpha=(0.2,0.5,0.3)^T$ and kernel values between three training points and a target point $q=(2,4,1)^T$, compute the weighted projection expression.</p>
 <p><strong>Step 1:</strong> Multiply corresponding entries: $0.2\cdot2=0.4$, $0.5\cdot4=2$, $0.3\cdot1=0.3$.</p>
 <p><strong>Step 2:</strong> Sum:</p>
 <p>$$\boxed{\alpha^Tq=0.4+2+0.3=2.7}.$$</p>
 <p><strong>Scope:</strong> This is the supplied example's kernel weighted-sum arithmetic. If $q$ is raw, centered PCA score additionally needs training centering statistics. Also $\mathbf1^T\alpha=1$, whereas a standard positive-eigenvalue $K_c$ coefficient vector must sum to zero. Thus these givens do not establish a properly normalized nonzero centered-KPCA component; do not use 2.7 as an unconditional centered score.</p>
-<h3 id="topic-48">Q25 — Three-point linear kernel: Full consistency check</h3>
+<h3 id="topic-54">Q25 — Three-point linear kernel: Full consistency check</h3>
 <p><strong>Question:</strong> For $x_1=(1,0)^T$, $x_2=(0,1)^T$, $x_3=(1,1)^T$, use $k(x,y)=x^Ty$. Compute the raw and centered Gram matrices, eigenvalues, normalized coefficients and training scores. Verify agreement with ordinary centered PCA.</p>
 <p><strong>Step 1 — Raw Gram:</strong></p>
 <p>$$K=\begin{bmatrix}1&amp;0&amp;1\\0&amp;1&amp;1\\1&amp;1&amp;2\end{bmatrix}.$$</p>
@@ -442,8 +591,8 @@ w_j=\Phi_c\alpha_j,\qquad\boxed{\alpha_j^TK_c\alpha_j=1}.$$</p>
 </table>
 <p><strong>Step 7 — Ordinary PCA check:</strong> Raw mean $(2/3,2/3)$; covariance $C=\frac19\begin{bmatrix}2&amp;-1\\-1&amp;2\end{bmatrix}$ has eigenvalues $1/3,1/9$, exactly $\mu_1/3,\mu_2/3$. Feature directions $w_1=(1,-1)/\sqrt2$, $w_2=(-1,-1)/\sqrt2$ produce the same scores. PC2 sign can be reversed consistently.</p>
 <p>Linear kernel PCA equals ordinary centered PCA. Is dataset ko next question mein nonlinear kernel ke saath compare karenge.</p>
-<h2 id="topic-49">10. One complete nonlinear master question</h2>
-<h3 id="topic-50">Q26 — Polynomial Kernel PCA from start to new-point scores</h3>
+<h2 id="topic-55">10. One complete nonlinear master question</h2>
+<h3 id="topic-56">Q26 — Polynomial Kernel PCA from start to new-point scores</h3>
 <p><strong>Question:</strong> Let $x_1=(1,0)^T$, $x_2=(0,1)^T$, $x_3=(1,1)^T$, with kernel $k(x,y)=(x^Ty+1)^2$. Find:</p>
 <ol>
 <li>A feature map and its dimension; explain kernel validity.</li>
@@ -453,12 +602,12 @@ w_j=\Phi_c\alpha_j,\qquad\boxed{\alpha_j^TK_c\alpha_j=1}.$$</p>
 <li>The maximum useful component count, and the scores of a new point $x_*=(0,0)^T$.</li>
 </ol>
 <p>The final new-point subpart extends the PDF's master problem using the same trained model.</p>
-<h3 id="topic-51">10.1 Feature map and validity</h3>
+<h3 id="topic-57">10.1 Feature map and validity</h3>
 <p><strong>Step 1:</strong> From Q9:</p>
 <p>$$\phi(x)=(x_1^2,\sqrt2x_1x_2,x_2^2,\sqrt2x_1,\sqrt2x_2,1)^T.$$</p>
 <p>$D=\binom42=6$, raw dimension 2. Map dot product exactly $(x^Ty+1)^2$, so kernel valid.</p>
 <p><strong>Step 2:</strong> Explicit map useful for understanding, but subsequent calculations only need kernel values. $D=6$ does not imply three samples can produce six independent centered PCs.</p>
-<h3 id="topic-52">10.2 Raw kernel and centering</h3>
+<h3 id="topic-58">10.2 Raw kernel and centering</h3>
 <p>Pairwise raw dot products same as Q25. Add 1, then square each entry:</p>
 <p>$$\boxed{K=\begin{bmatrix}4&amp;1&amp;4\\1&amp;4&amp;4\\4&amp;4&amp;9\end{bmatrix}}.$$</p>
 <p>Row sums $9,9,17$, so $r=(3,3,17/3)$; grand mean $g=35/9$.</p>
@@ -468,7 +617,7 @@ w_j=\Phi_c\alpha_j,\qquad\boxed{\alpha_j^TK_c\alpha_j=1}.$$</p>
 <p>Thus:</p>
 <p>$$\boxed{K_c=\frac19\begin{bmatrix}17&amp;-10&amp;-7\\-10&amp;17&amp;-7\\-7&amp;-7&amp;14\end{bmatrix}}.$$</p>
 <p>Row sums zero; centered feature geometry now ready for PCA.</p>
-<h3 id="topic-53">10.3 Eigenpairs and normalization</h3>
+<h3 id="topic-59">10.3 Eigenpairs and normalization</h3>
 <p><strong>Step 1:</strong> First two points symmetric hain. Try antisymmetric vector $(1,-1,0)$:</p>
 <p>$$K_c(1,-1,0)^T=(3,-3,0)^T.$$</p>
 <p>Hence $\boxed{\mu_1=3,\quad\beta_1=(1,-1,0)/\sqrt2}$.</p>
@@ -479,7 +628,7 @@ w_j=\Phi_c\alpha_j,\qquad\boxed{\alpha_j^TK_c\alpha_j=1}.$$</p>
 <p>$$\boxed{\alpha_1=(1,-1,0)/\sqrt6},\qquad
 \boxed{\alpha_2=(1,1,-2)/\sqrt{14}}.$$</p>
 <p>Both coefficients sum to zero and satisfy $\alpha_j^TK_c\alpha_j=1$.</p>
-<h3 id="topic-54">10.4 Covariance variances and training coordinates</h3>
+<h3 id="topic-60">10.4 Covariance variances and training coordinates</h3>
 <p>$n=3$, so $\boxed{\lambda_1=1,\quad\lambda_2=7/9}$. Total variance $16/9$.</p>
 <p>$$\boxed{\mathrm{EVR}_1=\frac{3}{3+7/3}=\frac9{16}=56.25\%},\qquad
 \boxed{\mathrm{EVR}_2=43.75\%}.$$</p>
@@ -515,10 +664,10 @@ w_j=\Phi_c\alpha_j,\qquad\boxed{\alpha_j^TK_c\alpha_j=1}.$$</p>
 <p><img src="assets/week2/06_linear_vs_polynomial.png" loading="lazy" alt="Linear and polynomial Kernel PCA scores for the same three points" /></p>
 <p><strong>Raw-versus-centered trap:</strong> PDF writes generic first-point expression $4a+b+4c$ using raw $K$. Correct centered score is $(17a-10b-7c)/9$.</p>
 <p>For actual $\alpha_1$, both happen to coincide because its antisymmetry cancels the offset. That coincidence fails for $\alpha_2$: raw scores $(1,1,-10)/\sqrt{14}$ have nonzero mean, while centered scores $(7,7,-14)/(3\sqrt{14})$ match the table. Always use $K_c\alpha$.</p>
-<h3 id="topic-55">10.5 Component count and meaning of reconstruction</h3>
+<h3 id="topic-61">10.5 Component count and meaning of reconstruction</h3>
 <p>Here centered rank 2, so exactly two nonzero kernel PCs. Cannot take a third nonzero PC, despite $D=6$. In other datasets with more samples, kernel PC count may exceed raw $d$.</p>
 <p>Reconstruction in transformed feature space is $m+\sum_jz_jw_j$. Recovering a raw $x$ from that feature vector is the <strong>pre-image problem</strong>: solution may be non-unique or may not exist exactly. Kernel PCA does not automatically provide ordinary PCA's simple raw-space inverse.</p>
-<h3 id="topic-56">10.6 Project new point without refitting</h3>
+<h3 id="topic-62">10.6 Project new point without refitting</h3>
 <p>$x_*=(0,0)$ has raw dot product zero with all training points, so $q=(1,1,1)^T$ and $\bar q=1$.</p>
 <p>Use stored training $r,g$:</p>
 <p>$$q^c=q-r-\bar q\mathbf1+g\mathbf1
@@ -530,7 +679,7 @@ w_j=\Phi_c\alpha_j,\qquad\boxed{\alpha_j^TK_c\alpha_j=1}.$$</p>
 =\boxed{\frac{16}{3\sqrt{14}}\approx1.4254}.$$</p>
 <p>Raw $\alpha_j^Tq$ would give zero for both because coefficients sum to zero; it would miss the second component's training-mean offset. This is why new-point centering matters.</p>
 <p><img src="assets/week2/07_new_point.png" loading="lazy" alt="Training points and the new point in polynomial Kernel PCA coordinates" /></p>
-<h2 id="topic-57">11. Revision: Follow the dependency order</h2>
+<h2 id="topic-63">11. Revision: Follow the dependency order</h2>
 <table>
 <thead>
 <tr>
@@ -571,9 +720,25 @@ w_j=\Phi_c\alpha_j,\qquad\boxed{\alpha_j^TK_c\alpha_j=1}.$$</p>
 <td>Q26</td>
 <td>Complete nonlinear pipeline plus properly centered new-point prediction</td>
 </tr>
+<tr>
+<td>Q4 extra error</td>
+<td>Gram eigenvalue versus square-root normalization</td>
+</tr>
+<tr>
+<td>Q9A → Q10A</td>
+<td>Homogeneous quadratic map → feature-space normal se shifted ellipse</td>
+</tr>
+<tr>
+<td>Q18A</td>
+<td>Four-point mixed-kernel matrix with all distinct pair calculations</td>
+</tr>
+<tr>
+<td>Section 7.1 hint</td>
+<td>Feature mean subtraction se kernel-centering identity</td>
+</tr>
 </tbody>
 </table>
-<h3 id="topic-58">11.1 Formula sheet</h3>
+<h3 id="topic-64">11.1 Formula sheet</h3>
 <table>
 <thead>
 <tr>
@@ -646,6 +811,6 @@ w_j=\Phi_c\alpha_j,\qquad\boxed{\alpha_j^TK_c\alpha_j=1}.$$</p>
 </table>
 <p>Before final answer: <strong>matrix shape, raw/centered status, Gram/covariance eigenvalue, unit/scaled coefficients, and scalar/vector projection</strong> check karo. Centered matrix row sums zero, eigenvalues nonnegative, and training scores mean zero hone chahiye. Ye checks source ke repeated traps ko ek jagah resolve karte hain.</p>
 </article><nav class="next-prev" aria-label="Previous and next weeks"><a href="index.html">← Week 1</a><a href="week3.html">Week 3 →</a></nav></main>
-<aside class="contents"><details open><summary>On this page</summary><nav aria-label="Topic index"><a class="level-h2" href="#topic-1">1. PCA ko sample space mein solve karna</a><a class="level-h3" href="#topic-2">1.1 Why a second matrix?</a><a class="level-h3" href="#topic-3">1.2 Gram matrix ki properties</a><a class="level-h3" href="#topic-4">Q1 — Which matrices can be Gram matrices?</a><a class="level-h2" href="#topic-5">2. Same eigenvalues, different eigenvectors</a><a class="level-h3" href="#topic-6">2.1 Shared nonzero spectrum</a><a class="level-h3" href="#topic-7">Q2 — Sample count, covariance trace and PC2 variance</a><a class="level-h3" href="#topic-8">2.2 Normalize the actual PC, not just its coefficient list</a><a class="level-h3" href="#topic-9">Q3 — Coefficient normalization with inconsistent printed data</a><a class="level-h3" href="#topic-10">Q4 — Find errors in the dual-PCA algorithm</a><a class="level-h3" href="#topic-11">Q5 — Projection using a unit Gram eigenvector</a><a class="level-h2" href="#topic-12">3. Kernel trick: Nonlinear data ko linear feature-space problem banana</a><a class="level-h3" href="#topic-13">3.1 Feature map and implicit dot product</a><a class="level-h3" href="#topic-14">Q6 — Scalar feature map and coefficient square root</a><a class="level-h3" href="#topic-15">Q7 — Normalized kernel and its feature map</a><a class="level-h2" href="#topic-16">4. Polynomial kernels: Feature count and actual map</a><a class="level-h3" href="#topic-17">4.1 Brackets placement matters</a><a class="level-h3" href="#topic-18">Q8 — Feature dimension: All distinct source cases</a><a class="level-h3" href="#topic-19">4.2 Expand → match → square-root coefficients</a><a class="level-h3" href="#topic-20">Q9 — Three similar-looking kernels, three maps</a><a class="level-h3" href="#topic-21">Q10 — Hyperbola becomes a linear constraint</a><a class="level-h2" href="#topic-22">5. Valid kernels: Symmetry plus PSD</a><a class="level-h3" href="#topic-23">5.1 What must hold for every dataset?</a><a class="level-h3" href="#topic-24">Q11 — Different factors on x and y</a><a class="level-h3" href="#topic-25">Q12 — Feature-sum kernels</a><a class="level-h3" href="#topic-26">Q13 — Product feature and constant feature</a><a class="level-h3" href="#topic-27">Q14 — RBF, polynomial, distance and exponential distance</a><a class="level-h3" href="#topic-28">Q15 — Asymmetric polynomial expression</a><a class="level-h3" href="#topic-29">Q16 — Kernel validity plus matrix properties</a><a class="level-h2" href="#topic-30">6. Gaussian/RBF and mixed kernels</a><a class="level-h3" href="#topic-31">6.1 Distance-to-similarity intuition</a><a class="level-h3" href="#topic-32">Q17 — Direct RBF value</a><a class="level-h3" href="#topic-33">Q18 — Mixed kernel entries</a><a class="level-h2" href="#topic-34">7. Kernel centering: Mean feature vector subtract karna</a><a class="level-h3" href="#topic-35">7.1 Raw centering is not feature-space centering</a><a class="level-h3" href="#topic-36">7.2 Entry-wise calculation</a><a class="level-h3" href="#topic-37">Q19 — Two-point polynomial centering</a><a class="level-h3" href="#topic-38">Q20 — Three-point centering with unequal means</a><a class="level-h2" href="#topic-39">8. Kernel PCA eigenvalues, normalization and scores</a><a class="level-h3" href="#topic-40">8.1 One consistent notation</a><a class="level-h3" href="#topic-41">Q21 — Kernel eigenvalue versus covariance eigenvalue</a><a class="level-h3" href="#topic-42">Q22 — Can the number of kernel PCs exceed d?</a><a class="level-h3" href="#topic-43">8.2 Complete training pipeline</a><a class="level-h3" href="#topic-44">Q23 — Fully worked two-point eigensystem</a><a class="level-h2" href="#topic-45">9. New-point projection and the linear-kernel check</a><a class="level-h3" href="#topic-46">9.1 Center a new point using the training mean</a><a class="level-h3" href="#topic-47">Q24 — Weighted kernel values: What is actually determined?</a><a class="level-h3" href="#topic-48">Q25 — Three-point linear kernel: Full consistency check</a><a class="level-h2" href="#topic-49">10. One complete nonlinear master question</a><a class="level-h3" href="#topic-50">Q26 — Polynomial Kernel PCA from start to new-point scores</a><a class="level-h3" href="#topic-51">10.1 Feature map and validity</a><a class="level-h3" href="#topic-52">10.2 Raw kernel and centering</a><a class="level-h3" href="#topic-53">10.3 Eigenpairs and normalization</a><a class="level-h3" href="#topic-54">10.4 Covariance variances and training coordinates</a><a class="level-h3" href="#topic-55">10.5 Component count and meaning of reconstruction</a><a class="level-h3" href="#topic-56">10.6 Project new point without refitting</a><a class="level-h2" href="#topic-57">11. Revision: Follow the dependency order</a><a class="level-h3" href="#topic-58">11.1 Formula sheet</a></nav></details></aside></div>
-<footer>MLT Notes <span>Learn one concept at a time.</span></footer>
+<aside class="contents"><details open><summary>On this page</summary><nav aria-label="Topic index"><a class="level-h2" href="#topic-1">1. PCA ko sample space mein solve karna</a><a class="level-h3" href="#topic-2">1.1 Why a second matrix?</a><a class="level-h3" href="#topic-3">1.2 Gram matrix ki properties</a><a class="level-h3" href="#topic-4">Q1 — Which matrices can be Gram matrices?</a><a class="level-h2" href="#topic-5">2. Same eigenvalues, different eigenvectors</a><a class="level-h3" href="#topic-6">2.1 Shared nonzero spectrum</a><a class="level-h3" href="#topic-7">Q2 — Sample count, covariance trace and PC2 variance</a><a class="level-h3" href="#topic-8">2.2 Normalize the actual PC, not just its coefficient list</a><a class="level-h3" href="#topic-9">Q3 — Coefficient normalization with inconsistent printed data</a><a class="level-h3" href="#topic-10">Q4 — Find errors in the dual-PCA algorithm</a><a class="level-h3" href="#topic-12">Q5 — Projection using a unit Gram eigenvector</a><a class="level-h2" href="#topic-13">3. Kernel trick: Nonlinear data ko linear feature-space problem banana</a><a class="level-h3" href="#topic-14">3.1 Feature map and implicit dot product</a><a class="level-h3" href="#topic-15">Q6 — Scalar feature map and coefficient square root</a><a class="level-h3" href="#topic-16">Q7 — Normalized kernel and its feature map</a><a class="level-h2" href="#topic-17">4. Polynomial kernels: Feature count and actual map</a><a class="level-h3" href="#topic-18">4.1 Brackets placement matters</a><a class="level-h3" href="#topic-19">Q8 — Feature dimension: All distinct source cases</a><a class="level-h3" href="#topic-20">4.2 Expand → match → square-root coefficients</a><a class="level-h3" href="#topic-21">Q9 — Three similar-looking kernels, three maps</a><a class="level-h3" href="#topic-22">Q9A — Homogeneous quadratic kernel: Constant feature bhi remove hota hai</a><a class="level-h3" href="#topic-23">Q10 — Hyperbola becomes a linear constraint</a><a class="level-h3" href="#topic-24">4.3 Reverse connection: Feature-space normal se raw-space curve</a><a class="level-h3" href="#topic-25">Q10A — Shifted ellipse from a feature-space constraint</a><a class="level-h2" href="#topic-26">5. Valid kernels: Symmetry plus PSD</a><a class="level-h3" href="#topic-27">5.1 What must hold for every dataset?</a><a class="level-h3" href="#topic-28">Q11 — Different factors on x and y</a><a class="level-h3" href="#topic-29">Q12 — Feature-sum kernels</a><a class="level-h3" href="#topic-30">Q13 — Product feature and constant feature</a><a class="level-h3" href="#topic-31">Q14 — RBF, polynomial, distance and exponential distance</a><a class="level-h3" href="#topic-32">Q15 — Asymmetric polynomial expression</a><a class="level-h3" href="#topic-33">Q16 — Kernel validity plus matrix properties</a><a class="level-h2" href="#topic-34">6. Gaussian/RBF and mixed kernels</a><a class="level-h3" href="#topic-35">6.1 Distance-to-similarity intuition</a><a class="level-h3" href="#topic-36">Q17 — Direct RBF value</a><a class="level-h3" href="#topic-37">Q18 — Mixed kernel entries</a><a class="level-h3" href="#topic-38">Q18A — Full four-point mixed-kernel matrix</a><a class="level-h2" href="#topic-39">7. Kernel centering: Mean feature vector subtract karna</a><a class="level-h3" href="#topic-40">7.1 Raw centering is not feature-space centering</a><a class="level-h3" href="#topic-42">7.2 Entry-wise calculation</a><a class="level-h3" href="#topic-43">Q19 — Two-point polynomial centering</a><a class="level-h3" href="#topic-44">Q20 — Three-point centering with unequal means</a><a class="level-h2" href="#topic-45">8. Kernel PCA eigenvalues, normalization and scores</a><a class="level-h3" href="#topic-46">8.1 One consistent notation</a><a class="level-h3" href="#topic-47">Q21 — Kernel eigenvalue versus covariance eigenvalue</a><a class="level-h3" href="#topic-48">Q22 — Can the number of kernel PCs exceed d?</a><a class="level-h3" href="#topic-49">8.2 Complete training pipeline</a><a class="level-h3" href="#topic-50">Q23 — Fully worked two-point eigensystem</a><a class="level-h2" href="#topic-51">9. New-point projection and the linear-kernel check</a><a class="level-h3" href="#topic-52">9.1 Center a new point using the training mean</a><a class="level-h3" href="#topic-53">Q24 — Weighted kernel values: What is actually determined?</a><a class="level-h3" href="#topic-54">Q25 — Three-point linear kernel: Full consistency check</a><a class="level-h2" href="#topic-55">10. One complete nonlinear master question</a><a class="level-h3" href="#topic-56">Q26 — Polynomial Kernel PCA from start to new-point scores</a><a class="level-h3" href="#topic-57">10.1 Feature map and validity</a><a class="level-h3" href="#topic-58">10.2 Raw kernel and centering</a><a class="level-h3" href="#topic-59">10.3 Eigenpairs and normalization</a><a class="level-h3" href="#topic-60">10.4 Covariance variances and training coordinates</a><a class="level-h3" href="#topic-61">10.5 Component count and meaning of reconstruction</a><a class="level-h3" href="#topic-62">10.6 Project new point without refitting</a><a class="level-h2" href="#topic-63">11. Revision: Follow the dependency order</a><a class="level-h3" href="#topic-64">11.1 Formula sheet</a></nav></details></aside></div>
+<footer>MLT Notes · Notes by Shiva <span>Learn one concept at a time.</span></footer>
 </body></html>

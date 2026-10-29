@@ -3,7 +3,9 @@
 <title>Week 10 · Support Vector Machine | MLT Notes</title>
 <script src="theme.js"></script>
 <link rel="stylesheet" href="style.css">
-<script>window.MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']],processEscapes:true},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']},svg:{fontCache:'global'}};</script>
+<script>window.MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']],processEscapes:true},startup:{typeset:false, pageReady:() => window.renderNotesMath()},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']},svg:{fontCache:'global'}};</script>
+<script defer src="navigation.js"></script>
+<script defer src="math.js"></script>
 <script defer src="vendor/tex-svg.js"></script></head>
 <body><a class="skip" href="#notes">Skip to notes</a>
 <header><a class="brand" href="index.html"><span class="brand-mark">m</span> MLT <span class="brand-muted">/ study notes</span></a><label class="theme-control">Theme <select id="theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label></header>
@@ -59,6 +61,11 @@
 <td>8. Decision-tree information gain</td>
 <td>Entropy, weighted split quality</td>
 <td>Q10</td>
+</tr>
+<tr>
+<td>Additional dual/KKT varieties</td>
+<td>Claim audit, diagram count, coefficient signs and consistency</td>
+<td>Q12–Q14; changed-data variant</td>
 </tr>
 <tr>
 <td>9. Revision</td>
@@ -452,7 +459,51 @@
 <p><strong>Counterexample to “nonnegative means support”:</strong> Inputs $-1,+1,+2$ with labels $-1,+1,+1$. Optimal $w=1,b=0$. Point $+2$ has margin 2 and multiplier 0. Its multiplier is nonnegative, but it does not support the optimum.</p>
 <p><strong>Counterexample to “on margin always positive multiplier”:</strong> Repeat positive input $+1$ twice, add negative input $-1$. At $w=1,b=0$, all three are on supporting hyperplanes. A valid optimal multiplier assignment in that order is $(1/2,0,1/2)$. Second positive duplicate is on-margin but has zero coefficient.</p>
 <p>Some texts call all on-margin points geometric support vectors. Here <strong>positive-dual-coefficient criterion</strong> follows the supplied slides' dual viewpoint; equality-on-margin alone does not guarantee positive coefficient.</p>
-<h3 id="topic-32">5.6 Q9 — Multipliers to prediction</h3>
+<h3 id="topic-32">5.5A Q12 — Support vectors, primal variables and sparse representation</h3>
+<p><strong>Source:</strong> Week 10 — Solve with us, Q1.</p>
+<p><strong>Question:</strong></p>
+<p>Select the correct statements about the Support Vector Machine algorithm.</p>
+<p>(A) All support vectors lie on the supporting hyperplanes.</p>
+<p>(B) Every point on the supporting hyperplanes is a support vector.</p>
+<p>(C) w is a dual variable in the optimization problem</p>
+<p>$$\min_w\left(\max_{\alpha\ge0}\frac{\|w\|^2}{2}+\sum_{i=1}^n\alpha_i[1-(w^Tx_i)y_i]\right).$$</p>
+<p>(D) The search space has dimension d for the primal problem.</p>
+<p>(E) Large-margin classifiers are capable of generalizing better to unseen data.</p>
+<p>(F) The weight vector can be seen as a sparse linear combination of the data points.</p>
+<p>(G) Support vectors are the closest data points to the boundary.</p>
+<p><strong>Solution:</strong> Use the question's <strong>hard-margin, no-bias</strong> formulation and the positive-multiplier definition of support vectors.</p>
+<p><strong>Step 1 — Geometry, (A), (B), (G):</strong> Complementary slackness gives</p>
+<p>$$\alpha_i&gt;0\Rightarrow y_iw^Tx_i=1.$$</p>
+<p>Hence positive-multiplier points lie on supporting planes and attain the minimum boundary distance $1/\|w\|$: <strong>A and G true</strong>. Reverse implication is not guaranteed: a redundant on-margin point can have $\alpha_i=0$, so <strong>B false</strong>. Section 5.5's duplicated-point counterexample already demonstrates this; no need to repeat its full calculation.</p>
+<p><strong>Step 2 — Variable roles, (C), (D):</strong> w is the <strong>primal</strong> variable, with d coordinates. The n multipliers are dual variables. Thus <strong>C false, D true</strong> for this no-bias model. Free bias adds one primal scalar; soft-margin slacks would add n more variables.</p>
+<p><strong>Step 3 — Generalization, (E):</strong> Larger margin can support better generalization under suitable data/complexity assumptions. The phrase “capable of” is reasonable, so <strong>E is intended true</strong>. It does not guarantee higher accuracy on every unseen dataset; noisy labels and feature scaling still matter.</p>
+<p><strong>Step 4 — Representation, (F):</strong></p>
+<p>$$w=\sum_i\alpha_i y_i x_i=\sum_{i:\alpha_i&gt;0}\alpha_i y_i x_i.$$</p>
+<p>Only positive-multiplier points contribute. This is the usual <strong>support-based sparse representation</strong>, so <strong>F is intended true</strong>. Sparsity is across training examples, not necessarily zero coordinates in w. Also all samples can be support vectors; “most coefficients must be zero” is not guaranteed.</p>
+<p>$$\boxed{\text{Intended answers: A, D, E, F, G}}.$$</p>
+<p><strong>Scope:</strong> Soft-margin support vectors can lie inside the margin or even be misclassified, so A/G are not universal statements for all SVM variants. A text defining every on-margin point as a geometric support vector uses a different convention for B; this question follows the dual-coefficient criterion.</p>
+<h3 id="topic-33">5.5B Q13 — Can a diagram reveal the exact nonzero-multiplier count?</h3>
+<p><strong>Source:</strong> Week 10 — Solve with us, Q3.</p>
+<p><strong>Question:</strong></p>
+<p>Consider the following supporting hyperplanes. We know that</p>
+<p>$$w=\sum_{i=1}^n\alpha_i x_i y_i.$$</p>
+<p>For how many data points in the figure is $\alpha_i\ne0$?</p>
+<p><img src="assets/week10/new_support_count_source.png" loading="lazy" alt="Supplied supporting hyperplanes and on-margin points" /></p>
+<p>(i) 5</p>
+<p>(ii) 10</p>
+<p>(iii) 0</p>
+<p>(iv) Cannot conclude</p>
+<p><strong>Solution:</strong></p>
+<p><strong>Step 1 — Read the geometry:</strong> The supplied figure/solution identifies ten points on the two supporting hyperplanes, five on each side. Other points are strictly beyond the margin.</p>
+<p><strong>Step 2 — Beyond-margin points:</strong> Their signed margin exceeds 1. Complementary slackness forces their multipliers to be zero.</p>
+<p><strong>Step 3 — On-margin points:</strong> For each such point,</p>
+<p>$$\alpha_i(1-y_iw^Tx_i)=\alpha_i\cdot0=0.$$</p>
+<p>This equality permits both $\alpha_i=0$ and $\alpha_i&gt;0$. Merely counting contacts does not tell which constraints carry positive multipliers in the chosen dual solution.</p>
+<p><strong>Step 4 — Answer:</strong></p>
+<p>$$\boxed{\text{(iv) Cannot conclude the exact count}}.$$</p>
+<p><strong>What can be concluded?</strong> Nonzero multipliers can only belong to these ten candidates, and not all can be zero because then w would be zero and could not separate the classes. Thus $1\le\#\{i:\alpha_i&gt;0\}\le10$ is a coarse no-bias bound, not an exact answer. With a free bias, $\sum_i\alpha_i y_i=0$ additionally requires positive contributions from both classes.</p>
+<p><strong>Connection:</strong> Unique primal weight does not imply unique dual multipliers. Redundant margin constraints can allow different coefficient assignments reconstructing the same boundary.</p>
+<h3 id="topic-34">5.6 Q9 — Multipliers to prediction</h3>
 <p><strong>Source:</strong> 2026 May 06 ET, Q9.</p>
 <p><strong>Question:</strong></p>
 <blockquote>
@@ -510,7 +561,84 @@
 <p>$$w^T(1,1)=-4+7=3&gt;0.$$</p>
 <p><strong>Answer using supplied coefficients and hint: $\boxed{1}$.</strong></p>
 <p><strong>Consistency note:</strong> These numbers cannot actually be optimal canonical hard-margin multipliers for the listed data. Training signed margins with $w=(-4,7)$ are $10,6,15,18$. In particular $\alpha_1,\alpha_3&gt;0$ but their margins are not 1, violating complementary slackness. The intended weight-reconstruction calculation still gives answer 1; do not learn a false KKT rule from the word “optimal” in this question.</p>
-<h3 id="topic-33">5.7 Hard margin vs soft margin: Q3 ke liye needed concept</h3>
+<h3 id="topic-35">5.6A Q14 — Count support coefficients and predict with label signs</h3>
+<p><strong>Source:</strong> Week 10 — Solve with us, Q2. Weight-reconstruction method is the same as Q9; this adds an explicit support count and a sign-error check.</p>
+<p><strong>Question:</strong></p>
+<p>For the dataset</p>
+<p>$$X=\begin{bmatrix}1&amp;0&amp;3&amp;3&amp;-1&amp;0&amp;-3&amp;-3\\0&amp;-1&amp;2&amp;0&amp;0&amp;1&amp;-2&amp;0\end{bmatrix},$$</p>
+<p>$$y=[1,1,1,1,-1,-1,-1,-1]^T,$$</p>
+<p>suppose the solution to the dual problem is</p>
+<p>$$\alpha^*=[0.42,0.57,0,0,0,0.81,0.19,0]^T.$$</p>
+<p>(i) How many support vectors are there?</p>
+<p>(ii) Find the label of the test point $(3,-1)^T$.</p>
+<p><strong>Solution:</strong></p>
+<p><strong>Step 1 — Count positive coefficients:</strong> Indices 1,2,6,7 have $\alpha_i&gt;0$. Under the given coefficient convention, <strong>4 support vectors</strong>.</p>
+<p><strong>Step 2 — Keep label factors:</strong> Samples are columns of X. Only four contributions are nonzero:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:right">i</th>
+<th style="text-align:right">$\alpha_i$</th>
+<th style="text-align:right">$y_i$</th>
+<th>$x_i$</th>
+<th>$\alpha_i y_i x_i$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0.42</td>
+<td style="text-align:right">+1</td>
+<td>$(1,0)$</td>
+<td>$(0.42,0)$</td>
+</tr>
+<tr>
+<td style="text-align:right">2</td>
+<td style="text-align:right">0.57</td>
+<td style="text-align:right">+1</td>
+<td>$(0,-1)$</td>
+<td>$(0,-0.57)$</td>
+</tr>
+<tr>
+<td style="text-align:right">6</td>
+<td style="text-align:right">0.81</td>
+<td style="text-align:right">−1</td>
+<td>$(0,1)$</td>
+<td>$(0,-0.81)$</td>
+</tr>
+<tr>
+<td style="text-align:right">7</td>
+<td style="text-align:right">0.19</td>
+<td style="text-align:right">−1</td>
+<td>$(-3,-2)$</td>
+<td>$(0.57,0.38)$</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Step 3 — Add:</strong></p>
+<p>$$w=(0.42+0.57,\,-0.57-0.81+0.38)=\boxed{(0.99,-1)}.$$</p>
+<p><strong>Step 4 — Score using the supplied no-bias convention:</strong></p>
+<p>$$w^T(3,-1)=0.99(3)+(-1)(-1)=3.97&gt;0.$$</p>
+<p>$$\boxed{\text{(i) }4,\qquad\text{(ii) }+1}.$$</p>
+<p><strong>Source correction:</strong> The typed solution omits some label signs and obtains $(-0.15,-0.14)$; that is not $\sum_i\alpha_i y_ix_i$. Correct weight is $(0.99,-1)$, consistent with the handwritten correction and positive label. Keep intermediate values until the final step.</p>
+<p><strong>Precision check:</strong> Taken literally, the displayed rounded coefficients are not an exact canonical optimum: at $x_1=(1,0)$ signed margin is 0.99, and at $x_7=(-3,-2),y=-1$ it is 0.97, both below 1. They may be rounded approximations, but exact KKT feasibility cannot be claimed from these decimals. The requested reconstruction and prediction above use the given values.</p>
+<h3 id="topic-36">5.6B Changed dataset — Same reconstruction via $XY\alpha$</h3>
+<p><strong>Source:</strong> Week 10 — Solve with us, Q4. Same numerical method as Q9/Q14; use this compact changed-data calculation rather than repeating the theory.</p>
+<p><strong>Question:</strong></p>
+<p>Predict the label for $(3,2)$ assuming</p>
+<p>$$\alpha=[0,3,1,0,2,0,5,0]^T,$$</p>
+<p>$$X=\begin{bmatrix}-1&amp;0.25&amp;-1&amp;1&amp;0.4&amp;0.5&amp;0&amp;0.5\\0&amp;0.5&amp;1&amp;0&amp;0.2&amp;1&amp;-1&amp;-3\end{bmatrix},$$</p>
+<p>$$y=[-1,1,-1,1,1,1,-1,-1]^T.$$</p>
+<p><strong>Step 1 — Signed coefficients:</strong> For $Y=\operatorname{diag}(y)$,</p>
+<p>$$Y\alpha=(0,3,-1,0,2,0,-5,0)^T.$$</p>
+<p><strong>Step 2 — Nonzero contributions:</strong></p>
+<p>$$w=3(0.25,0.5)-( -1,1)+2(0.4,0.2)-5(0,-1).$$</p>
+<p>$$w=(0.75,1.5)+(1,-1)+(0.8,0.4)+(0,5)=\boxed{(2.55,5.9)}.$$</p>
+<p><strong>Step 3 — Score:</strong></p>
+<p>$$w^T(3,2)=2.55(3)+5.9(2)=7.65+11.8=19.45&gt;0.$$</p>
+<p>$$\boxed{\hat y=+1}.$$</p>
+<p><strong>Property:</strong> $X(Y\alpha)$ first multiplies each coefficient by its label; $X\alpha$ alone is wrong. These are supplied prediction coefficients, not a verified hard-margin optimum: training point $(-1,1)$ with label −1 has signed margin $-3.35&lt;0$ under this w. A requested test prediction can still be computed, but it does not certify optimality or correct classification of every training sample.</p>
+<h3 id="topic-37">5.7 Hard margin vs soft margin: Q3 ke liye needed concept</h3>
 <p><strong>Hard margin:</strong> All $y_if(x_i)\ge1$ required, no violations.</p>
 <p><strong>Soft margin:</strong> Slack $\xi_i\ge0$ allow karo:</p>
 <p>$$\min_{w,b,\xi}\frac12\|w\|^2+C\sum_i\xi_i,$$</p>
@@ -518,7 +646,7 @@
 <p><strong>Meaning of $C$:</strong> Violation penalty ka strength. Small $C$ violations ko relatively cheap banata hai; large $C$ unhe strongly penalize karta hai.</p>
 <p>Even separable data par small $C$ ka soft-margin optimum hard-margin optimum se different ho sakta hai. “Separable” alone means soft/hard equal for every $C$, yeh false hai.</p>
 <p><strong>Counterexample:</strong> Inputs $-1,+1$, labels $-1,+1$, no bias. Hard-margin optimum $w=1$, objective norm term 0.5. At $C=0.1$, soft candidate $w=0.2$, both slacks 0.8, objective $0.02+0.1(1.6)=0.18&lt;0.5$. Thus hard-margin solution is not the soft optimum at this $C$.</p>
-<h3 id="topic-34">5.8 Q3 — Integer coefficients and the multiplier-sign trap</h3>
+<h3 id="topic-38">5.8 Q3 — Integer coefficients and the multiplier-sign trap</h3>
 <p><strong>Source:</strong> 2024 Sep 01 ET, Q3. Related comprehension Week 9 Q7 mein bhi tha; yahan part (ii) mein printed inequality <strong>$\ge0$</strong> hai, so usko carefully read karo.</p>
 <p><strong>Question:</strong></p>
 <blockquote>
@@ -534,7 +662,7 @@
 <p><strong>Key mismatch:</strong> Supplied key says True. Correct sufficient condition is <strong>$\alpha_i^*&gt;0$</strong>, and Week 9 Q7(ii) uses that strict inequality. If intended symbol was $&gt;0$, answer becomes True. Do not replace $&gt;0$ by $\ge0$ in the rule.</p>
 <p><strong>Part (iii):</strong> Section 5.7 ke small-$C$ example se hard/soft optima differ → <strong>False</strong>.</p>
 <p><strong>Answers as written: True, False, False.</strong> Expected key's True for part (ii) only works after correcting the inequality to $&gt;0$.</p>
-<h3 id="topic-35">5.9 Q5 — Remove non-support vectors</h3>
+<h3 id="topic-39">5.9 Q5 — Remove non-support vectors</h3>
 <p><strong>Source:</strong> 2024 Dec 22 ET, Q5.</p>
 <p><strong>Question:</strong></p>
 <blockquote>
@@ -552,13 +680,13 @@
 <p><strong>Answer: (b).</strong> No basis to claim accuracy increases just because data points were removed.</p>
 <p><strong>Qualification:</strong> This assumes same model setup and preprocessing. Re-fitting a scaler after deletion changes the geometry, which is a different operation. Removing actual support vectors can change the optimum, but need not always do so in redundant/degenerate cases.</p>
 <hr />
-<h2 id="topic-36">6. Leave-one-out cross-validation: Support count se error bound</h2>
-<h3 id="topic-37">6.1 LOOCV ka meaning</h3>
+<h2 id="topic-40">6. Leave-one-out cross-validation: Support count se error bound</h2>
+<h3 id="topic-41">6.1 LOOCV ka meaning</h3>
 <p><strong>Definition:</strong> Har sample ko once test point banao; remaining $N-1$ samples par model retrain karo.</p>
 <p><strong>Real life:</strong> Har student ki exam outcome prediction test karo using a model trained without that student's example. Self-inclusion se artificially easy evaluation avoid hoti hai.</p>
 <p>$$e_n=\mathbf1(\hat y_n\ne y_n),\qquad\boxed{E_{\mathrm{CV}}=\frac1N\sum_{n=1}^{N}e_n}.$$</p>
 <p><strong>Training error ≠ LOOCV error:</strong> Full hard-margin model training data correctly classify karta hai, but held-out sample removed model ke liye error possible hai.</p>
-<h3 id="topic-38">6.2 Why support-vector count gives an upper bound</h3>
+<h3 id="topic-42">6.2 Why support-vector count gives an upper bound</h3>
 <p>Usual separable hard-margin setting, fixed preprocessing and consistent optimization:</p>
 <ul>
 <li>Hold out a non-support point → optimum remains same, as in Q5.</li>
@@ -568,7 +696,7 @@
 <p>If support-vector count $K$ hai:</p>
 <p>$$\boxed{\#\text{LOOCV errors}\le K\quad\Rightarrow\quad E_{\mathrm{CV}}\le\frac KN}.$$</p>
 <p><strong>Not equality:</strong> Support point remove karne par model change ho sakta hai, but removed point necessarily misclassified nahi hota. Thus actual errors less than $K$ ho sakte hain.</p>
-<h3 id="topic-39">6.3 Q11 — Select the LOOCV relationship</h3>
+<h3 id="topic-43">6.3 Q11 — Select the LOOCV relationship</h3>
 <p><strong>Source:</strong> 2026 Sep 13 ET, Q11.</p>
 <p><strong>Question:</strong></p>
 <blockquote>
@@ -588,13 +716,13 @@
 <p><strong>Quick numerical interpretation:</strong> $N=100,K=12$ ho toh bound 0.12. Actual LOOCV error could be 0.03; it need not equal 0.12.</p>
 <p><strong>Scope of the result:</strong> Yeh standard exact-SVM stability argument hai, Week 10 ke hard-margin context mein. Arbitrary preprocessing changes, approximate training or changed hyperparameters across folds ko same unchanged-solution claim se justify nahi karna.</p>
 <hr />
-<h2 id="topic-40">7. Kernel SVM: Input-space curve, feature-space hyperplane</h2>
-<h3 id="topic-41">7.1 Why kernels?</h3>
+<h2 id="topic-44">7. Kernel SVM: Input-space curve, feature-space hyperplane</h2>
+<h3 id="topic-45">7.1 Why kernels?</h3>
 <p><strong>Definition:</strong> Kernel transformed features ka inner product compute karta hai:</p>
 <p>$$\boxed{K(x,z)=\phi(x)^T\phi(z)}.$$</p>
 <p><strong>Real life:</strong> Classes straight line se separate nahi, but radius/interaction features se separate ho sakti hain. Kernel aise richer features ka inner-product effect give karta hai without necessarily constructing the full feature vector.</p>
 <p><strong>Connection:</strong> Week 2 kernel methods aur Week 9 span representation same idea use karte hain. SVM dual already only inner products par depend karta hai.</p>
-<h3 id="topic-42">7.2 Replace Gram matrix, not the whole reasoning</h3>
+<h3 id="topic-46">7.2 Replace Gram matrix, not the whole reasoning</h3>
 <p>Linear case:</p>
 <p>$$G_{ij}=x_i^Tx_j.$$</p>
 <p>Kernel case:</p>
@@ -607,7 +735,7 @@
 <p>Test score:</p>
 <p>$$\boxed{f(x)=\sum_i\alpha_i y_iK(x_i,x)+b}.$$</p>
 <p>Predict using score sign and stated tie rule. <strong>Label factors $y_i$ prediction sum mein zaroor hain.</strong> Slide table's kernel-prediction shorthand without labels should not be used with unsigned nonnegative $\alpha_i$; labels can be omitted only if absorbed into separately defined signed coefficients.</p>
-<h3 id="topic-43">7.3 Common kernel properties</h3>
+<h3 id="topic-47">7.3 Common kernel properties</h3>
 <table>
 <thead>
 <tr>
@@ -636,7 +764,7 @@
 </table>
 <p>A valid real kernel gives symmetric positive-semidefinite Gram matrices. Arbitrary similarity function ko kernel bolkar use karne se convex SVM guarantees automatically retain nahi hoti.</p>
 <p><strong>Property:</strong> Feature space mein hyperplane linear hota hai; input space boundary nonlinear ho sakti hai. Kernel use karne se every dataset perfectly separable ho jaayega, yeh guarantee nahi.</p>
-<h3 id="topic-44">7.4 Practice — Radius feature se circular boundary</h3>
+<h3 id="topic-48">7.4 Practice — Radius feature se circular boundary</h3>
 <p><strong>Question:</strong> “Class +1 points lie on the circle $x_1^2+x_2^2=1$, and class -1 points lie on the circle $x_1^2+x_2^2=4$. Use the feature $\phi(x)=x_1^2+x_2^2$ to construct a separating classifier.”</p>
 <p><strong>Step 1:</strong> Mapped positive feature value 1, negative feature value 4. Ab 1D separation problem hai.</p>
 <p><strong>Step 2:</strong> Midpoint threshold $(1+4)/2=2.5$.</p>
@@ -648,8 +776,8 @@
 <p><img src="assets/week10/06_kernel_mapping.png" loading="lazy" alt="Circular input-space boundary becomes a threshold after a radius-squared feature map" /></p>
 <p><strong>Feature-map kernel:</strong> For this specific scalar feature, $K(x,z)=(x_1^2+x_2^2)(z_1^2+z_2^2)$ is a valid kernel. Example uses an intercept; no-bias restriction in this scalar feature space would not separate two positive feature values with opposite labels.</p>
 <hr />
-<h2 id="topic-45">8. Decision-tree information gain</h2>
-<h3 id="topic-46">8.1 Is question ke liye short concept recap</h3>
+<h2 id="topic-49">8. Decision-tree information gain</h2>
+<h3 id="topic-50">8.1 Is question ke liye short concept recap</h3>
 <p>Week 10 paper mein one decision-tree question bhi hai. Isko solve karne ke liye entropy and weighted child impurity chahiye.</p>
 <p><strong>Entropy definition:</strong> Node mein class-label uncertainty/mixture ka measure.</p>
 <p>For positive proportion $p$ and negative proportion $1-p$:</p>
@@ -661,12 +789,12 @@
 <li>More homogeneous children generally useful split dete hain.</li>
 </ul>
 <p><strong>Real life:</strong> Students ko aise groups mein divide karna jahan pass/fail outcomes less mixed hon. Sirf “group split hua” enough nahi; resulting uncertainty kitni kam hui?</p>
-<h3 id="topic-47">8.2 Information gain</h3>
+<h3 id="topic-51">8.2 Information gain</h3>
 <p>$$\boxed{IG=H(\text{parent})-\left[\frac{N_L}{N}H(L)+\frac{N_R}{N}H(R)\right]}.$$</p>
 <p><strong>Weights mandatory:</strong> Har child ka contribution uske sample fraction se weight hota hai.</p>
 <p><strong>Counterexample:</strong> Left child 90 samples with entropy 1; right child 10 samples pure. Post-split entropy $0.9(1)+0.1(0)=0.9$, not unweighted average 0.5.</p>
 <p><strong>Property:</strong> Same parent ho toh lower weighted child entropy means higher gain. Different parent distributions ho toh parent entropy bhi compare karni padegi.</p>
-<h3 id="topic-48">8.3 Q10 — Compare two root splits</h3>
+<h3 id="topic-52">8.3 Q10 — Compare two root splits</h3>
 <p><strong>Source:</strong> 2026 May 06 ET, Q10.</p>
 <p><strong>Question:</strong></p>
 <blockquote>
@@ -697,8 +825,8 @@
 <p><strong>Intuition:</strong> Tree 1 root immediately sends more samples into a pure child and leaves less weighted uncertainty in its mixed child.</p>
 <p><strong>Wording qualification:</strong> Information gain is a property of a <strong>split</strong>. Supplied answer treats this as root-split comparison. If comparing total entropy reduction over fully grown trees with all terminal leaves genuinely pure, both could achieve the same total parent entropy reduction. Leaf labels alone do not specify leaf impurity, so don't silently treat “gain of the whole tree” as the computed root gain.</p>
 <hr />
-<h2 id="topic-49">9. Revision</h2>
-<h3 id="topic-50">9.1 Formula sheet</h3>
+<h2 id="topic-53">9. Revision</h2>
+<h3 id="topic-54">9.1 Formula sheet</h3>
 <table>
 <thead>
 <tr>
@@ -797,7 +925,7 @@
 </tr>
 </tbody>
 </table>
-<h3 id="topic-51">9.2 Common mistakes</h3>
+<h3 id="topic-55">9.2 Common mistakes</h3>
 <table>
 <thead>
 <tr>
@@ -876,7 +1004,7 @@
 </tr>
 </tbody>
 </table>
-<h3 id="topic-52">9.3 Last-minute solving checklist</h3>
+<h3 id="topic-56">9.3 Last-minute solving checklist</h3>
 <ol>
 <li><strong>Model:</strong> Hard/soft margin? Linear/kernel? Bias allowed?</li>
 <li><strong>Labels:</strong> Convert to $\pm1$ before using SVM constraints.</li>
@@ -887,6 +1015,6 @@
 <li><strong>Rounding:</strong> Keep intermediate precision; round final answer only.</li>
 </ol>
 </article><nav class="next-prev" aria-label="Previous and next weeks"><a href="week9.html">← Week 9</a><a href="week11.html">Week 11 →</a></nav></main>
-<aside class="contents"><details open><summary>On this page</summary><nav aria-label="Topic index"><a class="level-h2" href="#topic-1">Topic index</a><a class="level-h2" href="#topic-2">1. Margin: Sirf correct classification se aage</a><a class="level-h3" href="#topic-3">1.1 Perceptron se SVM ka connection</a><a class="level-h3" href="#topic-4">1.2 Score, label aur boundary</a><a class="level-h3" href="#topic-5">1.3 Functional margin</a><a class="level-h3" href="#topic-6">1.4 Geometric margin</a><a class="level-h3" href="#topic-7">1.5 Canonical scaling: Functional margin ko 1 set karna</a><a class="level-h3" href="#topic-8">1.6 One-sided margin vs full width</a><a class="level-h3" href="#topic-9">1.7 Q2 — Width from weight vector</a><a class="level-h3" href="#topic-10">1.8 Point-to-hyperplane distance</a><a class="level-h3" href="#topic-11">1.9 Q8 — Distance in three dimensions</a><a class="level-h2" href="#topic-12">2. Hard-margin SVM ka optimization problem</a><a class="level-h3" href="#topic-13">2.1 “Hard margin” ka meaning</a><a class="level-h3" href="#topic-14">2.2 Primal objective</a><a class="level-h3" href="#topic-15">2.3 Properties jo exam mein matter karti hain</a><a class="level-h3" href="#topic-16">2.4 Q1 — Separable dataset and width</a><a class="level-h3" href="#topic-17">2.5 Q7 — Similar options, changed dataset</a><a class="level-h2" href="#topic-18">3. Support vectors: Boundary ko support kaun karta hai?</a><a class="level-h3" href="#topic-19">3.1 Geometric intuition</a><a class="level-h3" href="#topic-20">3.2 Q6 — Support vectors in one dimension</a><a class="level-h2" href="#topic-21">4. Constraints se Lagrangian tak</a><a class="level-h3" href="#topic-22">4.1 Constrained optimization ka idea</a><a class="level-h3" href="#topic-23">4.2 Lagrangian</a><a class="level-h3" href="#topic-24">4.3 Q4 — Maximize Lagrangian at an infeasible point</a><a class="level-h3" href="#topic-25">4.4 Primal, dual aur min-max</a><a class="level-h2" href="#topic-26">5. Dual problem aur KKT: Support vectors ko mathematically samjho</a><a class="level-h3" href="#topic-27">5.1 SVM Lagrangian and weight reconstruction</a><a class="level-h3" href="#topic-28">5.2 Matrix notation and dimensions</a><a class="level-h3" href="#topic-29">5.3 Dual objective</a><a class="level-h3" href="#topic-30">5.4 KKT conditions: What to check at an optimum</a><a class="level-h3" href="#topic-31">5.5 Correct implications, and their converses</a><a class="level-h3" href="#topic-32">5.6 Q9 — Multipliers to prediction</a><a class="level-h3" href="#topic-33">5.7 Hard margin vs soft margin: Q3 ke liye needed concept</a><a class="level-h3" href="#topic-34">5.8 Q3 — Integer coefficients and the multiplier-sign trap</a><a class="level-h3" href="#topic-35">5.9 Q5 — Remove non-support vectors</a><a class="level-h2" href="#topic-36">6. Leave-one-out cross-validation: Support count se error bound</a><a class="level-h3" href="#topic-37">6.1 LOOCV ka meaning</a><a class="level-h3" href="#topic-38">6.2 Why support-vector count gives an upper bound</a><a class="level-h3" href="#topic-39">6.3 Q11 — Select the LOOCV relationship</a><a class="level-h2" href="#topic-40">7. Kernel SVM: Input-space curve, feature-space hyperplane</a><a class="level-h3" href="#topic-41">7.1 Why kernels?</a><a class="level-h3" href="#topic-42">7.2 Replace Gram matrix, not the whole reasoning</a><a class="level-h3" href="#topic-43">7.3 Common kernel properties</a><a class="level-h3" href="#topic-44">7.4 Practice — Radius feature se circular boundary</a><a class="level-h2" href="#topic-45">8. Decision-tree information gain</a><a class="level-h3" href="#topic-46">8.1 Is question ke liye short concept recap</a><a class="level-h3" href="#topic-47">8.2 Information gain</a><a class="level-h3" href="#topic-48">8.3 Q10 — Compare two root splits</a><a class="level-h2" href="#topic-49">9. Revision</a><a class="level-h3" href="#topic-50">9.1 Formula sheet</a><a class="level-h3" href="#topic-51">9.2 Common mistakes</a><a class="level-h3" href="#topic-52">9.3 Last-minute solving checklist</a></nav></details></aside></div>
-<footer>MLT Notes <span>Learn one concept at a time.</span></footer>
+<aside class="contents"><details open><summary>On this page</summary><nav aria-label="Topic index"><a class="level-h2" href="#topic-1">Topic index</a><a class="level-h2" href="#topic-2">1. Margin: Sirf correct classification se aage</a><a class="level-h3" href="#topic-3">1.1 Perceptron se SVM ka connection</a><a class="level-h3" href="#topic-4">1.2 Score, label aur boundary</a><a class="level-h3" href="#topic-5">1.3 Functional margin</a><a class="level-h3" href="#topic-6">1.4 Geometric margin</a><a class="level-h3" href="#topic-7">1.5 Canonical scaling: Functional margin ko 1 set karna</a><a class="level-h3" href="#topic-8">1.6 One-sided margin vs full width</a><a class="level-h3" href="#topic-9">1.7 Q2 — Width from weight vector</a><a class="level-h3" href="#topic-10">1.8 Point-to-hyperplane distance</a><a class="level-h3" href="#topic-11">1.9 Q8 — Distance in three dimensions</a><a class="level-h2" href="#topic-12">2. Hard-margin SVM ka optimization problem</a><a class="level-h3" href="#topic-13">2.1 “Hard margin” ka meaning</a><a class="level-h3" href="#topic-14">2.2 Primal objective</a><a class="level-h3" href="#topic-15">2.3 Properties jo exam mein matter karti hain</a><a class="level-h3" href="#topic-16">2.4 Q1 — Separable dataset and width</a><a class="level-h3" href="#topic-17">2.5 Q7 — Similar options, changed dataset</a><a class="level-h2" href="#topic-18">3. Support vectors: Boundary ko support kaun karta hai?</a><a class="level-h3" href="#topic-19">3.1 Geometric intuition</a><a class="level-h3" href="#topic-20">3.2 Q6 — Support vectors in one dimension</a><a class="level-h2" href="#topic-21">4. Constraints se Lagrangian tak</a><a class="level-h3" href="#topic-22">4.1 Constrained optimization ka idea</a><a class="level-h3" href="#topic-23">4.2 Lagrangian</a><a class="level-h3" href="#topic-24">4.3 Q4 — Maximize Lagrangian at an infeasible point</a><a class="level-h3" href="#topic-25">4.4 Primal, dual aur min-max</a><a class="level-h2" href="#topic-26">5. Dual problem aur KKT: Support vectors ko mathematically samjho</a><a class="level-h3" href="#topic-27">5.1 SVM Lagrangian and weight reconstruction</a><a class="level-h3" href="#topic-28">5.2 Matrix notation and dimensions</a><a class="level-h3" href="#topic-29">5.3 Dual objective</a><a class="level-h3" href="#topic-30">5.4 KKT conditions: What to check at an optimum</a><a class="level-h3" href="#topic-31">5.5 Correct implications, and their converses</a><a class="level-h3" href="#topic-32">5.5A Q12 — Support vectors, primal variables and sparse representation</a><a class="level-h3" href="#topic-33">5.5B Q13 — Can a diagram reveal the exact nonzero-multiplier count?</a><a class="level-h3" href="#topic-34">5.6 Q9 — Multipliers to prediction</a><a class="level-h3" href="#topic-35">5.6A Q14 — Count support coefficients and predict with label signs</a><a class="level-h3" href="#topic-36">5.6B Changed dataset — Same reconstruction via $XY\alpha$</a><a class="level-h3" href="#topic-37">5.7 Hard margin vs soft margin: Q3 ke liye needed concept</a><a class="level-h3" href="#topic-38">5.8 Q3 — Integer coefficients and the multiplier-sign trap</a><a class="level-h3" href="#topic-39">5.9 Q5 — Remove non-support vectors</a><a class="level-h2" href="#topic-40">6. Leave-one-out cross-validation: Support count se error bound</a><a class="level-h3" href="#topic-41">6.1 LOOCV ka meaning</a><a class="level-h3" href="#topic-42">6.2 Why support-vector count gives an upper bound</a><a class="level-h3" href="#topic-43">6.3 Q11 — Select the LOOCV relationship</a><a class="level-h2" href="#topic-44">7. Kernel SVM: Input-space curve, feature-space hyperplane</a><a class="level-h3" href="#topic-45">7.1 Why kernels?</a><a class="level-h3" href="#topic-46">7.2 Replace Gram matrix, not the whole reasoning</a><a class="level-h3" href="#topic-47">7.3 Common kernel properties</a><a class="level-h3" href="#topic-48">7.4 Practice — Radius feature se circular boundary</a><a class="level-h2" href="#topic-49">8. Decision-tree information gain</a><a class="level-h3" href="#topic-50">8.1 Is question ke liye short concept recap</a><a class="level-h3" href="#topic-51">8.2 Information gain</a><a class="level-h3" href="#topic-52">8.3 Q10 — Compare two root splits</a><a class="level-h2" href="#topic-53">9. Revision</a><a class="level-h3" href="#topic-54">9.1 Formula sheet</a><a class="level-h3" href="#topic-55">9.2 Common mistakes</a><a class="level-h3" href="#topic-56">9.3 Last-minute solving checklist</a></nav></details></aside></div>
+<footer>MLT Notes · Notes by Shiva <span>Learn one concept at a time.</span></footer>
 </body></html>

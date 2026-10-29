@@ -14,6 +14,7 @@
 | 6. Leave-one-out validation | Error definition, support-vector bound | Q11 |
 | 7. Kernel SVM | Feature maps, Gram matrix, kernel prediction | Practice example |
 | 8. Decision-tree information gain | Entropy, weighted split quality | Q10 |
+| Additional dual/KKT varieties | Claim audit, diagram count, coefficient signs and consistency | Q12–Q14; changed-data variant |
 | 9. Revision | Formula sheet, mistakes, solving checklist | — |
 
 ---
@@ -528,6 +529,94 @@ Write $m_i=y_if(x_i)$.
 
 Some texts call all on-margin points geometric support vectors. Here **positive-dual-coefficient criterion** follows the supplied slides' dual viewpoint; equality-on-margin alone does not guarantee positive coefficient.
 
+### 5.5A Q12 — Support vectors, primal variables and sparse representation
+
+**Source:** Week 10 — Solve with us, Q1.
+
+**Question:**
+
+Select the correct statements about the Support Vector Machine algorithm.
+
+(A) All support vectors lie on the supporting hyperplanes.
+
+(B) Every point on the supporting hyperplanes is a support vector.
+
+(C) w is a dual variable in the optimization problem
+
+$$\min_w\left(\max_{\alpha\ge0}\frac{\|w\|^2}{2}+\sum_{i=1}^n\alpha_i[1-(w^Tx_i)y_i]\right).$$
+
+(D) The search space has dimension d for the primal problem.
+
+(E) Large-margin classifiers are capable of generalizing better to unseen data.
+
+(F) The weight vector can be seen as a sparse linear combination of the data points.
+
+(G) Support vectors are the closest data points to the boundary.
+
+**Solution:** Use the question's **hard-margin, no-bias** formulation and the positive-multiplier definition of support vectors.
+
+**Step 1 — Geometry, (A), (B), (G):** Complementary slackness gives
+
+$$\alpha_i>0\Rightarrow y_iw^Tx_i=1.$$
+
+Hence positive-multiplier points lie on supporting planes and attain the minimum boundary distance $1/\|w\|$: **A and G true**. Reverse implication is not guaranteed: a redundant on-margin point can have $\alpha_i=0$, so **B false**. Section 5.5's duplicated-point counterexample already demonstrates this; no need to repeat its full calculation.
+
+**Step 2 — Variable roles, (C), (D):** w is the **primal** variable, with d coordinates. The n multipliers are dual variables. Thus **C false, D true** for this no-bias model. Free bias adds one primal scalar; soft-margin slacks would add n more variables.
+
+**Step 3 — Generalization, (E):** Larger margin can support better generalization under suitable data/complexity assumptions. The phrase “capable of” is reasonable, so **E is intended true**. It does not guarantee higher accuracy on every unseen dataset; noisy labels and feature scaling still matter.
+
+**Step 4 — Representation, (F):**
+
+$$w=\sum_i\alpha_i y_i x_i=\sum_{i:\alpha_i>0}\alpha_i y_i x_i.$$
+
+Only positive-multiplier points contribute. This is the usual **support-based sparse representation**, so **F is intended true**. Sparsity is across training examples, not necessarily zero coordinates in w. Also all samples can be support vectors; “most coefficients must be zero” is not guaranteed.
+
+$$\boxed{\text{Intended answers: A, D, E, F, G}}.$$
+
+**Scope:** Soft-margin support vectors can lie inside the margin or even be misclassified, so A/G are not universal statements for all SVM variants. A text defining every on-margin point as a geometric support vector uses a different convention for B; this question follows the dual-coefficient criterion.
+
+### 5.5B Q13 — Can a diagram reveal the exact nonzero-multiplier count?
+
+**Source:** Week 10 — Solve with us, Q3.
+
+**Question:**
+
+Consider the following supporting hyperplanes. We know that
+
+$$w=\sum_{i=1}^n\alpha_i x_i y_i.$$
+
+For how many data points in the figure is $\alpha_i\ne0$?
+
+![Supplied supporting hyperplanes and on-margin points](images/new_support_count_source.png)
+
+(i) 5
+
+(ii) 10
+
+(iii) 0
+
+(iv) Cannot conclude
+
+**Solution:**
+
+**Step 1 — Read the geometry:** The supplied figure/solution identifies ten points on the two supporting hyperplanes, five on each side. Other points are strictly beyond the margin.
+
+**Step 2 — Beyond-margin points:** Their signed margin exceeds 1. Complementary slackness forces their multipliers to be zero.
+
+**Step 3 — On-margin points:** For each such point,
+
+$$\alpha_i(1-y_iw^Tx_i)=\alpha_i\cdot0=0.$$
+
+This equality permits both $\alpha_i=0$ and $\alpha_i>0$. Merely counting contacts does not tell which constraints carry positive multipliers in the chosen dual solution.
+
+**Step 4 — Answer:**
+
+$$\boxed{\text{(iv) Cannot conclude the exact count}}.$$
+
+**What can be concluded?** Nonzero multipliers can only belong to these ten candidates, and not all can be zero because then w would be zero and could not separate the classes. Thus $1\le\#\{i:\alpha_i>0\}\le10$ is a coarse no-bias bound, not an exact answer. With a free bias, $\sum_i\alpha_i y_i=0$ additionally requires positive contributions from both classes.
+
+**Connection:** Unique primal weight does not imply unique dual multipliers. Redundant margin constraints can allow different coefficient assignments reconstructing the same boundary.
+
 ### 5.6 Q9 — Multipliers to prediction
 
 **Source:** 2026 May 06 ET, Q9.
@@ -564,6 +653,85 @@ $$w^T(1,1)=-4+7=3>0.$$
 **Answer using supplied coefficients and hint: $\boxed{1}$.**
 
 **Consistency note:** These numbers cannot actually be optimal canonical hard-margin multipliers for the listed data. Training signed margins with $w=(-4,7)$ are $10,6,15,18$. In particular $\alpha_1,\alpha_3>0$ but their margins are not 1, violating complementary slackness. The intended weight-reconstruction calculation still gives answer 1; do not learn a false KKT rule from the word “optimal” in this question.
+
+### 5.6A Q14 — Count support coefficients and predict with label signs
+
+**Source:** Week 10 — Solve with us, Q2. Weight-reconstruction method is the same as Q9; this adds an explicit support count and a sign-error check.
+
+**Question:**
+
+For the dataset
+
+$$X=\begin{bmatrix}1&0&3&3&-1&0&-3&-3\\0&-1&2&0&0&1&-2&0\end{bmatrix},$$
+
+$$y=[1,1,1,1,-1,-1,-1,-1]^T,$$
+
+suppose the solution to the dual problem is
+
+$$\alpha^*=[0.42,0.57,0,0,0,0.81,0.19,0]^T.$$
+
+(i) How many support vectors are there?
+
+(ii) Find the label of the test point $(3,-1)^T$.
+
+**Solution:**
+
+**Step 1 — Count positive coefficients:** Indices 1,2,6,7 have $\alpha_i>0$. Under the given coefficient convention, **4 support vectors**.
+
+**Step 2 — Keep label factors:** Samples are columns of X. Only four contributions are nonzero:
+
+| i | $\alpha_i$ | $y_i$ | $x_i$ | $\alpha_i y_i x_i$ |
+|---:|---:|---:|---|---|
+| 1 | 0.42 | +1 | $(1,0)$ | $(0.42,0)$ |
+| 2 | 0.57 | +1 | $(0,-1)$ | $(0,-0.57)$ |
+| 6 | 0.81 | −1 | $(0,1)$ | $(0,-0.81)$ |
+| 7 | 0.19 | −1 | $(-3,-2)$ | $(0.57,0.38)$ |
+
+**Step 3 — Add:**
+
+$$w=(0.42+0.57,\,-0.57-0.81+0.38)=\boxed{(0.99,-1)}.$$
+
+**Step 4 — Score using the supplied no-bias convention:**
+
+$$w^T(3,-1)=0.99(3)+(-1)(-1)=3.97>0.$$
+
+$$\boxed{\text{(i) }4,\qquad\text{(ii) }+1}.$$
+
+**Source correction:** The typed solution omits some label signs and obtains $(-0.15,-0.14)$; that is not $\sum_i\alpha_i y_ix_i$. Correct weight is $(0.99,-1)$, consistent with the handwritten correction and positive label. Keep intermediate values until the final step.
+
+**Precision check:** Taken literally, the displayed rounded coefficients are not an exact canonical optimum: at $x_1=(1,0)$ signed margin is 0.99, and at $x_7=(-3,-2),y=-1$ it is 0.97, both below 1. They may be rounded approximations, but exact KKT feasibility cannot be claimed from these decimals. The requested reconstruction and prediction above use the given values.
+
+### 5.6B Changed dataset — Same reconstruction via $XY\alpha$
+
+**Source:** Week 10 — Solve with us, Q4. Same numerical method as Q9/Q14; use this compact changed-data calculation rather than repeating the theory.
+
+**Question:**
+
+Predict the label for $(3,2)$ assuming
+
+$$\alpha=[0,3,1,0,2,0,5,0]^T,$$
+
+$$X=\begin{bmatrix}-1&0.25&-1&1&0.4&0.5&0&0.5\\0&0.5&1&0&0.2&1&-1&-3\end{bmatrix},$$
+
+$$y=[-1,1,-1,1,1,1,-1,-1]^T.$$
+
+**Step 1 — Signed coefficients:** For $Y=\operatorname{diag}(y)$,
+
+$$Y\alpha=(0,3,-1,0,2,0,-5,0)^T.$$
+
+**Step 2 — Nonzero contributions:**
+
+$$w=3(0.25,0.5)-( -1,1)+2(0.4,0.2)-5(0,-1).$$
+
+$$w=(0.75,1.5)+(1,-1)+(0.8,0.4)+(0,5)=\boxed{(2.55,5.9)}.$$
+
+**Step 3 — Score:**
+
+$$w^T(3,2)=2.55(3)+5.9(2)=7.65+11.8=19.45>0.$$
+
+$$\boxed{\hat y=+1}.$$
+
+**Property:** $X(Y\alpha)$ first multiplies each coefficient by its label; $X\alpha$ alone is wrong. These are supplied prediction coefficients, not a verified hard-margin optimum: training point $(-1,1)$ with label −1 has signed margin $-3.35<0$ under this w. A requested test prediction can still be computed, but it does not certify optimality or correct classification of every training sample.
 
 ### 5.7 Hard margin vs soft margin: Q3 ke liye needed concept
 

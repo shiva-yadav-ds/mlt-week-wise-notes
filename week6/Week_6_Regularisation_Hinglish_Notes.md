@@ -13,6 +13,8 @@
 | 5. Bayesian regularisation | Gaussian and Laplace priors, MAP, estimator risk | Q17, Q21, Q23, Q7, Q19 |
 | 6. Model selection | K-fold CV, validation tables, loss curves | Q4, Q18, Q22, Q6, Q10 |
 | 7. Classification threshold | False negatives, recall trade-off | Q8 |
+| Added numerical varieties | Finite ridge ratio; fixed-weight ridge/LASSO losses | Q26, Q27 |
+| Added validation varieties | Actual LOOCV fit; MAE and polynomial-degree graph | Q28, Q29 |
 | 8. Revision | Formulas, common mistakes, checklist | — |
 
 ---
@@ -392,6 +394,39 @@ $$\boxed{w_R=0.20}.$$
 
 OLS would be $4/10=0.40$; ridge shrinks it by $10/(10+10)=1/2$.
 
+### Q26 — Finite-penalty ridge-to-MLE ratio
+
+**Source:** Week 6 — Solve With TAs, Q6. Scalar fitting method Q25 jaisa hai; yahan requested quantity finite-penalty **ratio** hai.
+
+**Question:**
+
+Consider the dataset $X=[-3,5,4]$ and $y=[-10,20,20]^T$. Assuming a ridge penalty $\lambda=50$, what is the value of $w_{ridge}/w_{MLE}$? Here $w_{ridge}$ and $w_{MLE}$ are the Ridge and MLE estimates of the weight, respectively.
+
+**Solution:**
+
+**Step 1 — Shared sums:** No intercept specified, so one scalar weight fit karna hai.
+
+$$a=\sum x_i^2=9+25+16=50.$$
+
+$$b=\sum x_i y_i=(-3)(-10)+5(20)+4(20)=210.$$
+
+**Step 2 — Estimates:** Under the usual paired convention SSE $+\lambda w^2$ (equivalently half-SSE $+(\lambda/2)w^2$):
+
+$$w_{MLE}=b/a=210/50=4.2,\qquad w_{ridge}=b/(a+\lambda)=210/100=2.1.$$
+
+**Step 3 — Requested ratio:**
+
+$$\boxed{\frac{w_{ridge}}{w_{MLE}}=\frac{2.1}{4.2}=0.5}.$$
+
+**Shortcut/property:** If $a>0$ and $b\ne0$, the target-dependent numerator cancels:
+
+$$\boxed{\frac{w_{ridge}}{w_{MLE}}=\frac{a}{a+\lambda}}.$$
+
+- $\lambda=a$ means half of the OLS weight, regardless of nonzero b.
+- For a desired fraction $0<r<1$, choose $\lambda=a(1/r-1)$.
+- If $b=0$, both weights are zero and their ratio is undefined; do not cancel zero.
+- This scalar ratio is not one universal multiplier for every coordinate of a general multifeature model; Section 3.3 gives the eigen-direction version.
+
 ### Q2 — Ridge coefficients for a 2 × 2 design
 
 **Source:** 2024 Mar 24 Quiz 2, Q2.
@@ -545,6 +580,18 @@ $$\boxed{\text{(b)}}.$$
 
 ---
 
+**Same concept also appears:** Week 6 — Solve With TAs, Q2 asks which statements hold for very high ridge regularization:
+
+(A) Large coefficients are significantly penalized.
+
+(B) It can lead to a model that is too simple and underfits.
+
+(C) Large coefficients are not penalized.
+
+(D) It can lead to a model that is too simple and overfits.
+
+**Answer: (A), (B).** Q14 and Section 3.1 already explain the penalty mechanism. Very strong shrinkage can suppress useful signal and cause underfitting; “can” does not mean every dataset must underfit. For example, if the true penalized coefficients are zero, shrinking them toward zero need not introduce approximation bias.
+
 ## 4. Constraint geometry and LASSO: Shrinkage versus sparsity
 
 ### 4.1 Penalized and constrained forms
@@ -640,6 +687,83 @@ Equivalent constrained viewpoint: minimize SSE subject to $\lVert w\rVert_1\le\t
 **Real life:** Many house attributes available hain; a sparse model kuch useful coefficients retain karke baaki zero kar sakta hai. Zero coefficient means that feature has no contribution in that fitted linear predictor.
 
 **Important:** Standard LASSO uses $\lVert w\rVert_1$, **not** $\lVert w\rVert_1^2$. LASSO can produce zeros; har dataset/positive $\lambda$ par at least one zero guarantee nahi.
+
+### 4.3A Evaluating a loss is different from fitting weights
+
+**Definition:** Loss evaluation means given w par predictions, residuals aur penalty calculate karna. Optimization means w change karke objective minimize karna. Fixed-weight question mein inverse nikalna unnecessary hai.
+
+**Real-life connection:** Already chosen model ko score karna aur best model train karna alag tasks hain.
+
+Always identify three things:
+
+1. Data-fit term SSE, half-SSE, ya MSE hai?
+2. Penalty $\lambda\|w\|_2^2$, $(\lambda/2)\|w\|_2^2$, ya $\lambda\|w\|_1$ hai?
+3. Bias/intercept penalty mein included hai ya excluded?
+
+### Q27 — Ridge and LASSO losses at the same given weight
+
+**Source:** Week 6 — Solve With TAs, Q3.
+
+**Question:**
+
+Ajay has a dataset with a non-linear relationship between the features and the label. The dimension of the training samples is $4\times2$, excluding an additional all-ones feature for the bias term, which you should add. The label vector is $4\times1$ and the weight vector is $3\times1$. For all calculations, consider SSE to be $\frac12\|X^Tw-y\|^2$.
+
+| Feature vector | Label |
+|---|---:|
+| $[1,1]^T$ | 1 |
+| $[2,2]^T$ | 1 |
+| $[3,2]^T$ | 2 |
+| $[4,3]^T$ | 2 |
+
+$$w=[0.1,0.2,0.3]^T.$$
+
+(i) Compute the ridge loss for regularization parameter 0.2, correct to two decimal places.
+
+(ii) Compute the LASSO loss for regularization parameter 0.2, correct to two decimal places.
+
+**Solution:**
+
+**Step 1 — State the supplied solution's convention:** Here use
+
+$$J_R=\frac12\|X^Tw-y\|^2+\frac\lambda2\|w\|_2^2,\qquad J_L=\frac12\|X^Tw-y\|^2+\lambda\|w\|_1.$$
+
+All three coefficients, including the bias, penalized hain in this question's supplied solution. Normally bias unpenalized ho sakta hai, but silently convention change nahi karni. Question ka “SSE” label actually half-SSE denote karta hai.
+
+**Step 2 — Add intercept and check shape:** Input table has samples as rows. Notes ke column-sample convention mein augmented matrix:
+
+$$X=\begin{bmatrix}1&1&1&1\\1&2&3&4\\1&2&2&3\end{bmatrix}\in\mathbb R^{3\times4}.$$
+
+First coefficient $w_0=0.1$ is bias, so $\hat y_i=0.1+0.2x_{i1}+0.3x_{i2}$.
+
+**Step 3 — Predictions and squared errors:**
+
+| Input | Prediction | $\hat y-y$ | Squared error |
+|---|---:|---:|---:|
+| $(1,1)$ | $0.1+0.2+0.3=0.6$ | −0.4 | 0.16 |
+| $(2,2)$ | $0.1+0.4+0.6=1.1$ | 0.1 | 0.01 |
+| $(3,2)$ | $0.1+0.6+0.6=1.3$ | −0.7 | 0.49 |
+| $(4,3)$ | $0.1+0.8+0.9=1.8$ | −0.2 | 0.04 |
+
+$$\operatorname{SSE}=0.70,\qquad \tfrac12\operatorname{SSE}=0.35.$$
+
+**Step 4 — Ridge penalty:**
+
+$$\|w\|_2^2=0.1^2+0.2^2+0.3^2=0.14.$$
+
+$$J_R=0.35+\frac{0.2}{2}(0.14)=0.364\Rightarrow\boxed{0.36}.$$
+
+**Step 5 — LASSO penalty:**
+
+$$\|w\|_1=|0.1|+|0.2|+|0.3|=0.6.$$
+
+$$J_L=0.35+0.2(0.6)=\boxed{0.47}.$$
+
+**Properties and traps:**
+
+- Given nonlinear relationship ke basis par extra polynomial features invent nahi karne; specified features and weight hi evaluate karo.
+- Bias excluded hota toh ridge $0.35+0.1(0.13)=0.363$ aur LASSO $0.35+0.2(0.5)=0.45$. Ridge rounded answer same reh sakta hai, although convention different hai.
+- Half-SSE ke saath ridge penalty $\lambda\|w\|^2$ use karte toh $0.378\to0.38$. Same numeric lambda with a different relative normalization means a different objective.
+- Here smaller numerical ridge objective se “ridge generalizes better” conclude nahi kar sakte. Different penalties ki raw objective values validation comparison ka substitute nahi hain.
 
 ### 4.4 Subgradient and why exact zeros occur
 
@@ -764,6 +888,18 @@ $$\boxed{\text{(b)}}.$$
 This is the most appropriate pattern match, not a unique identification theorem from vectors alone: OLS/ridge can occasionally have zero coefficients too.
 
 ---
+
+**Same variety also appears:** Week 6 — Solve With TAs, Q5 gives six-dimensional vectors:
+
+$$w_1=(0.5,0,0.025,0,0,-0.14)^T,$$
+
+$$w_2=(0.8,-0.23,0.45,0.2,0.31,-0.54)^T,$$
+
+$$w_3=(0.24,-0.03,0.1,0.02,0.09,-0.14)^T.$$
+
+Q15 ka same pattern-matching method applies: $w_1$ has three exact zeros → **LASSO**, $w_2$ has the largest norm → **OLS**, and the smaller dense $w_3$ → **ridge**. No duplicate full solution needed.
+
+**PDF correction:** Handwritten labels follow this mapping, but typed solution swaps ridge/LASSO for $w_1,w_3$. Also LASSO/ridge are regularized models, despite the typed phrase “non-regularized model like LASSO or RIDGE”. A smaller norm alone does not identify “more regularized” across different penalty types/scales. These vectors give intended clues, not a proof of which fitting algorithm produced them.
 
 ## 5. Bayesian view: Prior becomes regularizer
 
@@ -1052,6 +1188,69 @@ $$\boxed{\text{(i) }4,\qquad\text{(ii) }750}.$$
 
 ![Four-fold cross-validation with 1000 observations](images/four_fold_cv.png)
 
+**Same counting method also appears:** Week 6 — Solve With TAs, Q4 asks for total fits in five-fold CV comparing standard linear regression, polynomial kernel regression and Gaussian kernel regression. There are 3 candidate procedures and 5 folds, so **$3\times5=15$ CV fits**. One final refit, if separately requested, makes 16. This assumes one fixed configuration per model family; extra degree/bandwidth settings count as additional candidates.
+
+### 6.2A LOOCV: Fit an actual fold before predicting its held-out point
+
+**Definition:** LOOCV mein one sample validation hota hai; coefficients remaining samples se fit hote hain. Har held-out sample ke liye model refit karna hota hai.
+
+For $m$ training points and model $\hat y=w_0+w_1x$:
+
+$$\boxed{w_1=\frac{\sum(x_i-\bar x)(y_i-\bar y)}{\sum(x_i-\bar x)^2},\qquad w_0=\bar y-w_1\bar x}.$$
+
+Means and sums **current training fold only** se nikaalo. Denominator positive hona chahiye; all training inputs equal hon toh slope separately identifiable nahi hota.
+
+### Q28 — Leave out sample 3, then fit slope and predict
+
+**Source:** Week 6 — Solve With TAs, Q7.
+
+**Question:**
+
+Consider the dataset:
+
+| Sample No. | $x$ | $y$ |
+|---:|---:|---:|
+| 1 | 3 | 8 |
+| 2 | 0 | 3 |
+| 3 | 5 | 12 |
+| 4 | 6 | 13 |
+
+The linear regression model is $y=w_0+w_1x$. Assume that Leave-One-Out Cross-Validation is applied.
+
+(i) Enter the value of $w_1$ obtained when the third sample is used as the validation data point.
+
+(ii) What is the predicted value for the left-out data point?
+
+**Solution:**
+
+**Step 1 — Split:** Hold out $(5,12)$. Train using $(3,8),(0,3),(6,13)$. Held-out label 12 fitting mein use nahi hoga.
+
+**Step 2 — Training means:**
+
+$$\bar x=(3+0+6)/3=3,\qquad \bar y=(8+3+13)/3=8.$$
+
+**Step 3 — Fit the slope:**
+
+$$\sum(x_i-\bar x)(y_i-\bar y)=0(0)+(-3)(-5)+3(5)=30.$$
+
+$$\sum(x_i-\bar x)^2=0+9+9=18.$$
+
+$$\boxed{w_1=30/18=5/3\approx1.6667}.$$
+
+**Step 4 — Fit intercept:**
+
+$$w_0=8-(5/3)(3)=3.$$
+
+Training predictions $8,3,13$ targets se exactly match karte hain.
+
+**Step 5 — Held-out prediction:**
+
+$$\boxed{\hat y(5)=3+(5/3)(5)=34/3\approx11.33}.$$
+
+![Training-fold line and the held-out sample with its prediction](images/new_loocv_fold.png)
+
+**Useful follow-through:** Held-out residual $12-34/3=2/3$, absolute error $2/3$, squared error $4/9$. Training error zero hone ke baad bhi validation error nonzero hai. Yeh **one fold's** error hai; full LOOCV MSE ke liye all four held-out squared errors average karne padenge.
+
 ### Q18 — Select learning rate and iteration setting
 
 **Source:** 2025 Aug 03 Quiz 2, Q18.
@@ -1140,6 +1339,50 @@ For exact ridge training optima on the same fixed dataset, increasing $\lambda$ 
 Validation/test prediction error can first improve then worsen; no universal smooth U shape required. If horizontal axis is decreasing function of $\lambda$, these directions reverse.
 
 **Important distinction:** Full regularized objective and prediction error differ. Validation normally compares prediction SSE/MSE without adding training penalty; graph's labels and question convention read karo.
+
+### 6.3A MAE and selecting polynomial degree from a graph
+
+**Definition:** Mean absolute error averages prediction misses without squaring:
+
+$$\boxed{\operatorname{MAE}=\frac1n\sum_i|y_i-\hat y_i|}.$$
+
+**Real-life connection:** Price prediction average kitne currency units se miss hui, MAE directly target units mein batata hai. MSE squared target units mein hota hai.
+
+- Smaller held-out MAE means better performance **under this metric**.
+- MAE and MSE models ko different order mein rank kar sakte hain. Residuals A=$(0,4)$ and B=$(2.1,2.1)$: MAE A=2 < B=2.1, but MSE A=8 > B=4.41. Large miss squaring se zyada penalize hoti hai.
+- Degree badhne par fit flexibility badhti hai; minimum training error alone model select karne ka criterion nahi.
+
+### Q29 — Read the best polynomial degree from the supplied chart
+
+**Source:** Week 6 — Solve With TAs, Q1.
+
+**Question:**
+
+The following chart plots MAE against degree of polynomial features for a regression task on the California housing dataset. Which is the optimal value of degree?
+
+![Supplied MAE-versus-degree chart with training and test curves](images/new_degree_source.png)
+
+(i) 1
+
+(ii) 2
+
+(iii) 3
+
+(iv) 4
+
+**Solution:**
+
+**Step 1 — Read axes and legend:** Horizontal axis polynomial degree hai, vertical axis MAE. Purple training error hai; red curve supplied chart mein “Test error” labelled hai.
+
+**Step 2 — Locate the red curve's minimum:** Degree 1 se 2 tak error decreases. Degree 2 ke baad 3, 4, 5 par increases. Precise plotted MAE values estimate karne ki zaroorat nahi; minimum location sufficient hai.
+
+**Step 3 — Select:**
+
+$$\boxed{\text{Degree }2\quad\text{(ii)}}.$$
+
+**Step 4 — Explain the gap:** Training MAE higher degrees par lower hoti hai, but held-out curve rises. Is graph mein added flexibility training data ko better fit karke unseen performance hurt kar rahi hai, consistent with overfitting.
+
+**Model-selection distinction:** Question ka intended answer supplied red curve se 2 hai. Actual workflow mein degree **validation/CV** se select karte hain; untouched final test set ko tune karne ke liye use nahi karte. Agar labelled “test” set se degree choose ki, woh selection ke liye validation role play kar raha hai, unbiased final test evaluation nahi.
 
 ### Q6 — Identify the horizontal-axis function of lambda
 

@@ -14,6 +14,8 @@
 | 6. Learning logistic regression | Likelihood, cross-entropy, gradient updates | Q17, Q16 |
 | 7. Regularization and kernels | L2 penalty, span representation, SVM connection | Q7 |
 | 8. Classifier comparison | One-step training, linear boundaries | Q19, Q26 |
+| Additional perceptron varieties | Regions, zero updates, cyclic trace, plotted margin | Q27–Q30 |
+| Additional logistic/comparison varieties | Opposite-input bias caveat, ascent stopping, claim audits | Q31–Q34 |
 | 9. Revision | Formula sheet, common mistakes, solving checklist | — |
 
 ---
@@ -52,6 +54,32 @@ $$\boxed{z=w^Tx+b=\sum_{j=1}^{d}w_jx_j+b}.$$
 Bias ko dummy feature se absorb kar sakte hain: $\tilde x=(x,1)$, $\tilde w=(w,b)$, then $\tilde w^T\tilde x=w^Tx+b$.
 
 **Exam rule:** Agar sirf $w^Tx$ diya ho aur bias mention na ho, question mein apni taraf se bias add nahi karna.
+
+### 1.2A Q27 — One hyperplane in five dimensions
+
+**Source:** Week 9 — Solve With Instructors, Q1.
+
+**Question:**
+
+The perceptron's decision boundary is a line in $\mathbb R^2$ and divides the space into two regions. If the input vector $x\in\mathbb R^5$, into how many regions will its decision boundary divide $\mathbb R^5$?
+
+(i) 2
+
+(ii) 3
+
+(iii) 4
+
+(iv) 5
+
+**Solution:**
+
+**Step 1:** For nonzero w, $w^Tx+b=0$ is a four-dimensional hyperplane in five-dimensional input space.
+
+**Step 2:** Its two sides are $w^Tx+b>0$ and $w^Tx+b<0$. More features change boundary dimension, not number of sides.
+
+$$\boxed{2\text{ regions — (i)}}.$$
+
+**Property:** In $\mathbb R^d$, one nondegenerate hyperplane has dimension $d-1$ and two open half-spaces. Boundary points need the classifier's tie rule; they are not a third class. If $w=0$, there is no ordinary separating hyperplane: score is constant. With $b=0$ it is a linear subspace; with nonzero bias generally an affine hyperplane.
 
 ### 1.3 Labels aur score zero ka convention
 
@@ -302,6 +330,42 @@ $$\boxed{y(w_{\mathrm{new}}^Tx)=y(w^Tx)+\eta\|x\|^2}.$$
 
 **Counterexample:** 1D $w=-100$, $x=1$, $y=+1$, $\eta=1$. Update ke baad $w=-99$; score improve hua, still negative. Doosre points ki classification bhi update se change ho sakti hai.
 
+### 2.4A Q28 — Correct initialization means zero updates
+
+**Source:** Week 9 — Solve With Instructors, Q2.
+
+**Question:**
+
+Consider the following data, with features $x=[x_1,x_2]^T$ and label y:
+
+| $x_1$ | $x_2$ | y |
+|---:|---:|---:|
+| 0 | 0 | −1 |
+| 0 | 1 | +1 |
+| 1 | 0 | +1 |
+| 1 | 1 | +1 |
+
+Initialize the perceptron at $w=[1,1]^T$. Classify as +1 if $w^Tx>0$ and −1 if $w^Tx\le0$. How many times will w be updated during the entire training process? Cycle through points in the given order.
+
+**Solution:**
+
+**Step 1 — Evaluate the initial model:**
+
+| Input | Score | Prediction under the stated rule | Correct? |
+|---|---:|---:|---|
+| $(0,0)$ | 0 | −1 | Yes |
+| $(0,1)$ | 1 | +1 | Yes |
+| $(1,0)$ | 1 | +1 | Yes |
+| $(1,1)$ | 2 | +1 | Yes |
+
+**Step 2:** No prediction mistake in the complete pass, so no update is needed.
+
+$$\boxed{0\text{ updates};\quad w_{final}=(1,1)^T}.$$
+
+**Property:** Initialization at zero is not compulsory. Already-correct initialization can terminate immediately after checking the data.
+
+**Boundary caveat:** Origin cannot have strictly positive signed margin for a bias-free model. Here its correct label is assigned by the zero-score rule. If you instead force updates whenever $y(w^Tx)\le0$, origin repeatedly triggers a zero increment $yx=0$ and an update-based stopping test may never terminate. Do not silently replace this question's prediction-error rule.
+
 ### 2.5 Q9 — Two consecutive updates
 
 **Source:** 2024 Dec 22 ET, Q9.
@@ -450,6 +514,41 @@ True label $-1$. Under zero-margin update rule it needs another update; under po
 
 ---
 
+### 2.8 Q29 — Reverse cyclic order and the final squared norm
+
+**Source:** Week 9 PDF, appended question, printed pp. 3–5.
+
+**Question:**
+
+Consider $x_1=(1,1)^T$, $x_2=(1,-1)^T$, $x_3=(-1,-1)^T$, $x_4=(-1,1)^T$ with labels $y_1=-1,y_2=+1,y_3=+1,y_4=-1$. Use the perceptron with no bias, cycling in the order $x_4,x_3,x_2,x_1$ until a linear separator is found.
+
+(i) What is the number of mistakes?
+
+(ii) What is the squared length of the final weight vector?
+
+**Solution:**
+
+**Step 1 — State missing run conventions:** Following the supplied solution, start at $w=0$, use learning rate 1, predict +1 at score zero, and update only on wrong predictions. The question itself does not specify initialization/tie handling.
+
+**Step 2 — First pass:**
+
+| Point | Current w | Score | Prediction | True label | Action / new w |
+|---|---|---:|---:|---:|---|
+| $x_4$ | $(0,0)$ | 0 | +1 | −1 | Update: $(0,0)-(-1,1)=(1,-1)$ |
+| $x_3$ | $(1,-1)$ | 0 | +1 | +1 | No update |
+| $x_2$ | $(1,-1)$ | 2 | +1 | +1 | No update |
+| $x_1$ | $(1,-1)$ | 0 | +1 | −1 | Update: $(1,-1)-(1,1)=(0,-2)$ |
+
+**Step 3 — Verify a full next pass:** Scores in the same order are $-2,2,2,-2$. All four labels correct, no further updates.
+
+**Step 4 — Report:**
+
+$$\boxed{M=2,\qquad w=(0,-2)^T,\qquad\|w\|^2=0^2+(-2)^2=4}.$$
+
+Boundary $x_2=0$: lower half-plane positive, upper half-plane negative. Two updates and two passes are different quantities, even though both happen to equal 2 here.
+
+**Convention check:** With zero-margin update rule, second update occurs at $x_3$ instead of $x_1$; final weight and update count still agree in this example. That agreement is not universal.
+
 ## 3. Perceptron kab converge karega? Margin aur mistake bound
 
 ### 3.1 Linear separability
@@ -499,6 +598,26 @@ $M$ update/mistake bound hai, dataset passes ki count nahi. Zero-margin update v
 ![Geometric margin and how the mistake bound depends on it](images/04_margin_bound.png)
 
 **Bias caution:** Agar augmented features $(x,1)$ se bias train kar rahe ho, theorem apply karte waqt augmented-space radius/margin use karo. Raw $x$ ka radius directly plug karna generally valid nahi.
+
+### 3.3A Q30 — Compare convergence from the plotted margin
+
+**Source:** Week 9 — Solve With Instructors, Q6.
+
+**Question:**
+
+For which dataset is the perceptron algorithm likely to take fewer iterations to converge?
+
+![Supplied datasets with smaller and larger separation around the vertical boundary](images/new_margin_comparison.png)
+
+**Solution:**
+
+**Step 1:** Figure 1 has points very close to the separating vertical line. Figure 2 has a wider empty band around it, hence larger margin for that separator.
+
+**Step 2:** For comparable radius R, $M\le(R/\gamma)^2$ decreases as margin increases. Larger safe separation usually makes fitting easier.
+
+$$\boxed{\text{Figure 2, as the intended qualitative answer}}.$$
+
+**Step 3 — Bound versus measured run:** Source reports 2367 rounds for Figure 1 and 264 for Figure 2. These are reported run counts, not values calculable exactly from this plot. They depend on initialization, order and stopping convention. A larger bound does **not** force more actual updates for every run; always distinguish “likely” from “guaranteed”.
 
 ### 3.4 Q5 — Given inequalities se separator identify karo
 
@@ -559,6 +678,8 @@ $$M\le\frac{R^2}{\gamma^2}=\frac{2^2}{0.5^2}=\frac4{0.25}=\boxed{16}.$$
 **Step 3:** Thus guaranteed upper bound 16 mistakes/updates. Actual run fewer kar sakta hai; exactly 16 hona zaroori nahi.
 
 **Trap:** 1000 samples aur 100 features ko formula mein multiply nahi karna. Given $R,\gamma$ bound determine karte hain.
+
+**Same numerical-bound variety:** Week 9 PDF appended question (printed pp. 1–2) has 500 points, 50 features, unit separator, $\gamma\ge0.25$ and $R\le1$. Q4's method gives $M\le1^2/(0.25)^2=\boxed{16}$. Samples/features are not extra factors, and 16 is an upper bound, not necessarily attained.
 
 ### 3.6 Q18 — More samples/features means more mistakes?
 
@@ -711,6 +832,30 @@ Useful values:
 | $\sigma(z)$ | 0.1192 | 0.2689 | 0.5 | 0.7311 | 0.8808 |
 
 ![Sigmoid curve and the score positions corresponding to probability thresholds](images/05_sigmoid.png)
+
+### 4.2A Q31 — Opposite input probabilities and the bias assumption
+
+**Source:** Week 9 PDF, appended question, printed pp. 8–9.
+
+**Question:**
+
+Consider a logistic regression model trained for binary classification with features in $\mathbb R^2$ and labels in $\{1,0\}$. The probability that test point $(1,3)^T$ belongs to class 1 is 0.75. What is the probability that $(-1,-3)^T$ belongs to class 0?
+
+**Solution:**
+
+**Step 1 — No-bias interpretation:** Let $z=w^Tx$ and $\sigma(z)=0.75$. At opposite input, $w^T(-x)=-z$.
+
+**Step 2 — Complement:**
+
+$$P(1\mid-x)=\sigma(-z)=1-0.75=0.25.$$
+
+**Step 3 — Asked class is 0:**
+
+$$\boxed{P(0\mid-x)=1-0.25=0.75}.$$
+
+**Important assumption:** This is the supplied answer under **zero bias**. For score $w^Tx+b$, opposite input score equals $2b-z$, not generally $-z$. If b unspecified and allowed, the answer is not uniquely determined.
+
+**Counterexample:** Set $w=0,b=\log3$. Both x and −x have class-1 probability 0.75, so class-0 probability at −x is **0.25**, not 0.75. Sigmoid symmetry concerns opposite **scores**, not automatically opposite feature vectors.
 
 ### 4.3 Q24 — Sigmoid properties
 
@@ -882,6 +1027,8 @@ Definitions: **False negative (FN)** = actual positive ko negative bolna. **Fals
 
 **Answer: $\boxed{1}$ — lower threshold.** Yeh “har phishing email definitely catch hoga” ki guarantee nahi; stated trade-off ka direction hai.
 
+**Same threshold-cost question:** Week 9 — Solve With Instructors, Q4 replaces phishing emails with objectionable videos. Missing a positive is costly and extra false positives are acceptable. Answer **(A) low threshold**, by the same reasoning as Q8. (B) high threshold prioritizes fewer false positives; (C) threshold-independent performance is false.
+
 ### 5.4 Q11 — Dot product then threshold
 
 **Source:** 2025 Apr 13 ET, Q11.
@@ -901,6 +1048,8 @@ $$p=\sigma(15)=\frac1{1+e^{-15}}\approx0.999999694.$$
 **Step 3:** $p>0.55$ → **label $\boxed{1}$**.
 
 **Quick check:** Score cutoff $\log(0.55/0.45)\approx0.2007$. Since $15>0.2007$, same answer without evaluating sigmoid precisely.
+
+**Related numeric variant:** Week 9 PDF appended question (printed pp. 6–7) uses $w=(1/2,2/3)^T$, test point $(1,0)^T$, and predicts 1 only if probability is **greater than 0.60**. Score $=1/2$; sigmoid $\approx0.622459>0.60$ → **label 1**. Same dot-product → sigmoid → cutoff method as Q11; equality would receive 0 under this strict rule.
 
 ### 5.5 Q22 — Count positives at threshold 0.7
 
@@ -1137,6 +1286,28 @@ Magnitude also depends on $\|x\|$: $\|x(y-p)\|=|y-p|\|x\|$. Small residual means
 
 **Answer: (a), (d).** Feature scale ka qualification section 6.6 mein diya hai; intended comparison residual coefficients ka hai.
 
+### 6.7A Q32 — Gradient ascent reaches the maximum before a repeated-iterate check
+
+**Source:** Week 9 — Solve With Instructors, Q5.
+
+**Question:**
+
+Use gradient ascent to find $(x,y)$ maximizing $f(x,y)=3+x+y-x^2-y^2$. Starting at $(2,2)$ with learning rate 0.5, after how many iterations will the algorithm stop?
+
+**Solution:**
+
+**Step 1 — Ascent uses plus:** $\nabla f=(1-2x,1-2y)$ and $u_{t+1}=u_t+0.5\nabla f(u_t)$.
+
+**Step 2 — First update:**
+
+$$u_1=(2,2)+0.5(-3,-3)=(0.5,0.5).$$
+
+**Step 3 — Second update:** Gradient there is $(0,0)$, so $u_2=(0.5,0.5)=u_1$.
+
+**Step 4 — Stopping convention:** Source detects equality of consecutive iterates after the second update and answers **2 iterations**. The maximum is actually reached in **1 update**; checking zero gradient before the next update would stop without a second update.
+
+**Check:** $f=3.5-(x-0.5)^2-(y-0.5)^2$, so $(0.5,0.5)$ is the global maximum with value 3.5. This also confirms ascent's sign; using descent would move away from the maximum.
+
 ### 6.8 Practice — One gradient step by hand
 
 **Question:** “For one sample $x=(2,-1)$, $y=1$, start at $w=(0,0)$. Use gradient ascent on the natural-log likelihood with learning rate $\eta=0.1$. Find the updated weight.”
@@ -1356,6 +1527,78 @@ $$w^{(1)}=(0,0)+(1,0)=\boxed{(1,0)}.$$
 **Answer: (c).** On separable data, logistic training ko finite iterations/regularization ke saath use karna practical hai; this does not change the model-choice answer.
 
 ---
+
+### 8.4 Q33 — Audit perceptron and logistic-regression claims
+
+**Source:** Week 9 — Solve With Instructors, Q3.
+
+**Question:**
+
+Which options are correct with respect to perceptron and logistic regression?
+
+(A) Perceptron is robust to outliers because it only updates for misclassified points.
+
+(B) Logistic regression assumes perfectly linearly separable data for effective training.
+
+(C) For linearly separable data, perceptron always makes $R^2/\gamma^2$ mistakes.
+
+(D) Depending on the order of cycling through points, perceptron may return a different weight vector.
+
+(E) In perceptron, as the margin decreases, the number of updates increases.
+
+(F) Logistic regression uses cross-entropy loss.
+
+(G) Perceptron guarantees that learned weights will be optimal for linearly separable data.
+
+(H) The logistic-loss gradient with respect to w is proportional to the difference between predicted probabilities and actual labels.
+
+(I) As $w^Tx\to\infty$, logistic-regression probability tends to 0.
+
+**Solution — Evaluate each claim:**
+
+| Option | Evaluation and reason |
+|---|---|
+| A | False. Mistake update has size $\eta\|x\|$; a large-norm misclassified outlier can cause a large change. |
+| B | False. Logistic loss can train on nonseparable data. Strictly separable unregularized data can instead have no finite loss-minimizing weight. |
+| C | False. This is an upper bound under theorem assumptions, not an exact count. |
+| D | True. Order changes intermediate weights and subsequent mistakes. |
+| E | Source intends true as a bound trend; **not guaranteed for actual updates**. At fixed R, smaller gamma enlarges the upper bound only. |
+| F | True. Standard binary logistic training uses cross-entropy/negative log-likelihood. |
+| G | False if “optimal” means a unique or maximum-margin separator. Perceptron finds some separating solution, not an optimal-margin one. |
+| H | True with the feature factor: $\nabla_w L=\sum_i(p_i-y_i)x_i$ for summed natural-log cross-entropy. Residuals alone are not the weight-gradient vector. |
+| I | False. Sigmoid tends to 1 at positive infinity. |
+
+**Source intended answers: D, E, F, H. Strict guaranteed statements: D, F, H**, with E interpreted as a statement about the bound rather than actual update count.
+
+**Counterexample for E:** One positive 1D training point x=a, zero start, boundary-update convention. Every a>0 needs exactly one update. Reducing a reduces its geometric margin but does not increase actual updates (radius scales too). More generally, an upper bound increasing never proves that each observed run must take longer.
+
+### 8.5 Q34 — Initialization, uniqueness and shifted hyperplanes
+
+**Source:** Week 9 — Solve With Instructors, Q7.
+
+**Question:**
+
+Choose the correct options:
+
+(A) Initializing at 0 is compulsory to implement perceptron.
+
+(B) Irrespective of initialization, perceptron converges to a unique w.
+
+(C) Logistic regression assumes a linear decision boundary.
+
+(D) No adjustment can apply perceptron to a dataset separable with gamma margin by a hyperplane that does not pass through the origin.
+
+**Solution:**
+
+**Step 1 — (A):** False; Q28 starts with $(1,1)$ and needs no updates. Zero start is a common theorem/algorithm convention, not an implementation requirement.
+
+**Step 2 — (B):** False. On data $(x,y)=(1,+1),(-1,-1)$, both initial weights w=1 and w=2 correctly classify all points and remain unchanged. Unique final w is not guaranteed.
+
+**Step 3 — (C):** True for standard logistic regression in the chosen feature space. Fixed threshold gives $w^Tx+b=\log(\tau/(1-\tau))$, an affine hyperplane for nonzero w. Nonlinear feature maps can give nonlinear boundaries in original coordinates.
+
+**Step 4 — (D):** False. Introduce bias via $\tilde x=(x,1)$, $\tilde w=(w,b)$; then $\tilde w^T\tilde x=w^Tx+b$. Update b along with w. A shifted original-space separator becomes through-origin in augmented feature space.
+
+$$\boxed{\text{(C) only}}.$$
 
 ## 9. Revision
 

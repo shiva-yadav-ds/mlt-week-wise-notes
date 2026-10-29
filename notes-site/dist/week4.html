@@ -3,7 +3,9 @@
 <title>Week 4 · Estimation, GMM and EM Algorithm | MLT Notes</title>
 <script src="theme.js"></script>
 <link rel="stylesheet" href="style.css">
-<script>window.MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']],processEscapes:true},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']},svg:{fontCache:'global'}};</script>
+<script>window.MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']],processEscapes:true},startup:{typeset:false, pageReady:() => window.renderNotesMath()},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']},svg:{fontCache:'global'}};</script>
+<script defer src="navigation.js"></script>
+<script defer src="math.js"></script>
 <script defer src="vendor/tex-svg.js"></script></head>
 <body><a class="skip" href="#notes">Skip to notes</a>
 <header><a class="brand" href="index.html"><span class="brand-mark">m</span> MLT <span class="brand-muted">/ study notes</span></a><label class="theme-control">Theme <select id="theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label></header>
@@ -69,6 +71,16 @@
 <td>10. Revision</td>
 <td>Formulas, mistakes, solving checklist</td>
 <td>—</td>
+</tr>
+<tr>
+<td>Added MLE/Bayesian types</td>
+<td>Weibull scale; Binomial-count update; Gamma–Exponential posterior</td>
+<td>Q23, Section 5.1 extension, Q24</td>
+</tr>
+<tr>
+<td>Added GMM/EM types</td>
+<td>Unequal priors; responsibility matrix; mean and weight; convexity graphs</td>
+<td>Q25–Q28</td>
 </tr>
 </tbody>
 </table>
@@ -210,12 +222,49 @@
 <p>$$\boxed{\hat\lambda=0.286}.$$</p>
 <p><img src="assets/week4/likelihood_curves.png" loading="lazy" alt="Bernoulli and exponential likelihood curves" /></p>
 <p>Left graph success fraction 0.4 par peak dikhata hai; right graph Q1 ki exponential estimate par log-likelihood peak.</p>
-<h3 id="topic-17">3.2 Poisson distribution: Counts per interval</h3>
+<h3 id="topic-17">3.1A Weibull model: Shape fixed, scale unknown</h3>
+<p><strong>Definition:</strong> Weibull nonnegative lifetime model hai. Known shape $k&gt;0$ distribution ka shape control karta hai; unknown scale $\lambda&gt;0$ lifetime scale control karta hai.</p>
+<p><strong>Real life:</strong> Machine lifetimes ko exponential se more flexible shape chahiye ho toh Weibull useful ho sakta hai. Is question mein $k$ estimate nahi karna.</p>
+<p>$$f(x\mid\lambda)=\frac{k}{\lambda}\left(\frac{x}{\lambda}\right)^{k-1}e^{-(x/\lambda)^k}.$$</p>
+<p><strong>Parameter trap:</strong> Yahan $\lambda$ <strong>scale</strong> hai. Previous exponential section ka $\lambda$ <strong>rate</strong> tha. Symbol same hone se meaning same nahi ho jaata.</p>
+<h3 id="topic-18">Q23 — Weibull scale ka MLE</h3>
+<p><strong>Question:</strong> Let the probability density function be defined as</p>
+<p>$$f(x\mid\lambda)=\frac{k}{\lambda}\left(\frac{x}{\lambda}\right)^{k-1}e^{-(x/\lambda)^k},\qquad x\ge0,\ \lambda,k&gt;0,$$</p>
+<p>where $k$ is some constant and $\lambda$ is the parameter that we want to estimate using Maximum Likelihood Estimation. Choose the option which has the correct MLE form of $\lambda$.</p>
+<p>(i) $\left(\sum_{i=1}^n x_i^k\right)^{1/k}$</p>
+<p>(ii) $\left(\frac1n\sum_{i=1}^n x_i^k\right)^k$</p>
+<p>(iii) $\left(\frac1n\sum_{i=1}^n x_i^k\right)^{1/k}$</p>
+<p>(iv) $\frac1n\sum_{i=1}^n x_i^k$</p>
+<p><code>Week 4.pdf</code>, Q1, pp. 2–7; options column-wise transcribed. Standard derivation assumes IID positive observations, so log terms are finite.</p>
+<p><strong>Step 1 — Separate parameter powers:</strong></p>
+<p>$$f(x_i\mid\lambda)=k x_i^{k-1}\lambda^{-k}\exp(-x_i^k/\lambda^k).$$</p>
+<p>Let $S=\sum_i x_i^k$. Then</p>
+<p>$$L(\lambda)=k^n\left(\prod_i x_i^{k-1}\right)\lambda^{-nk}e^{-S/\lambda^k}.$$</p>
+<p><strong>Step 2 — Take log:</strong></p>
+<p>$$\ell(\lambda)=n\ln k+(k-1)\sum_i\ln x_i-nk\ln\lambda-S\lambda^{-k}.$$</p>
+<p>Only last two terms depend on $\lambda$; first two can be ignored for maximization.</p>
+<p><strong>Step 3 — Differentiate:</strong></p>
+<p>$$\ell&#x27;(\lambda)=-\frac{nk}{\lambda}+kS\lambda^{-k-1}.$$</p>
+<p><strong>Step 4 — Solve:</strong> Multiply $\ell&#x27;(\lambda)=0$ by $\lambda^{k+1}/k$:</p>
+<p>$$-n\lambda^k+S=0\Rightarrow\boxed{\hat\lambda=\left(\frac1n\sum_i x_i^k\right)^{1/k}}.$$</p>
+<p>Correct option <strong>(iii)</strong>.</p>
+<p><strong>Step 5 — Check maximum, not just stationary point:</strong></p>
+<p>$$\ell&#x27;(\lambda)=\frac{k}{\lambda^{k+1}}(S-n\lambda^k).$$</p>
+<p>For $S&gt;0$, derivative positive below $\hat\lambda$ and negative above it. Hence this is the unique maximum on $\lambda&gt;0$ for the regular positive-data case.</p>
+<p><strong>Properties and quick checks:</strong></p>
+<ul>
+<li>$k=1$: $\hat\lambda=\bar x$—exponential <strong>scale</strong>, reciprocal of exponential rate MLE.</li>
+<li>$k=2$: $\hat\lambda=\sqrt{\frac1n\sum_i x_i^2}$, root mean square, not ordinary mean. For $x=(1,3)$, result $\sqrt5$, whereas mean is 2.</li>
+<li>Rescale all observations by $c&gt;0$: estimated scale becomes $c\hat\lambda$.</li>
+<li>Formula giving 0 for all-zero data does not supply an allowed positive-scale estimate. Exact zero observations for $k\ne1$ need care because density at the support boundary may vanish or diverge; do not blindly take $\ln0$.</li>
+</ul>
+<hr />
+<h3 id="topic-19">3.2 Poisson distribution: Counts per interval</h3>
 <p><strong>Short definition:</strong> Poisson nonnegative integer counts model karta hai:</p>
 <p>$$P(X=x)=\frac{e^{-\lambda}\lambda^x}{x!},\qquad x=0,1,2,\ldots$$</p>
 <p>$$E[X]=\lambda,\qquad\boxed{\hat\lambda_{\mathrm{MLE}}=\bar x}.$$</p>
 <p><strong>Real life:</strong> One hour mein number of calls. Same symbol $\lambda$ exponential rate mein bhi hai, but MLE formulas interchangeable nahi: Poisson → sample mean; exponential rate → reciprocal sample mean.</p>
-<h3 id="topic-18">Q6 — Poisson log-likelihood and frequency-table estimate</h3>
+<h3 id="topic-20">Q6 — Poisson log-likelihood and frequency-table estimate</h3>
 <p><strong>Source:</strong> May 2024 Quiz 1, Q6.</p>
 <p><strong>Question:</strong></p>
 <p>Comprehension: Consider a dataset of n data-points all of which are non-negative integers. These data-points are sampled from a Poisson distribution, whose probability mass function is given below:</p>
@@ -274,12 +323,15 @@
 <p><strong>Step 4:</strong></p>
 <p>$$\boxed{\hat\lambda=63/25=2.52}.$$</p>
 <p>Five distinct table rows nahi, 25 observations hain. Simple mean of $0,1,2,3,4$ wrong hai. If every count were zero and allowed range were strictly $\lambda&gt;0$, best value would be approached at $0^+$ rather than attained; this dataset has an interior maximum.</p>
-<h3 id="topic-19">3.3 Pareto distribution: Heavy-tailed values</h3>
+<p><strong>Same Poisson type:</strong> <code>Week 4.pdf</code>, first question labelled Q6 (pp. 16–18), asks for the general likelihood and MLE. Existing Q6 above covers the method. Its compact full likelihood is</p>
+<p>$$\boxed{L(\lambda)=\frac{e^{-n\lambda}\lambda^{\sum_i x_i}}{\prod_i x_i!}},\qquad\hat\lambda=\bar x.$$</p>
+<p>No second derivative calculation needs repeating. Do not confuse this Poisson mean parameter with the previous exponential rate or Weibull scale.</p>
+<h3 id="topic-21">3.3 Pareto distribution: Heavy-tailed values</h3>
 <p><strong>Short definition:</strong> Pareto distribution mein large values ki tail comparatively slowly decrease karti hai. Given scale 1 and shape $\theta$:</p>
 <p>$$f(x\mid\theta)=\theta x^{-\theta-1},\quad x\ge1.$$</p>
 <p><strong>Real life:</strong> Large insurance claims/wealth-like heavy-tail modeling. Larger shape generally faster tail decay.</p>
 <p>Support and shape constraint question se read karo. Neeche question explicitly $\theta&gt;1$ impose karta hai.</p>
-<h3 id="topic-20">Q15 — Pareto MLE</h3>
+<h3 id="topic-22">Q15 — Pareto MLE</h3>
 <p><strong>Source:</strong> May 2025 Quiz 1, Q15.</p>
 <p><strong>Question:</strong></p>
 <p>Let $X_1,X_2,\ldots,X_n$ be an i.i.d. sample drawn from a Pareto distribution with the following probability density function:</p>
@@ -328,9 +380,9 @@
 <p><strong>Step 4:</strong> $1.14846766&gt;1$, allowed domain ke andar; $\ell&#x27;&#x27;=-n/\theta^2&lt;0$, so maximum.</p>
 <p>$$\boxed{\hat\theta=1.148}.$$</p>
 <p><strong>Property:</strong> $\sum\ln x_i$ use hota hai, $\ln(\sum x_i)$ nahi. Agar unconstrained stationary point $\le1$ aaye, given open constraint $\theta&gt;1$ ko ignore nahi kar sakte; boundary supremum may replace attained MLE.</p>
-<h3 id="topic-21">3.4 Discrete parameter: Derivative ki zaroorat nahi</h3>
+<h3 id="topic-23">3.4 Discrete parameter: Derivative ki zaroorat nahi</h3>
 <p>Parameter sirf kuch allowed values le sakta ho toh har candidate likelihood compare karo. “Always differentiate” MLE rule nahi hai.</p>
-<h3 id="topic-22">Q7 — Choose between two possible densities</h3>
+<h3 id="topic-24">Q7 — Choose between two possible densities</h3>
 <p><strong>Source:</strong> Sep 2024 Quiz 1, Q7.</p>
 <p><strong>Question:</strong></p>
 <p>Let $X_1,X_2,\ldots,X_n$ be n i.i.d. samples with parameter $\theta$, which follows one of the following PDFs:</p>
@@ -354,8 +406,8 @@
 <p>$$\boxed{\text{(a), (d)}}.$$</p>
 <p>Equality par both are maximizers; unique MLE nahi. Likelihood ratio compare karna sufficient hai—posterior probabilities assume karne ki need nahi.</p>
 <hr />
-<h2 id="topic-23">4. Bayesian estimation: Prior belief ko data se update karo</h2>
-<h3 id="topic-24">4.1 Prior, likelihood, posterior and evidence</h3>
+<h2 id="topic-25">4. Bayesian estimation: Prior belief ko data se update karo</h2>
+<h3 id="topic-26">4.1 Prior, likelihood, posterior and evidence</h3>
 <p><strong>Short definition:</strong> Bayesian estimation unknown parameter par distribution rakhti hai, phir data aane par update karti hai.</p>
 <p><strong>Real life:</strong> Factory ka historical defect rate low raha hai. New small batch ka data noisy ho sakta hai; prior history aur new observations dono combine kar sakte hain.</p>
 <p>$$\boxed{p(\theta\mid D)=\frac{p(D\mid\theta)p(\theta)}{p(D)}}.$$</p>
@@ -368,7 +420,7 @@
 <p>For comparing parameter values:</p>
 <p>$$p(\theta\mid D)\propto L(\theta)p(\theta).$$</p>
 <p>Evidence $\theta$ se independent hai, so MAP optimization mein drop kar sakte hain. Normalized probability/density calculate karni ho toh normalization needed hai.</p>
-<h3 id="topic-25">4.2 Beta distribution for a Bernoulli probability</h3>
+<h3 id="topic-27">4.2 Beta distribution for a Bernoulli probability</h3>
 <p>Since p lies in $[0,1]$, Beta prior natural choice hai:</p>
 <p>$$p\sim\operatorname{Beta}(\alpha,\beta),\qquad\alpha&gt;0,\ \beta&gt;0,$$</p>
 <p>$$\boxed{f(p)=\frac{p^{\alpha-1}(1-p)^{\beta-1}}{B(\alpha,\beta)},\quad0&lt;p&lt;1}.$$</p>
@@ -382,7 +434,7 @@
 <li>Variance $\alpha\beta/[(\alpha+\beta)^2(\alpha+\beta+1)]$; fixed mean par larger total concentration more concentrated prior banati hai.</li>
 </ul>
 <p><strong>Conjugacy:</strong> Beta prior + Bernoulli likelihood gives Beta posterior. “Conjugate” means <strong>posterior prior ki same family mein hai</strong>, not that likelihood itself Beta hai.</p>
-<h3 id="topic-26">Q2 — Beta mean and mode on a graph</h3>
+<h3 id="topic-28">Q2 — Beta mean and mode on a graph</h3>
 <p><strong>Source:</strong> Jan 2024 Quiz 1, Q2.</p>
 <p><strong>Question:</strong></p>
 <p>For the given Beta distribution, choose the correct option. (MSQ)</p>
@@ -402,13 +454,25 @@
 <p><img src="assets/week4/beta_mean_mode.png" loading="lazy" alt="Beta mean and mode shown clearly" /></p>
 <p>Right tail mean ko peak se right pull karti hai. Mean ko visually tallest point assume karna wrong hai.</p>
 <hr />
-<h2 id="topic-27">5. Beta–Bernoulli posterior and point estimates</h2>
-<h3 id="topic-28">5.1 Update rule</h3>
+<h2 id="topic-29">5. Beta–Bernoulli posterior and point estimates</h2>
+<h3 id="topic-30">5.1 Update rule</h3>
 <p>Prior Beta($\alpha,\beta$), data mein s ones and f zeros:</p>
 <p>$$\boxed{p\mid D\sim\operatorname{Beta}(\alpha+s,\beta+f)}.$$</p>
 <p>Short connection: Prior exponent $\alpha-1$ mein success likelihood exponent s add hota hai; resulting Beta parameter $\alpha+s$ hota hai. Failures similarly $\beta+f$.</p>
 <p><strong>No minus-one mistake:</strong> Posterior parameters are $\alpha+s,\beta+f$, not $\alpha+s-1,\beta+f-1$. Minus ones appear in density exponents and interior mode formula.</p>
-<h3 id="topic-29">5.2 Three estimates ko distinguish karo</h3>
+<h4 id="topic-31">Same update with a Binomial count</h4>
+<p><code>Week 4.pdf</code>, Q2 (pp. 8–9), uses an aggregated count rather than individual Bernoulli outcomes.</p>
+<p><strong>Question:</strong> Suppose that $Y$ follows a binomial distribution with parameters $n$ and $p=\theta$, so that</p>
+<p>$$P(Y=y;\theta)=\binom ny\theta^y(1-\theta)^{n-y},\qquad y=0,1,\ldots,n.$$</p>
+<p>Suppose that the prior p.d.f. of $\theta$ is the beta$(\alpha,\beta)$ p.d.f., that is $h(\theta)=\theta^{\alpha-1}(1-\theta)^{\beta-1}$ for $0\le\theta\le1$. Find the posterior p.d.f. of $\theta$ using Bayesian estimation.</p>
+<p><strong>Step 1:</strong> Same Section 5.1 update: successes $s=y$, failures $f=n-y$. $\binom ny$ does not depend on $\theta$.</p>
+<p><strong>Step 2:</strong> Multiply kernels and combine powers:</p>
+<p>$$p(\theta\mid y)\propto\theta^{\alpha+y-1}(1-\theta)^{\beta+n-y-1}.$$</p>
+<p><strong>Step 3 — Full normalized density, since PDF is asked:</strong></p>
+<p>$$\boxed{p(\theta\mid y)=\frac{\theta^{\alpha+y-1}(1-\theta)^{\beta+n-y-1}}{B(\alpha+y,\beta+n-y)}},\quad0&lt;\theta&lt;1.$$</p>
+<p>Thus $\boxed{\theta\mid y\sim\operatorname{Beta}(\alpha+y,\beta+n-y)}$, with $\alpha,\beta&gt;0$.</p>
+<p>Source prior expression omits $1/B(\alpha,\beta)$: it is a <strong>density kernel</strong>, not generally a normalized PDF. For parameter updates constant can be omitted, but final full PDF needs its normalizer. Observing count $y$ or a specific Bernoulli sequence with $y$ successes produces the same posterior in this model.</p>
+<h3 id="topic-32">5.2 Three estimates ko distinguish karo</h3>
 <table>
 <thead>
 <tr>
@@ -440,7 +504,7 @@
 <p>$$\boxed{E[p\mid D]=\frac{\alpha+\beta}{\alpha+\beta+n}\frac\alpha{\alpha+\beta}+\frac n{\alpha+\beta+n}\frac sn}.$$</p>
 <p>Prior mean aur sample fraction ka weighted average hai. Fixed prior ke saath n large ho toh data influence grows.</p>
 <p><strong>Counterexample:</strong> Beta(1,1) prior, one success and no failures → MLE 1, posterior Beta(2,1), mean $2/3$. Uniform prior ke saath <strong>posterior mean</strong> MLE ke equal hona necessary nahi.</p>
-<h3 id="topic-30">Q5 — Beta prior with eight ones and five zeros</h3>
+<h3 id="topic-33">Q5 — Beta prior with eight ones and five zeros</h3>
 <p><strong>Source:</strong> May 2024 Quiz 1, Q5.</p>
 <p><strong>Question:</strong></p>
 <p>Comprehension: In the context of Bayesian estimation, consider a Beta prior for the parameter p of a Bernoulli distribution:</p>
@@ -460,7 +524,7 @@
 <p>$$\boxed{\hat p=\frac{12}{12+8}=\frac{12}{20}=0.6}.$$</p>
 <p><strong>Compare:</strong> MLE $8/13\approx0.6154$; posterior MAP $11/18\approx0.6111$. Neither is asked in part (ii).</p>
 <p><img src="assets/week4/beta_update.png" loading="lazy" alt="Prior and posterior in Q5" /></p>
-<h3 id="topic-31">Q12 — Defective items with a uniform Beta prior</h3>
+<h3 id="topic-34">Q12 — Defective items with a uniform Beta prior</h3>
 <p><strong>Source:</strong> Jan 2025 Quiz 1, Q12.</p>
 <p><strong>Question:</strong></p>
 <p>Comprehension: Suppose that 100 items are sampled from a manufacturing process and 10 are found to be defective. Let p denote the proportion of defective items. Assume that the prior distribution for p is Beta(1, 1).
@@ -483,7 +547,7 @@ Based on the above data, answer the given subquestions.</p>
 </ol>
 <p>$$E[p\mid D]=\frac{11}{102}\approx0.107843\quad\Rightarrow\quad\boxed{0.11}.$$</p>
 <p><strong>Trap:</strong> Beta distribution is over unknown probability p. Bernoulli is the observation model for one defective/nondefective outcome; it is not the posterior distribution of p.</p>
-<h3 id="topic-32">Q19 — Strong data with Beta(10,40) prior</h3>
+<h3 id="topic-35">Q19 — Strong data with Beta(10,40) prior</h3>
 <p><strong>Source:</strong> 2025 Apr 13 ET, Q19.</p>
 <p><strong>Question:</strong></p>
 <p>A coin is flipped 1000 times, and it lands on heads 150 times. You use a Beta(10, 40) prior to estimate the true probability of heads. Given these observations, calculate the posterior mean of the probability of heads. Enter the answer correct to three decimal places.</p>
@@ -499,7 +563,7 @@ Based on the above data, answer the given subquestions.</p>
 <p>$$E[p\mid D]=\frac{160}{160+890}=\frac{160}{1050}=0.15238095.$$</p>
 <p>$$\boxed{0.152}.$$</p>
 <p>Prior mean $10/50=0.2$ and MLE $150/1000=0.15$; posterior mean lies between them, close to MLE because n=1000 dominates prior concentration 50.</p>
-<h3 id="topic-33">Q22 — Same prior, different data size and heads fraction</h3>
+<h3 id="topic-36">Q22 — Same prior, different data size and heads fraction</h3>
 <p><strong>Source:</strong> 2026 May 06 ET, Q22.</p>
 <p><strong>Question:</strong></p>
 <p>A coin is flipped 100 times, and it lands on heads 60 times. You use a Beta(10, 40) prior to estimate the true probability of heads. Given these observations, calculate the posterior mean of the probability of heads. Enter the answer correct to three decimal places.</p>
@@ -517,8 +581,49 @@ Based on the above data, answer the given subquestions.</p>
 <p>$$\boxed{E[p\mid D]=\frac{70}{150}=0.466666\ldots\approx0.467}.$$</p>
 <p><strong>Connection:</strong> Prior mean 0.2, data fraction 0.6. Prior weight $50/150=1/3$, data weight $100/150=2/3$, so posterior mean $(1/3)(0.2)+(2/3)(0.6)=0.466667$. Same prior ka influence smaller dataset par more visible hai.</p>
 <hr />
-<h2 id="topic-34">6. MAP: Posterior ka highest point</h2>
-<h3 id="topic-35">6.1 Definition and uniform-prior rule</h3>
+<h3 id="topic-37">5.3 Gamma prior for an exponential rate</h3>
+<p><strong>Definition:</strong> Gamma distribution supports positive parameters, so it is a natural prior for an exponential rate. A conjugate prior keeps the posterior in the same distribution family.</p>
+<p><strong>Real life:</strong> Before seeing service waiting times, we have an uncertain belief about the arrival/service rate; observed waits update that belief.</p>
+<p>Use <strong>shape–rate</strong> notation throughout:</p>
+<p>$$\lambda\sim\operatorname{Gamma}(\alpha,\beta),\qquad
+p(\lambda)=\frac{\beta^\alpha}{\Gamma(\alpha)}\lambda^{\alpha-1}e^{-\beta\lambda},\quad\lambda&gt;0.$$</p>
+<p>$$E[\lambda]=\alpha/\beta,\qquad\operatorname{Var}(\lambda)=\alpha/\beta^2.$$</p>
+<p>If a source instead uses shape–scale $s$, mean is $\alpha s$ and $s=1/\beta$. PDF formula, not just parameter names, identifies the convention.</p>
+<h3 id="topic-38">Q24 — Gamma–Exponential posterior and posterior mean</h3>
+<p><strong>Question:</strong> We have $n$ iid samples from exponential distribution with $\lambda$ as parameter. $\lambda$ is said to follow a gamma distribution with $\alpha$ and $\beta$ as parameters. Find the posterior distribution.</p>
+<p>Hint: The PDF of exponential distribution is $f(x)=\lambda e^{-\lambda x}$. The PDF of gamma distribution is</p>
+<p>$$f(\lambda)=\frac{\beta^\alpha}{\Gamma(\alpha)}\lambda^{\alpha-1}e^{-\beta\lambda}.$$</p>
+<p>Find the posterior mean for $\alpha=6$ and $\beta=2$. The data points are $\{2,1,1,0.75,1.25,1\}$.</p>
+<p><code>Week 4.pdf</code>, Q8, pp. 25–27.</p>
+<p><strong>Step 1 — Likelihood:</strong> Put $S=\sum_i x_i$:</p>
+<p>$$L(\lambda)=\prod_i\lambda e^{-\lambda x_i}=\lambda^n e^{-S\lambda}.$$</p>
+<p><strong>Step 2 — Multiply by prior:</strong></p>
+<p>$$p(\lambda\mid D)\propto\lambda^n e^{-S\lambda}\lambda^{\alpha-1}e^{-\beta\lambda}
+=\lambda^{\alpha+n-1}e^{-(\beta+S)\lambda}.$$</p>
+<p><strong>Step 3 — Identify and normalize:</strong></p>
+<p>$$\boxed{\lambda\mid D\sim\operatorname{Gamma}(\alpha+n,\beta+S)\quad\text{(shape–rate)}}.$$</p>
+<p>$$p(\lambda\mid D)=\frac{(\beta+S)^{\alpha+n}}{\Gamma(\alpha+n)}\lambda^{\alpha+n-1}e^{-(\beta+S)\lambda},\quad\lambda&gt;0.$$</p>
+<p><strong>Step 4 — Data summary:</strong> $n=6$ and</p>
+<p>$$S=2+1+1+0.75+1.25+1=7.$$</p>
+<p>PDF ki ek line sum ko 2 print karti hai; correct sum 7 hai, which its next calculation also uses.</p>
+<p><strong>Step 5 — Posterior parameters and answer:</strong></p>
+<p>$$\alpha&#x27;=6+6=12,\qquad\beta&#x27;=2+7=9,$$</p>
+<p>$$\boxed{E[\lambda\mid D]=12/9=4/3\approx1.3333}.$$</p>
+<p><img src="assets/week4/new_gamma_posterior.png" loading="lazy" alt="Gamma prior and posterior for the exponential rate" /></p>
+<p><strong>Properties from this question:</strong></p>
+<ul>
+<li>New observations increase shape by their <strong>count</strong>, rate by their <strong>sum</strong>. Do not swap the updates.</li>
+<li>For $S&gt;0$, posterior mean is a weighted average of prior mean and exponential-rate MLE:</li>
+</ul>
+<p>$$\frac{\alpha+n}{\beta+S}=\frac{\beta}{\beta+S}\frac\alpha\beta+\frac{S}{\beta+S}\frac nS.$$</p>
+<ul>
+<li>Here prior mean 3, MLE $6/7$, posterior mean $4/3$ lies between them.</li>
+<li>Posterior mean is not MAP. With shape 12, the interior mode is $(12-1)/9=11/9$. Next section explains this distinction generally.</li>
+<li>Inverse expected rate is not expected waiting time: $1/E[\lambda\mid D]=3/4$, but $E[1/\lambda\mid D]=9/11$ for this Gamma posterior. Generally the latter is $\beta&#x27;/(\alpha&#x27;-1)$ for $\alpha&#x27;&gt;1$.</li>
+</ul>
+<hr />
+<h2 id="topic-39">6. MAP: Posterior ka highest point</h2>
+<h3 id="topic-40">6.1 Definition and uniform-prior rule</h3>
 <p>$$\boxed{\hat\theta_{\mathrm{MAP}}=\arg\max_\theta p(\theta\mid D)=\arg\max_\theta L(\theta)p(\theta)}.$$</p>
 <p>Positive factors ke log form mein:</p>
 <p>$$\hat\theta_{\mathrm{MAP}}=\arg\max_\theta[\ell(\theta)+\ln p(\theta)].$$</p>
@@ -526,13 +631,13 @@ Based on the above data, answer the given subquestions.</p>
 <p>Uniform prior on $[a,b]$ means constant density <strong>inside that interval</strong>, zero outside. Therefore:</p>
 <p>$$\boxed{\hat\theta_{\mathrm{MAP}}=\arg\max_{\theta\in[a,b]}L(\theta)}.$$</p>
 <p>Unrestricted MLE inside prior support ho toh same maximum can be used. MLE outside ho toh equality generally fail karti hai. Open intervals mein excluded endpoint par supremum hone se attained MAP absent bhi ho sakta hai; relevant numerical questions below interior/allowed boundary use karte hain.</p>
-<h3 id="topic-36">6.2 Uniform data model: Support itself carries information</h3>
+<h3 id="topic-41">6.2 Uniform data model: Support itself carries information</h3>
 <p>If $X\sim\operatorname{Uniform}[0,\theta]$:</p>
 <p>$$f(x\mid\theta)=\frac1\theta\mathbf1[0\le x\le\theta].$$</p>
 <p>For nonnegative observations, let $m=\max_i x_i$. Then:</p>
 <p>$$L(\theta)=\theta^{-n}\mathbf1[\theta\ge m].$$</p>
 <p><strong>Meaning:</strong> Largest observed value se chhota upper bound impossible hai. Feasible range mein $\theta^{-n}$ decreases as $\theta$ increases, so smallest allowed feasible value preferred hai.</p>
-<h3 id="topic-37">Q18 — Train-delay MAP with a bounded uniform prior</h3>
+<h3 id="topic-42">Q18 — Train-delay MAP with a bounded uniform prior</h3>
 <p><strong>Source:</strong> 2024 Dec 22 ET, Q18.</p>
 <p><strong>Question:</strong></p>
 <p>A train running between two stations A and B will be late on any day by a random amount X, where $X\sim\operatorname{Uniform}[0,\theta]$. Suppose the train is late by random amounts (in minutes)</p>
@@ -549,7 +654,7 @@ Based on the above data, answer the given subquestions.</p>
 <p><strong>Trap:</strong> Neither sample average nor prior average 30 is asked. $\theta&lt;55$ cannot generate observed 55 under the model.</p>
 <p><img src="assets/week4/map_support.png" loading="lazy" alt="Uniform-support MAP examples" /></p>
 <p>Left plot Q18 dikhata hai. Right plot shows why a uniform prior on a restricted interval need not preserve an unrestricted MLE.</p>
-<h3 id="topic-38">Q20 — Exponential rate MAP with Uniform(0,2) prior</h3>
+<h3 id="topic-43">Q20 — Exponential rate MAP with Uniform(0,2) prior</h3>
 <p><strong>Source:</strong> 2025 Aug 31 ET, Q20.</p>
 <p><strong>Question:</strong></p>
 <p>A machine’s lifetime (in hours) is modeled as a random variable $X\sim\operatorname{Exponential}(\lambda)$. Suppose the observed lifetimes (in hours) of the machine over 8 trials are:</p>
@@ -569,7 +674,7 @@ Based on the above data, answer the given subquestions.</p>
 <p><strong>Step 4:</strong> $0&lt;0.3053435&lt;2$, so candidate prior support mein hai and valid maximum.</p>
 <p>$$\boxed{\hat\lambda_{\mathrm{MAP}}=0.31\text{ per hour}}.$$</p>
 <p>Same algebra as Q1, but yahan additional prior-range check essential hai.</p>
-<h3 id="topic-39">Q21 — Does a uniform prior always make MAP equal MLE?</h3>
+<h3 id="topic-44">Q21 — Does a uniform prior always make MAP equal MLE?</h3>
 <p><strong>Source:</strong> 2025 Dec 18 ET, Q21.</p>
 <p><strong>Question:</strong></p>
 <p>Suppose we have a Uniform(1, 10) prior for the parameter $\theta$. Then, the value of the maximum likelihood estimate (MLE) is equal to the value of the maximum a posteriori (MAP) estimate.</p>
@@ -582,12 +687,12 @@ Based on the above data, answer the given subquestions.</p>
 <p><strong>Why condition necessary?</strong> Prior zero outside interval hai. For example, observe $x=20$ from $N(\theta,1)$ with unrestricted real-valued mean. MLE is 20, but Uniform[1,10] prior posterior only inside [1,10] allow karta hai; its maximum is at 10. For a strictly open interval (1,10), posterior increases toward 10 and has a supremum but no attained mode there. Either way unrestricted MLE 20 is not MAP.</p>
 <p>So statement <strong>as an unconditional claim is false</strong>. Formula ya MCQ key memorize karne ke saath support assumption bhi yaad rakho. Uniform prior equality concerns MAP, not posterior mean.</p>
 <hr />
-<h2 id="topic-40">7. Gaussian mixture model: Ek population, multiple hidden groups</h2>
-<h3 id="topic-41">7.1 Single Gaussian ki limitation</h3>
+<h2 id="topic-45">7. Gaussian mixture model: Ek population, multiple hidden groups</h2>
+<h3 id="topic-46">7.1 Single Gaussian ki limitation</h3>
 <p><strong>Short definition:</strong> GMM data density ko multiple Gaussian component densities ke weighted sum se represent karta hai.</p>
 <p><strong>Real life:</strong> Heights of a population with multiple subgroups ek broad bell curve se poorly fit ho sakte hain. Multiple Gaussian components subgroup-specific centers/spreads capture kar sakte hain.</p>
 <p>A component is a probabilistic generating group; automatically ground-truth class nahi. One component can overlap with another, so a point's membership uncertain ho sakti hai.</p>
-<h3 id="topic-42">7.2 Generative story and latent variable</h3>
+<h3 id="topic-47">7.2 Generative story and latent variable</h3>
 <p>For each observation i:</p>
 <ol>
 <li>Component label $z_i\in\{1,\ldots,K\}$ draw karo with probability $P(z_i=k)=\pi_k$.</li>
@@ -598,7 +703,7 @@ Based on the above data, answer the given subquestions.</p>
 <p>Mixture weights satisfy:</p>
 <p>$$\boxed{\pi_k\ge0,\qquad\sum_{k=1}^K\pi_k=1}.$$</p>
 <p><strong>Connection to Q16:</strong> Wahan groups supplied the; yahan model ko component membership probabilities infer karni padengi.</p>
-<h3 id="topic-43">7.3 Gaussian component and mixture density</h3>
+<h3 id="topic-48">7.3 Gaussian component and mixture density</h3>
 <p>One-dimensional Gaussian:</p>
 <p>$$\phi(x;\mu,\sigma^2)=\frac1{\sqrt{2\pi\sigma^2}}\exp\left[-\frac{(x-\mu)^2}{2\sigma^2}\right],\qquad\sigma^2&gt;0.$$</p>
 <p>Here Gaussian normalization mein $\pi$ mathematical constant hai; $\pi_k$ mixture weight alag quantity hai.</p>
@@ -608,7 +713,7 @@ Based on the above data, answer the given subquestions.</p>
 <p>$$L(\theta)=\prod_{i=1}^n\left[\sum_{k=1}^K\pi_k\phi(x_i;\mu_k,\sigma_k^2)\right],$$</p>
 <p>$$\boxed{\ell(\theta)=\sum_{i=1}^n\ln\left[\sum_{k=1}^K\pi_k\phi(x_i;\mu_k,\sigma_k^2)\right]}.$$</p>
 <p><strong>Trap:</strong> $\sum_i\sum_k\ln(\pi_k\phi_k(x_i))$ observed-data log-likelihood nahi. Log ke andar sum ko distribute nahi kar sakte. Isi coupling ki wajah se all parameters ka simple simultaneous closed-form MLE generally nahi milta; EM iterative solution deta hai.</p>
-<h3 id="topic-44">7.4 Parameter count</h3>
+<h3 id="topic-49">7.4 Parameter count</h3>
 <p>One-dimensional K-component GMM with separate means and variances:</p>
 <ul>
 <li>K means.</li>
@@ -620,7 +725,7 @@ Based on the above data, answer the given subquestions.</p>
 <p>For d-dimensional full-covariance components, each component has d mean coordinates and $d(d+1)/2$ independent covariance entries:</p>
 <p>$$K d+K\frac{d(d+1)}2+(K-1).$$</p>
 <p>Shared/diagonal/fixed covariance assumptions change count; $3K-1$ univariate unrestricted-component formula hai.</p>
-<h3 id="topic-45">7.5 Mixture properties</h3>
+<h3 id="topic-50">7.5 Mixture properties</h3>
 <ul>
 <li>Weighted densities sum to a normalized density because weights sum to 1.</li>
 <li>Component labels can be permuted without changing mixture density: label switching.</li>
@@ -630,21 +735,21 @@ Based on the above data, answer the given subquestions.</p>
 <p><img src="assets/week4/gmm_responsibilities.png" loading="lazy" alt="Gaussian mixture densities and posterior responsibilities" /></p>
 <p>Left: component contributions add into mixture density. Right: after observing x, component probabilities change with x, even though prior weights both 0.5 hain.</p>
 <hr />
-<h2 id="topic-46">8. E-step: Har point ke liye soft membership</h2>
-<h3 id="topic-47">8.1 Responsibility definition and formula</h3>
+<h2 id="topic-51">8. E-step: Har point ke liye soft membership</h2>
+<h3 id="topic-52">8.1 Responsibility definition and formula</h3>
 <p><strong>Short definition:</strong> Responsibility $r_{ik}$ probability hai ki observed point $x_i$ component k se aaya, given current model parameters.</p>
 <p>Paper $\lambda_{ik}$ notation use karta hai; here $r_{ik}=\lambda_{ik}$. Ye exponential/Poisson rate $\lambda$ se different quantity hai.</p>
 <p>$$\boxed{r_{ik}=P(z_i=k\mid x_i,\theta^{\mathrm{old}})=\frac{\pi_k^{\mathrm{old}}\phi(x_i;\mu_k^{\mathrm{old}},(\sigma_k^2)^{\mathrm{old}})}{\sum_{j=1}^K\pi_j^{\mathrm{old}}\phi(x_i;\mu_j^{\mathrm{old}},(\sigma_j^2)^{\mathrm{old}})}}.$$</p>
 <p><strong>Real life:</strong> A customer ki spending pattern dekhkar 80% chance budget group, 20% premium group. Hard assignment “definitely budget” nahi kiya; uncertainty retain ki.</p>
 <p>E-step mein current parameters fixed hain. Each point/component ka score $s_{ik}=\pi_k\phi_k(x_i)$ nikalo, phir same point ke across-component scores normalize karo.</p>
-<h3 id="topic-48">8.2 Properties: Row sum versus column sum</h3>
+<h3 id="topic-53">8.2 Properties: Row sum versus column sum</h3>
 <p>$$\boxed{0\le r_{ik}\le1,\qquad\sum_{k=1}^K r_{ik}=1\quad\text{for every fixed }i}.$$</p>
 <p>But column sum:</p>
 <p>$$N_k=\sum_{i=1}^n r_{ik}$$</p>
 <p>component k ka <strong>effective sample count</strong> hai; it can exceed 1 and need not be integer.</p>
 <p><strong>Counterexample:</strong> 10 points each give component 1 responsibility 0.7 → $N_1=7$, perfectly valid. Individual responsibility 2.5 is invalid.</p>
 <p><strong>Prior vs posterior:</strong> $\pi_k=P(z_i=k)$ before seeing point; $r_{ik}=P(z_i=k\mid x_i)$ after observing point. Same numbers hona necessary nahi.</p>
-<h3 id="topic-49">Q4 — Missing responsibility by normalization</h3>
+<h3 id="topic-54">Q4 — Missing responsibility by normalization</h3>
 <p><strong>Source:</strong> May 2024 Quiz 1, Q4.</p>
 <p><strong>Question:</strong></p>
 <p>The EM algorithm is run on a dataset of 100 points modeled using a GMM with three components. Let $\lambda_{ik}$ be the values obtained in the E-step in the final iteration. Here, i is the index of the data-point and k is the index of a component. Also, let $\pi_1=0.3,\pi_2=0.5,\pi_3=0.2$ be the estimates of the mixture probabilities. $x_p$ represent one of the data-points, for some constant p. If $\lambda_{p1}+\lambda_{p3}=0.2$, what is the probability that the second component generated $x_p$ given that we have seen the data-point?</p>
@@ -656,7 +761,7 @@ Based on the above data, answer the given subquestions.</p>
 </ol>
 <p>$$\boxed{\lambda_{p2}=1-0.2=0.8}.$$</p>
 <p><strong>Trap:</strong> Answer 0.5 would use mixture prior instead of conditional probability. Dataset size 100 is not needed for this row-normalization question.</p>
-<h3 id="topic-50">Q11 — E-step calculation with two Gaussians</h3>
+<h3 id="topic-55">Q11 — E-step calculation with two Gaussians</h3>
 <p><strong>Source:</strong> Jan 2025 Quiz 1, Q11.</p>
 <p><strong>Question:</strong></p>
 <p>Suppose we fit a Gaussian Mixture Model with K = 2 for the following dataset:</p>
@@ -678,8 +783,50 @@ Based on the above data, answer the given subquestions.</p>
 <p>Other responsibility $r_{12}=1-r_{11}\approx0.119203$, so row sum 1. The unnormalized score $0.5\phi(1;1,1)\approx0.199471$ is <strong>not</strong> the posterior probability.</p>
 <p><strong>Property:</strong> x lies exactly at component-1 mean, but membership probability is not 1 because component 2 also has positive density there. Other three dataset values not needed for this E-step row once parameters given hain.</p>
 <hr />
-<h2 id="topic-51">9. M-step and full EM: Soft assignments se parameters update</h2>
-<h3 id="topic-52">9.1 Effective count and weighted formulas</h3>
+<h3 id="topic-56">Q25 — Component selection with unequal mixture weights</h3>
+<p><strong>Question:</strong> A GMM is used to model a dataset with 3 components. For a given data point $x=6$, the likelihoods for each component are as follows:</p>
+<p>$$P(x\mid z=1)=0.2,\quad P(x\mid z=2)=0.3,\quad P(x\mid z=3)=0.5.$$</p>
+<p>The mixture probabilities are $\pi_1=0.4$, $\pi_2=0.3$, $\pi_3=0.3$. Which component is most likely to have generated the data point? Hint: Use posterior probability.</p>
+<p><code>Week 4.pdf</code>, Q4, pp. 13–15. Continuous GMM mein these are component <strong>density values</strong>, despite the source's $P$ notation.</p>
+<p><strong>Step 1 — Prior-weighted scores:</strong> Unlike Q11, priors unequal hain, so cancel nahi kar sakte.</p>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th style="text-align:right">$\pi_k$</th>
+<th style="text-align:right">Component density</th>
+<th style="text-align:right">Product</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td style="text-align:right">0.4</td>
+<td style="text-align:right">0.2</td>
+<td style="text-align:right">0.08</td>
+</tr>
+<tr>
+<td>2</td>
+<td style="text-align:right">0.3</td>
+<td style="text-align:right">0.3</td>
+<td style="text-align:right">0.09</td>
+</tr>
+<tr>
+<td>3</td>
+<td style="text-align:right">0.3</td>
+<td style="text-align:right">0.5</td>
+<td style="text-align:right">0.15</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Step 2 — Evidence:</strong> $p(x)=0.08+0.09+0.15=0.32$.</p>
+<p><strong>Step 3 — Normalize:</strong></p>
+<p>$$r_1=0.08/0.32=0.25,\quad r_2=0.09/0.32=0.28125,\quad r_3=0.15/0.32=0.46875.$$</p>
+<p><strong>Answer:</strong> $\boxed{\text{Component 3}}$; its posterior is largest, even though below 0.5. Multiclass winner need not have a majority probability.</p>
+<p><strong>Property and counterexample:</strong> Winner can be found from unnormalized products because denominator is shared. Comparing raw densities alone is not reliable: densities $(0.6,0.5)$ with weights $(0.1,0.9)$ give products $(0.06,0.45)$, so second component wins despite lower density.</p>
+<hr />
+<h2 id="topic-57">9. M-step and full EM: Soft assignments se parameters update</h2>
+<h3 id="topic-58">9.1 Effective count and weighted formulas</h3>
 <p><strong>Short definition:</strong> M-step fixed responsibilities ko fractional memberships maan kar model parameters update karta hai.</p>
 <p>$$\boxed{N_k=\sum_i r_{ik}}.$$</p>
 <p>For $N_k&gt;0$:</p>
@@ -698,7 +845,7 @@ Based on the above data, answer the given subquestions.</p>
 <p>Multivariate analogue:</p>
 <p>$$\mu_k^{\mathrm{new}}=\frac1{N_k}\sum_i r_{ik}x_i,\qquad\Sigma_k^{\mathrm{new}}=\frac1{N_k}\sum_i r_{ik}(x_i-\mu_k^{\mathrm{new}})(x_i-\mu_k^{\mathrm{new}})^T.$$</p>
 <p><strong>Tiny calculation:</strong> Points 0,2 with component weights 0.75,0.25 give $N_k=1$, mean 0.5, variance $0.75(0-0.5)^2+0.25(2-0.5)^2=0.75$. If dataset contains these two points, mixture weight update is $1/2$.</p>
-<h3 id="topic-53">Q8 — Weighted mean update, with an invalid supplied responsibility</h3>
+<h3 id="topic-59">Q8 — Weighted mean update, with an invalid supplied responsibility</h3>
 <p><strong>Source:</strong> Sep 2024 Quiz 1, Q8.</p>
 <p><strong>Question:</strong></p>
 <p>Consider a GMM for 5 points:</p>
@@ -751,7 +898,52 @@ Based on the above data, answer the given subquestions.</p>
 <p><strong>Step 3:</strong></p>
 <p>$$\boxed{\mu_k^{\mathrm{new}}=6.72/4.3=1.5627907\approx1.56}.$$</p>
 <p>This matches the paper's expected range. It is a valid weighted average of the supplied positive weights, but not evidence that those numbers form valid responsibilities. A corrected E-step result would require corrected source data.</p>
-<h3 id="topic-54">9.2 What EM actually alternates</h3>
+<h3 id="topic-60">Q26 — Fill responsibility rows, then update all three means</h3>
+<p><strong>Question:</strong> Consider a 1D dataset $X=[-3,-1,1,3]$ with $K=3$ mixture of Gaussian. Using EM algorithm, we try to estimate the mean and variance of the Gaussian component. Suppose the output of E-step in an iteration is</p>
+<p>$$R_{n\times K}=\begin{bmatrix}0.3&amp;a&amp;0.5\\b&amp;1&amp;b\\c&amp;0.5&amp;c\\0.1&amp;0.4&amp;d\end{bmatrix},$$</p>
+<p>where each $R_{ij}$ entry corresponds to the probability of $X_i$ belonging to component $K_j$. Let $\hat\mu_1,\hat\mu_2,\hat\mu_3$ be the updated means in the M-step after the E-step. Calculate $\hat\mu_1+\hat\mu_2+\hat\mu_3$.</p>
+<p><code>Week 4.pdf</code>, Q3, pp. 10–12.</p>
+<p><strong>Step 1 — Each row sums to one:</strong></p>
+<ul>
+<li>$0.3+a+0.5=1\Rightarrow a=0.2$.</li>
+<li>$b+1+b=1\Rightarrow b=0$.</li>
+<li>$c+0.5+c=1\Rightarrow c=0.25$.</li>
+<li>$0.1+0.4+d=1\Rightarrow d=0.5$.</li>
+</ul>
+<p>$$R=\begin{bmatrix}0.3&amp;0.2&amp;0.5\\0&amp;1&amp;0\\0.25&amp;0.5&amp;0.25\\0.1&amp;0.4&amp;0.5\end{bmatrix}.$$</p>
+<p><strong>Step 2 — Column sums (effective counts):</strong></p>
+<p>$$N_1=0.65,\quad N_2=2.1,\quad N_3=1.25,\quad N_1+N_2+N_3=4.$$</p>
+<p><strong>Step 3 — Weighted numerators:</strong></p>
+<p>$$T_1=0.3(-3)+0(-1)+0.25(1)+0.1(3)=-0.35,$$</p>
+<p>$$T_2=0.2(-3)+1(-1)+0.5(1)+0.4(3)=0.1,$$</p>
+<p>$$T_3=0.5(-3)+0(-1)+0.25(1)+0.5(3)=0.25.$$</p>
+<p><strong>Step 4 — Divide by each component's own count:</strong></p>
+<p>$$\hat\mu_1=-0.35/0.65=-7/13,\quad\hat\mu_2=0.1/2.1=1/21,\quad\hat\mu_3=0.25/1.25=1/5.$$</p>
+<p><strong>Step 5 — Sum before rounding:</strong></p>
+<p>$$\boxed{-\frac7{13}+\frac1{21}+\frac15=-\frac{397}{1365}\approx-0.29084249}.$$</p>
+<p>Two-decimal answer <strong>−0.29</strong>. PDF's intermediate −0.53 and 0.04 are truncated; retain fractions until the end.</p>
+<p><strong>Consistency properties:</strong></p>
+<ul>
+<li>Row sums 1, but column sums need not be 1.</li>
+<li>If weights also updated, $\pi^{\rm new}=(0.1625,0.525,0.3125)$; they sum to 1.</li>
+<li>$\sum_k N_k\hat\mu_k=\sum_i x_i=0$, so $\sum_k\pi_k\hat\mu_k=\bar x=0$. Unweighted sum of component means need not equal data mean.</li>
+<li>The row $(0,1,0)$ is a valid probability row abstractly. With finite means, positive weights and strictly positive Gaussian variances, exact E-step responsibilities are all strictly positive. Treat these exact zeros as supplied/rounded exercise inputs, not an exactly attainable ordinary nondegenerate Gaussian E-step.</li>
+</ul>
+<h3 id="topic-61">Q27 — One component's mean and mixture weight from the same column</h3>
+<p><strong>Question:</strong> We are trying to fit a GMM ($K=3$) for the following data points:</p>
+<p>$$\{2,1,3,2,1,2,0,-3,0,2\}.$$</p>
+<p>At the $t$-th round of the EM algorithm, the following were observed:</p>
+<p>$$\lambda_3=(0.2,0.3,0.1,0.6,0.1,0.5,0.4,0.7,0.1,0.2).$$</p>
+<p>The $i$-th element of this vector represents $P(z_i=3\mid x_i)$. What will $\mu_3$ and $\pi_3$ be after the maximization step in the $t$-th round?</p>
+<p><code>Week 4.pdf</code>, Q7, pp. 22–24.</p>
+<p><strong>Step 1 — Effective count:</strong></p>
+<p>$$N_3=0.2+0.3+0.1+0.6+0.1+0.5+0.4+0.7+0.1+0.2=3.2.$$</p>
+<p><strong>Step 2 — Weighted products in data order:</strong></p>
+<p>$$T_3=0.4+0.3+0.3+1.2+0.1+1+0-2.1+0+0.4=1.6.$$</p>
+<p><strong>Step 3 — Mean:</strong> $\boxed{\mu_3=1.6/3.2=0.5}$.</p>
+<p><strong>Step 4 — Mixture weight:</strong> Total observations $n=10$, so $\boxed{\pi_3=3.2/10=0.32}$.</p>
+<p><strong>Denominator check:</strong> $T_3/N_3$ gives location; $N_3/n$ gives population weight. Dividing numerator 1.6 by 10 would give neither requested mean nor mixture weight. Other component columns are unnecessary for these two updates.</p>
+<h3 id="topic-62">9.2 What EM actually alternates</h3>
 <p>Start with valid initial weights, means and positive variances. Then repeat:</p>
 <ol>
 <li><strong>E-step:</strong> Current parameters fixed → posterior distribution of latent labels/responsibilities compute karo.</li>
@@ -762,7 +954,7 @@ Based on the above data, answer the given subquestions.</p>
 <p>Expected complete-data objective for GMM:</p>
 <p>$$Q(\theta\mid\theta^{\mathrm{old}})=\sum_i\sum_k r_{ik}\left[\ln\pi_k+\ln\phi(x_i;\mu_k,\sigma_k^2)\right].$$</p>
 <p>E-step “E” expectation ka hai; hidden assignments ko necessarily hard label mein replace nahi karta. M-step ordinary observed-data likelihood ka direct one-shot maximizer generally nahi; it maximizes Q, enabling observed-data likelihood improvement.</p>
-<h3 id="topic-55">Q13 — Meaning of E and M steps</h3>
+<h3 id="topic-63">Q13 — Meaning of E and M steps</h3>
 <p><strong>Source:</strong> May 2025 Quiz 1, Q13.</p>
 <p><strong>Question:</strong></p>
 <p>You are presented with a dataset that has latent variables that influences your data. You are asked to use Expectation-Maximization algorithm to best capture the data. How would you define the steps in the EM (Expectation and Maximization) algorithm?</p>
@@ -778,7 +970,40 @@ Based on the above data, answer the given subquestions.</p>
 </ol>
 <p>$$\boxed{\text{(a)}}.$$</p>
 <p>Precise version: E-step posterior responsibilities; M-step expected complete-data log-likelihood Q maximize. K in a standard GMM EM run fixed hota hai; choosing K separate model-selection problem hai.</p>
-<h3 id="topic-56">9.3 Jensen inequality: Log-sum problem ka useful lower bound</h3>
+<h3 id="topic-64">9.2A Convexity: One chord test versus every chord</h3>
+<p><strong>Definition:</strong> Convex function ka graph any two graph points ko join karne wali chord ke neeche/on hota hai, throughout the connecting interval:</p>
+<p>$$\boxed{f(tx+(1-t)y)\le tf(x)+(1-t)f(y)},\quad0\le t\le1.$$</p>
+<p><strong>Real-life intuition:</strong> Bowl-shaped cost mein two choices ko average karne ka cost, unke costs ke weighted average se higher nahi hota. Domain bhi convex hona chahiye, so intermediate input allowed ho.</p>
+<ul>
+<li>Left side: pehle inputs mix, phir function apply.</li>
+<li>Right side: pehle function values, phir mix—chord height.</li>
+<li>Convexity requires <strong>all</strong> input pairs and all weights. One passing pair is not a proof; one failing pair disproves it.</li>
+<li>Linear function mein equality holds, so it is both convex and concave. Strictly convex hona different condition hai.</li>
+</ul>
+<h3 id="topic-65">Q28 — Which graphs satisfy Jensen, and which are convex?</h3>
+<p><strong>Question:</strong> Look at the following graphs.</p>
+<p><img src="assets/week4/new_convexity_source.png" loading="lazy" alt="Four supplied graphs with their selected endpoints" /></p>
+<p>(i) Select the option(s) which satisfy the following inequality for $\lambda_1,\lambda_2\in[0,1]$ and $\lambda_1+\lambda_2=1$:</p>
+<p>$$f(\lambda_1x_1+\lambda_2x_2)\le\lambda_1f(x_1)+\lambda_2f(x_2).$$</p>
+<p>(ii) Select the graph(s) from above that represent convex functions.</p>
+<p><code>Week 4.pdf</code>, second question labelled Q6, pp. 19–21. Source left side prints $\lambda x_1$; the stated two weights make $\lambda_1x_1$ the intended expression.</p>
+<p><strong>Step 1 — Draw chords for the marked pairs:</strong></p>
+<p><img src="assets/week4/new_convexity_chords.png" loading="lazy" alt="Supplied chord comparison for the selected endpoints" /></p>
+<p><strong>Step 2 — Compare curve with its chord over the marked interval:</strong></p>
+<ul>
+<li>(a): Despite its bumps, curve stays below the chord for <strong>this marked pair</strong>. Passes part (i).</li>
+<li>(b): Bowl-shaped curve stays below the chord. Passes part (i).</li>
+<li>(c): Curve rises above the chord somewhere between the marked endpoints. Fails.</li>
+<li>(d): Concave arch lies above the chord internally. Fails.</li>
+</ul>
+<p>$$\boxed{\text{Part (i): (a), (b)}}.$$</p>
+<p><strong>Step 3 — Change endpoints to test global convexity:</strong></p>
+<p><img src="assets/week4/new_convexity_counterexample.png" loading="lazy" alt="A different endpoint pair disproves convexity of graph a" /></p>
+<p>For (a), new endpoints produce a chord below an interior bump. Therefore “passes one chord” does not mean convex. (b) is the intended convex curve; (c),(d) already fail.</p>
+<p>$$\boxed{\text{Part (ii): only (b)}}.$$</p>
+<p><strong>Numerical counterexample for the principle:</strong> $f(x)=(x^2-1)^2$ on $[-2,2]$. Endpoints $\pm2$ both have value 9; whole graph is below that chord. But endpoints $\pm1$ have value 0 while midpoint $f(0)=1&gt;0$. Hence not convex despite the first passing test.</p>
+<p><strong>Connection to EM:</strong> Log is <strong>concave</strong>, so next section's Jensen sign reverses. Convex-function graph question aur concave-log lower bound ko mix mat karo.</p>
+<h3 id="topic-66">9.3 Jensen inequality: Log-sum problem ka useful lower bound</h3>
 <p><strong>Short definition:</strong> Concave log ke liye log of weighted average, weighted average of logs se at least as large hota hai.</p>
 <p>For $a_k&gt;0$, $q_k\ge0$, $\sum_kq_k=1$:</p>
 <p>$$\boxed{\ln\left(\sum_kq_ka_k\right)\ge\sum_kq_k\ln a_k}.$$</p>
@@ -789,7 +1014,7 @@ Based on the above data, answer the given subquestions.</p>
 <p>GMM ke liye per-point positive weights $q_{ik}$ with row sum 1 introduce karne par useful bound:</p>
 <p>$$\ell(\theta)\ge F(q,\theta)=\sum_{i,k}q_{ik}\ln\frac{\pi_k\phi_k(x_i)}{q_{ik}}.$$</p>
 <p>Zero weights ke terms limiting convention se handle hote hain. Current posterior responsibilities choose karne se bound current parameters par tight hota hai. E-step bound ko current model se match karta hai; M-step bound ko improve karta hai. Ye EM ka conceptual reason hai—full inequality/EM derivation exam ne ask nahi ki, so formula aur meaning enough hain.</p>
-<h3 id="topic-57">9.4 Convergence: Improvement is not global optimality</h3>
+<h3 id="topic-67">9.4 Convergence: Improvement is not global optimality</h3>
 <p>For exact valid E/M updates with well-defined objectives:</p>
 <p>$$\boxed{\ell(\theta^{t+1})\ge\ell(\theta^t)}.$$</p>
 <p>This is <strong>non-decreasing</strong>, not necessarily strictly increasing. Convergence to best possible global solution guaranteed nahi; stationary/local solutions and degenerate cases possible hain.</p>
@@ -799,7 +1024,7 @@ Based on the above data, answer the given subquestions.</p>
 <li>Standard EM does not choose K automatically.</li>
 <li>Gaussian variance collapse can invalidate naive “likelihood always reaches a finite best value” intuition.</li>
 </ul>
-<h3 id="topic-58">9.5 EM versus Lloyd's K-means</h3>
+<h3 id="topic-68">9.5 EM versus Lloyd's K-means</h3>
 <p><strong>Connection to earlier clustering:</strong> Lloyd alternates nearest-center hard assignment and cluster-mean update. GMM EM alternates posterior soft assignment and weighted parameter updates.</p>
 <table>
 <thead>
@@ -843,7 +1068,7 @@ Based on the above data, answer the given subquestions.</p>
 </tbody>
 </table>
 <p>With equal weights and spherical equal variances, larger Gaussian density corresponds to nearer mean. Small common variance can make soft responsibilities approach hard assignments; standard unconstrained GMM EM is not identical to K-means.</p>
-<h3 id="topic-59">Q14 — EM and Lloyd convergence statements</h3>
+<h3 id="topic-69">Q14 — EM and Lloyd convergence statements</h3>
 <p><strong>Source:</strong> May 2025 Quiz 1, Q14.</p>
 <p><strong>Question:</strong></p>
 <p>Which of the following statements is/are true? (MSQ)</p>
@@ -863,8 +1088,8 @@ Based on the above data, answer the given subquestions.</p>
 <p>$$\boxed{\text{Paper&#x27;s intended answer: (b), (d), (e)}}.$$</p>
 <p><strong>Counterexample to a strict reading of (d):</strong> If initialized at a poor stable Lloyd solution, it may stop immediately. Fast convergence alone good clustering ka certificate nahi.</p>
 <hr />
-<h2 id="topic-60">10. Quick revision</h2>
-<h3 id="topic-61">10.1 Formula sheet</h3>
+<h2 id="topic-70">10. Quick revision</h2>
+<h3 id="topic-71">10.1 Formula sheet</h3>
 <table>
 <thead>
 <tr>
@@ -892,6 +1117,22 @@ Based on the above data, answer the given subquestions.</p>
 <tr>
 <td>Poisson MLE</td>
 <td>$\sum_i x_i/n$, with allowed boundary considered</td>
+</tr>
+<tr>
+<td>Weibull scale MLE, known shape $k$</td>
+<td>$(\sum_i x_i^k/n)^{1/k}$, regular positive-data case</td>
+</tr>
+<tr>
+<td>Gamma–Exponential posterior</td>
+<td>Shape $\alpha+n$, rate $\beta+\sum_i x_i$</td>
+</tr>
+<tr>
+<td>Gamma posterior mean</td>
+<td>$(\alpha+n)/(\beta+\sum_i x_i)$</td>
+</tr>
+<tr>
+<td>Convexity</td>
+<td>Graph below every chord; one passing pair is insufficient</td>
 </tr>
 <tr>
 <td>Pareto shape candidate, scale 1</td>
@@ -955,7 +1196,7 @@ Based on the above data, answer the given subquestions.</p>
 </tr>
 </tbody>
 </table>
-<h3 id="topic-62">10.2 Common mistakes</h3>
+<h3 id="topic-72">10.2 Common mistakes</h3>
 <table>
 <thead>
 <tr>
@@ -1030,7 +1271,7 @@ Based on the above data, answer the given subquestions.</p>
 </tr>
 </tbody>
 </table>
-<h3 id="topic-63">10.3 Solving checklist</h3>
+<h3 id="topic-73">10.3 Solving checklist</h3>
 <ol>
 <li>Model identify karo: Bernoulli, exponential, Poisson, Pareto, uniform or mixture?</li>
 <li>Observation support aur parameter constraints write karo.</li>
@@ -1042,6 +1283,6 @@ Based on the above data, answer the given subquestions.</p>
 <li>Answers round at end; intermediate precision retain karo, probability bounds and row sums verify karo.</li>
 </ol>
 </article><nav class="next-prev" aria-label="Previous and next weeks"><a href="week3.html">← Week 3</a><a href="week5.html">Week 5 →</a></nav></main>
-<aside class="contents"><details open><summary>On this page</summary><nav aria-label="Topic index"><a class="level-h2" href="#topic-1">Topic index</a><a class="level-h2" href="#topic-2">1. Estimation: Data dekhkar unknown parameter find karna</a><a class="level-h3" href="#topic-3">1.1 Probabilistic model ka meaning</a><a class="level-h3" href="#topic-4">1.2 IID assumption</a><a class="level-h3" href="#topic-5">1.3 Likelihood versus probability</a><a class="level-h3" href="#topic-6">1.4 Log-likelihood and maximization</a><a class="level-h2" href="#topic-7">2. Bernoulli MLE: Ones ka fraction</a><a class="level-h3" href="#topic-8">2.1 Bernoulli model and estimate</a><a class="level-h3" href="#topic-9">Q3 and Q9 — Type-B count from Bernoulli MLE</a><a class="level-h3" href="#topic-10">Q17 — Find zeros when number of ones is known</a><a class="level-h3" href="#topic-11">Q10 — Four failures, followed by tossing until first success</a><a class="level-h3" href="#topic-12">2.2 Known group labels: Separate MLEs</a><a class="level-h3" href="#topic-13">Q16 — Estimate two Bernoulli parameters with known groups</a><a class="level-h2" href="#topic-14">3. Other MLE problems: Distribution changes, method same</a><a class="level-h3" href="#topic-15">3.1 Exponential distribution: Waiting times and rate</a><a class="level-h3" href="#topic-16">Q1 — Exponential log-likelihood and MLE</a><a class="level-h3" href="#topic-17">3.2 Poisson distribution: Counts per interval</a><a class="level-h3" href="#topic-18">Q6 — Poisson log-likelihood and frequency-table estimate</a><a class="level-h3" href="#topic-19">3.3 Pareto distribution: Heavy-tailed values</a><a class="level-h3" href="#topic-20">Q15 — Pareto MLE</a><a class="level-h3" href="#topic-21">3.4 Discrete parameter: Derivative ki zaroorat nahi</a><a class="level-h3" href="#topic-22">Q7 — Choose between two possible densities</a><a class="level-h2" href="#topic-23">4. Bayesian estimation: Prior belief ko data se update karo</a><a class="level-h3" href="#topic-24">4.1 Prior, likelihood, posterior and evidence</a><a class="level-h3" href="#topic-25">4.2 Beta distribution for a Bernoulli probability</a><a class="level-h3" href="#topic-26">Q2 — Beta mean and mode on a graph</a><a class="level-h2" href="#topic-27">5. Beta–Bernoulli posterior and point estimates</a><a class="level-h3" href="#topic-28">5.1 Update rule</a><a class="level-h3" href="#topic-29">5.2 Three estimates ko distinguish karo</a><a class="level-h3" href="#topic-30">Q5 — Beta prior with eight ones and five zeros</a><a class="level-h3" href="#topic-31">Q12 — Defective items with a uniform Beta prior</a><a class="level-h3" href="#topic-32">Q19 — Strong data with Beta(10,40) prior</a><a class="level-h3" href="#topic-33">Q22 — Same prior, different data size and heads fraction</a><a class="level-h2" href="#topic-34">6. MAP: Posterior ka highest point</a><a class="level-h3" href="#topic-35">6.1 Definition and uniform-prior rule</a><a class="level-h3" href="#topic-36">6.2 Uniform data model: Support itself carries information</a><a class="level-h3" href="#topic-37">Q18 — Train-delay MAP with a bounded uniform prior</a><a class="level-h3" href="#topic-38">Q20 — Exponential rate MAP with Uniform(0,2) prior</a><a class="level-h3" href="#topic-39">Q21 — Does a uniform prior always make MAP equal MLE?</a><a class="level-h2" href="#topic-40">7. Gaussian mixture model: Ek population, multiple hidden groups</a><a class="level-h3" href="#topic-41">7.1 Single Gaussian ki limitation</a><a class="level-h3" href="#topic-42">7.2 Generative story and latent variable</a><a class="level-h3" href="#topic-43">7.3 Gaussian component and mixture density</a><a class="level-h3" href="#topic-44">7.4 Parameter count</a><a class="level-h3" href="#topic-45">7.5 Mixture properties</a><a class="level-h2" href="#topic-46">8. E-step: Har point ke liye soft membership</a><a class="level-h3" href="#topic-47">8.1 Responsibility definition and formula</a><a class="level-h3" href="#topic-48">8.2 Properties: Row sum versus column sum</a><a class="level-h3" href="#topic-49">Q4 — Missing responsibility by normalization</a><a class="level-h3" href="#topic-50">Q11 — E-step calculation with two Gaussians</a><a class="level-h2" href="#topic-51">9. M-step and full EM: Soft assignments se parameters update</a><a class="level-h3" href="#topic-52">9.1 Effective count and weighted formulas</a><a class="level-h3" href="#topic-53">Q8 — Weighted mean update, with an invalid supplied responsibility</a><a class="level-h3" href="#topic-54">9.2 What EM actually alternates</a><a class="level-h3" href="#topic-55">Q13 — Meaning of E and M steps</a><a class="level-h3" href="#topic-56">9.3 Jensen inequality: Log-sum problem ka useful lower bound</a><a class="level-h3" href="#topic-57">9.4 Convergence: Improvement is not global optimality</a><a class="level-h3" href="#topic-58">9.5 EM versus Lloyd&#x27;s K-means</a><a class="level-h3" href="#topic-59">Q14 — EM and Lloyd convergence statements</a><a class="level-h2" href="#topic-60">10. Quick revision</a><a class="level-h3" href="#topic-61">10.1 Formula sheet</a><a class="level-h3" href="#topic-62">10.2 Common mistakes</a><a class="level-h3" href="#topic-63">10.3 Solving checklist</a></nav></details></aside></div>
-<footer>MLT Notes <span>Learn one concept at a time.</span></footer>
+<aside class="contents"><details open><summary>On this page</summary><nav aria-label="Topic index"><a class="level-h2" href="#topic-1">Topic index</a><a class="level-h2" href="#topic-2">1. Estimation: Data dekhkar unknown parameter find karna</a><a class="level-h3" href="#topic-3">1.1 Probabilistic model ka meaning</a><a class="level-h3" href="#topic-4">1.2 IID assumption</a><a class="level-h3" href="#topic-5">1.3 Likelihood versus probability</a><a class="level-h3" href="#topic-6">1.4 Log-likelihood and maximization</a><a class="level-h2" href="#topic-7">2. Bernoulli MLE: Ones ka fraction</a><a class="level-h3" href="#topic-8">2.1 Bernoulli model and estimate</a><a class="level-h3" href="#topic-9">Q3 and Q9 — Type-B count from Bernoulli MLE</a><a class="level-h3" href="#topic-10">Q17 — Find zeros when number of ones is known</a><a class="level-h3" href="#topic-11">Q10 — Four failures, followed by tossing until first success</a><a class="level-h3" href="#topic-12">2.2 Known group labels: Separate MLEs</a><a class="level-h3" href="#topic-13">Q16 — Estimate two Bernoulli parameters with known groups</a><a class="level-h2" href="#topic-14">3. Other MLE problems: Distribution changes, method same</a><a class="level-h3" href="#topic-15">3.1 Exponential distribution: Waiting times and rate</a><a class="level-h3" href="#topic-16">Q1 — Exponential log-likelihood and MLE</a><a class="level-h3" href="#topic-17">3.1A Weibull model: Shape fixed, scale unknown</a><a class="level-h3" href="#topic-18">Q23 — Weibull scale ka MLE</a><a class="level-h3" href="#topic-19">3.2 Poisson distribution: Counts per interval</a><a class="level-h3" href="#topic-20">Q6 — Poisson log-likelihood and frequency-table estimate</a><a class="level-h3" href="#topic-21">3.3 Pareto distribution: Heavy-tailed values</a><a class="level-h3" href="#topic-22">Q15 — Pareto MLE</a><a class="level-h3" href="#topic-23">3.4 Discrete parameter: Derivative ki zaroorat nahi</a><a class="level-h3" href="#topic-24">Q7 — Choose between two possible densities</a><a class="level-h2" href="#topic-25">4. Bayesian estimation: Prior belief ko data se update karo</a><a class="level-h3" href="#topic-26">4.1 Prior, likelihood, posterior and evidence</a><a class="level-h3" href="#topic-27">4.2 Beta distribution for a Bernoulli probability</a><a class="level-h3" href="#topic-28">Q2 — Beta mean and mode on a graph</a><a class="level-h2" href="#topic-29">5. Beta–Bernoulli posterior and point estimates</a><a class="level-h3" href="#topic-30">5.1 Update rule</a><a class="level-h3" href="#topic-32">5.2 Three estimates ko distinguish karo</a><a class="level-h3" href="#topic-33">Q5 — Beta prior with eight ones and five zeros</a><a class="level-h3" href="#topic-34">Q12 — Defective items with a uniform Beta prior</a><a class="level-h3" href="#topic-35">Q19 — Strong data with Beta(10,40) prior</a><a class="level-h3" href="#topic-36">Q22 — Same prior, different data size and heads fraction</a><a class="level-h3" href="#topic-37">5.3 Gamma prior for an exponential rate</a><a class="level-h3" href="#topic-38">Q24 — Gamma–Exponential posterior and posterior mean</a><a class="level-h2" href="#topic-39">6. MAP: Posterior ka highest point</a><a class="level-h3" href="#topic-40">6.1 Definition and uniform-prior rule</a><a class="level-h3" href="#topic-41">6.2 Uniform data model: Support itself carries information</a><a class="level-h3" href="#topic-42">Q18 — Train-delay MAP with a bounded uniform prior</a><a class="level-h3" href="#topic-43">Q20 — Exponential rate MAP with Uniform(0,2) prior</a><a class="level-h3" href="#topic-44">Q21 — Does a uniform prior always make MAP equal MLE?</a><a class="level-h2" href="#topic-45">7. Gaussian mixture model: Ek population, multiple hidden groups</a><a class="level-h3" href="#topic-46">7.1 Single Gaussian ki limitation</a><a class="level-h3" href="#topic-47">7.2 Generative story and latent variable</a><a class="level-h3" href="#topic-48">7.3 Gaussian component and mixture density</a><a class="level-h3" href="#topic-49">7.4 Parameter count</a><a class="level-h3" href="#topic-50">7.5 Mixture properties</a><a class="level-h2" href="#topic-51">8. E-step: Har point ke liye soft membership</a><a class="level-h3" href="#topic-52">8.1 Responsibility definition and formula</a><a class="level-h3" href="#topic-53">8.2 Properties: Row sum versus column sum</a><a class="level-h3" href="#topic-54">Q4 — Missing responsibility by normalization</a><a class="level-h3" href="#topic-55">Q11 — E-step calculation with two Gaussians</a><a class="level-h3" href="#topic-56">Q25 — Component selection with unequal mixture weights</a><a class="level-h2" href="#topic-57">9. M-step and full EM: Soft assignments se parameters update</a><a class="level-h3" href="#topic-58">9.1 Effective count and weighted formulas</a><a class="level-h3" href="#topic-59">Q8 — Weighted mean update, with an invalid supplied responsibility</a><a class="level-h3" href="#topic-60">Q26 — Fill responsibility rows, then update all three means</a><a class="level-h3" href="#topic-61">Q27 — One component&#x27;s mean and mixture weight from the same column</a><a class="level-h3" href="#topic-62">9.2 What EM actually alternates</a><a class="level-h3" href="#topic-63">Q13 — Meaning of E and M steps</a><a class="level-h3" href="#topic-64">9.2A Convexity: One chord test versus every chord</a><a class="level-h3" href="#topic-65">Q28 — Which graphs satisfy Jensen, and which are convex?</a><a class="level-h3" href="#topic-66">9.3 Jensen inequality: Log-sum problem ka useful lower bound</a><a class="level-h3" href="#topic-67">9.4 Convergence: Improvement is not global optimality</a><a class="level-h3" href="#topic-68">9.5 EM versus Lloyd&#x27;s K-means</a><a class="level-h3" href="#topic-69">Q14 — EM and Lloyd convergence statements</a><a class="level-h2" href="#topic-70">10. Quick revision</a><a class="level-h3" href="#topic-71">10.1 Formula sheet</a><a class="level-h3" href="#topic-72">10.2 Common mistakes</a><a class="level-h3" href="#topic-73">10.3 Solving checklist</a></nav></details></aside></div>
+<footer>MLT Notes · Notes by Shiva <span>Learn one concept at a time.</span></footer>
 </body></html>

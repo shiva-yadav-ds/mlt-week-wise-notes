@@ -13,6 +13,10 @@
 | 5. LOOCV | Intercept fitting and held-out error | Q3, Q13, Q14 |
 | 6. Probabilistic regression | Gaussian/Laplace noise, noise scale, log-mean models | Q22, Q28, Q29, Q26, Q20, Q34 |
 | 7. Kernel regression | Feature maps, polynomial/RBF kernels, dual prediction | Q16, Q27, Q4, Q8, Q11, Q17, Q19 |
+| Additional fitting varieties | Inexact normal-equation fit; intercept-only baseline | Q35, Q36 |
+| Additional geometry varieties | Recover fitted weights; joint-space hyperplane; rank-one inputs; PCA comparison | Q37–Q40 |
+| Additional optimization varieties | Stopping-rule count; sequential mini-batches | Q41, Q42 |
+| Additional kernel variety | Gaussian similarities and coefficient consistency | Q43 |
 | 8. Revision | Formula sheet, mistakes, checklist | — |
 
 ---
@@ -122,6 +126,80 @@ Other minimizers can differ by $v\in\operatorname{null}(X^T)$, since $X^T(w_{\mi
 **Convexity property:** Hessian $2XX^T$ positive semidefinite hai, so every local minimum global hai. **Unique** optimum requires positive definiteness/full row rank; convexity alone uniqueness imply nahi karti.
 
 If question uses rows as samples, predictions $Xw$ and normal equation $X^TXw=X^Ty$. Shapes pehle check karo.
+
+### Q35 — Normal equations when an exact fit is impossible
+
+**Source:** Week 5 — Solve With Instructors, Q1.
+
+**Question:**
+
+Suppose you are given three training instances $(x_1,y_1)$, $(x_2,y_2)$ and $(x_3,y_3)$ as follows:
+
+$$(x_1,y_1)=([1,0]^T,1),\quad (x_2,y_2)=([0,1]^T,1),\quad (x_3,y_3)=([1,1]^T,0).$$
+
+Each $x_i$ is a data point and $y_i$ its corresponding label. Predict the output using $\hat y=X^Tw$, where $w=[w_1,w_2]^T$. Find the $w$ that minimizes $\|y-\hat y\|^2$, where $y=[1,1,0]^T$.
+
+Hint: For $A=\begin{bmatrix}a&b\\c&d\end{bmatrix}$, use $A^{-1}=\frac1{\det A}\begin{bmatrix}d&-b\\-c&a\end{bmatrix}$.
+
+**Solution:**
+
+**Step 1 — Exact fit check:** Pehle do points exactly fit karne ke liye $w_1=w_2=1$ chahiye. Lekin third prediction 2 ho jaayegi, target 0 hai. Isliye sab equations ko exact equal maan kar solve nahi kar sakte; least squares compromise choose karega.
+
+**Step 2 — Matrices:**
+
+$$X=\begin{bmatrix}1&0&1\\0&1&1\end{bmatrix},\quad XX^T=\begin{bmatrix}2&1\\1&2\end{bmatrix},\quad Xy=\begin{bmatrix}1\\1\end{bmatrix}.$$
+
+**Step 3 — Inverse and weights:** Determinant $4-1=3$.
+
+$$w^*=\frac13\begin{bmatrix}2&-1\\-1&2\end{bmatrix}\begin{bmatrix}1\\1\end{bmatrix}=\boxed{\begin{bmatrix}1/3\\1/3\end{bmatrix}}.$$
+
+**Step 4 — Verify residuals:**
+
+$$\hat y=(1/3,1/3,2/3)^T,\quad r=y-\hat y=(2/3,2/3,-2/3)^T.$$
+
+$$Xr=0,\qquad \operatorname{SSE}=4/9+4/9+4/9=4/3,\qquad \operatorname{MSE}=4/9.$$
+
+**Property:** Unique least-squares weights ka matlab zero training error nahi hota. Yahan matrix invertible hai, optimum unique hai, phir bhi residual nonzero hai.
+
+### 2.1A Constant-only regression: Baseline is the mean
+
+**Definition:** $\hat y=\beta_0$ har input ko same prediction deta hai. Yeh intercept-only model hai; slope parameter hai hi nahi.
+
+**Real-life connection:** House features use karne se pehle sab houses ke liye training prices ka average predict karna ek baseline hai.
+
+For squared error:
+
+$$\boxed{\beta_0^*=\bar y=\frac1n\sum_i y_i}.$$
+
+- Input values optimum ko affect nahi karte, because model mein x term nahi hai.
+- Residual sum zero hota hai; individual residuals zero hona zaroori nahi.
+- Absolute-error loss hota toh a median optimal hota, mean zaroori nahi. Example targets $(0,0,9)$: mean 3, median 0. Loss specify karna important hai.
+
+### Q36 — Fit only an intercept
+
+**Source:** Week 5 — Solve With Instructors, Q10.
+
+**Question:**
+
+Consider fitting a linear regression model (as stated below) for the following data:
+
+| $x$ | $y$ |
+|---:|---:|
+| −1 | 1 |
+| 0 | −1 |
+| 2 | 1 |
+
+Fit $y_i=\beta_0$. Find $\beta_0$.
+
+**Solution:**
+
+**Step 1:** Model mein $\beta_1x$ nahi hai, so scalar-slope formula $\sum xy/\sum x^2$ use nahi hoga.
+
+**Step 2:** Squared-error fitting mein constant training targets ka mean hoga.
+
+$$\boxed{\beta_0=(1-1+1)/3=1/3}.$$
+
+**Step 3 — Check:** Predictions $(1/3,1/3,1/3)$; residuals $(2/3,-4/3,2/3)$ ka sum 0. SSE $=4/9+16/9+4/9=8/3$.
 
 ### 2.2 One feature, no intercept
 
@@ -314,6 +392,32 @@ $$\boxed{Xr=0},\qquad\boxed{\hat y^Tr=0}.$$
 
 ![Least squares as orthogonal projection](images/projection.png)
 
+### Q37 — Recover weights from projected labels
+
+**Source:** Week 5 — Solve With Instructors, Q5.
+
+**Question:**
+
+Consider the following data points: $\{(1,2),(3,1),(-1,4)\}$. The projection of the label vector onto the span of the feature vectors of the data points is $(2,11,-8)$. Predict the label for $(7,3)$ using linear regression.
+
+**Solution:**
+
+**Step 1 — Interpret the projection:** Given vector fitted labels $\hat y$ hai. Actual labels y nahi diye, lekin weights recover karne ke liye fitted labels sufficient hain.
+
+$$X^Tw=\hat y\Rightarrow w_1+2w_2=2,\quad3w_1+w_2=11,\quad-w_1+4w_2=-8.$$
+
+**Step 2 — Solve:** First equation se $w_1=2-2w_2$.
+
+$$3(2-2w_2)+w_2=11\Rightarrow -5w_2=5\Rightarrow w_2=-1,\quad w_1=4.$$
+
+**Step 3 — Check third equation:** $-4+4(-1)=-8$, so all three fitted values consistent hain.
+
+**Step 4 — Predict:**
+
+$$\boxed{\hat y(7,3)=4(7)-3=25}.$$
+
+**Space check:** Feature vectors $(1,3,-1)^T$ aur $(2,1,4)^T$ label space $\mathbb R^3$ mein hain. Input points $\mathbb R^2$ mein hain. Given projection pehle wale span mein hai.
+
 ### 3.2 When is training error zero?
 
 $$\boxed{\text{Zero SSE}\iff y\in\operatorname{row}(X)\iff\exists w:X^Tw=y}.$$
@@ -381,6 +485,42 @@ Let X be a data matrix of the shape (d, n) and y be the associated label vector 
 
 **Answer-key issue:** Paper lists **(a) only**, but it overlooks that (d), whenever compatible with the inverse assumption, also gives zero loss. Mathematically, among cases with the stated inverse defined, **(a) and (d)** suffice. If using pseudoinverse/ordinary least squares without the inverse restriction, (c) also has zero error. Don't memorize that zero labels somehow prevent an exact zero prediction.
 
+### 3.2A Zero error gives a hyperplane in the joint input-label space
+
+**Definition:** $w^Tx-y=0$ joint coordinates $(x,y)\in\mathbb R^{d+1}$ mein hyperplane hai, normal vector $(w,-1)$ ke saath.
+
+**Real-life connection:** Ek input aur target ho toh perfect fit points $(x_i,y_i)$ ek line par hain. Do inputs aur target ho toh points $(x_{i1},x_{i2},y_i)$ ek plane par hain.
+
+### Q38 — What follows from zero squared error?
+
+**Source:** Week 5 — Solve With Instructors, Q6.
+
+**Question:**
+
+We have data points $D=\{(x_1,y_1),\ldots,(x_n,y_n)\}$, where $x_i\in\mathbb R^d$ and $y_i\in\mathbb R$. We get a $w$ after linear regression such that $\sum_i(y_i-f(x_i))^2=0$, where $f(x_i)=w^Tx_i$. Which options are true?
+
+(A) $w$ is a result of overfitting.
+
+(B) Every datapoint in $D$ is on some hyperplane in $\mathbb R^d$.
+
+(C) Every datapoint in $D$ is on some hyperplane in $\mathbb R^{d+1}$.
+
+(D) Let $Y=(y_1,\ldots,y_n)^T$ and $Y_p$ be the projection of $Y$ onto the span of the feature vectors of $x_1,\ldots,x_n$. Then $\|Y-Y_p\|>0$.
+
+**Solution:**
+
+**Step 1:** Har squared term nonnegative hai. Sum zero means har $y_i=w^Tx_i$.
+
+**Step 2 — (C):** Har joint point satisfies $(w,-1)^T(x_i,y_i)=0$. Nonzero normal vector hai, hence $\mathbb R^{d+1}$ mein hyperplane. **True.**
+
+**Step 3 — (B):** Inputs alone ko lower-dimensional hyperplane mein hona zaroori nahi. Example $d=1$: inputs 0 and 1, targets 0 and 1, $w=1$. Perfect fit hai, lekin two distinct inputs $\mathbb R^1$ ke single-point hyperplane par nahi hain. **False.**
+
+**Step 4 — (A):** Training SSE zero se unseen-data performance pata nahi chalti. True noiseless linear relation perfectly fit ho sakti hai; overfit model bhi training data perfectly fit kar sakta hai. **Not guaranteed.**
+
+**Step 5 — (D):** Exact fit means $Y_p=Y$, so norm zero. **False.**
+
+$$\boxed{\text{(C) only}}.$$
+
 ### Q5 — Optimal weight orthogonal to the data span
 
 **Source:** 2024 Mar 24 Quiz 2, Q5.
@@ -440,6 +580,34 @@ Decompose $w=w_\parallel+w_\perp$, where $w_\parallel\in\operatorname{col}(X)$ a
 $$\boxed{w_{\min}=X\alpha}.$$
 
 **Counterexample to “every optimum must lie in data span”:** One point $x=(1,0)^T$, label 1. Every $w=(1,c)^T$ fits perfectly. Only c=0 lies in the one-dimensional data span and has minimum norm.
+
+### Q39 — All inputs lie along one direction
+
+**Source:** Week 5 — Solve With Instructors, Q3.
+
+**Question:**
+
+Consider the data points $\{(c_1u,y_1),\ldots,(c_nu,y_n)\}$ for a regression problem. Here $c_i$ is a real number and $u\in\mathbb R^d$, $u\ne0$. Fit a linear regression model and find the predicted value for $x_{test}=5u$. Assume some $c_i\ne0$. Given $\sum_i c_i y_i=20$ and $\sum_i c_i^2=100$.
+
+**Solution:**
+
+**Step 1 — Reduce to one effective coefficient:** $w^T(c_i u)=c_i(w^Tu)$. Define $a=w^Tu$. Loss becomes $\sum_i(c_i a-y_i)^2$, ordinary scalar no-intercept regression.
+
+**Step 2 — Fit a:**
+
+$$a^*=\frac{\sum c_i y_i}{\sum c_i^2}=\frac{20}{100}=0.2.$$
+
+**Step 3 — Predict along the same direction:**
+
+$$\boxed{\hat y(5u)=5w^Tu=5(0.2)=1}.$$
+
+**Step 4 — What weights fit this?** A minimum-norm choice is
+
+$$w_{\min}=\frac{0.2}{\|u\|^2}u.$$
+
+Any $w=w_{\min}+v$ with $v^Tu=0$ has the same training predictions. For $d>1$, weights need not be unique, but predictions at every $cu$ are unique.
+
+**Counterexample outside the training span:** Let $u=(1,0)$. Both $(0.2,0)$ and $(0.2,7)$ give prediction 1 at $(5,0)$, but predict 0 and 7 at $(0,1)$. Data ne unseen perpendicular direction ka coefficient determine nahi kiya.
 
 ### Q23 — Projection and span statements
 
@@ -541,6 +709,55 @@ $$\boxed{\text{(d)}}.$$
 Intuition: If all overpredicted, intercept thoda decrease karke every squared residual reduce kar sakte hain, so previous weights optimum nahi the.
 
 ---
+
+### 3.5 PCA versus regression: Which distance is minimized?
+
+**Definition:** PCA line squared **perpendicular** reconstruction distances minimize karti hai. Ordinary regression $y=wx+b$ squared **vertical** prediction errors minimize karta hai.
+
+**Real-life connection:** PCA dono measurements ko jointly compress karta hai. Regression x observe karke y predict karta hai, so x fixed rakhkar y direction mein error measure hota hai.
+
+For a nonvertical line $y=wx+b$:
+
+$$d_{vertical,i}=|y_i-wx_i-b|,\qquad d_{perpendicular,i}=\frac{|y_i-wx_i-b|}{\sqrt{1+w^2}}.$$
+
+$$\operatorname{SSPD}=\frac{\operatorname{SSVD}}{1+w^2}.$$
+
+- Denominator slope ke saath change hota hai, isliye objectives generally same minimizer nahi dete.
+- Centered data mein regression intercept 0 hota hai; PCA line mean/origin se pass karti hai.
+- PCA vertical line bhi select kar sakta hai. Finite-slope regression $y=wx+b$ vertical line represent nahi karta.
+- Perfect nonvertical collinear data mein dono same line de sakte hain. “Always different” bhi wrong hai.
+
+![PCA perpendicular residuals and regression vertical residuals on the same centered data](images/pca_vs_regression.png)
+
+### Q40 — PCA and regression objectives
+
+**Source:** Week 5 — Solve With Instructors, Q8.
+
+**Question:**
+
+We have $n$ data points $x_1,\ldots,x_n\in\mathbb R$ and corresponding labels $y_1,\ldots,y_n\in\mathbb R$. Form $D=\{(x_1,y_1),\ldots,(x_n,y_n)\}$. PCA on $D$ gives $l_1$, the line along the first principal component. Linear regression gives $l_2$ of the form $y=wx$. Assume $\sum_i(x_i,y_i)=(0,0)$. Choose the correct options.
+
+SSPD means sum squared perpendicular distance; SSVD means sum squared vertical distance.
+
+(A) The SSPD from $D$ to $l_1$ is the minimum possible SSPD to any line in $\mathbb R^2$.
+
+(B) The SSPD from $D$ to $l_2$ is the minimum possible SSPD to any line in $\mathbb R^2$.
+
+(C) The SSVD from $D$ to $l_1$ is the minimum possible SSVD to any line in $\mathbb R^2$.
+
+(D) The SSVD from $D$ to $l_2$ is the minimum possible SSVD to any line in $\mathbb R^2$.
+
+**Solution:**
+
+**Step 1 — PCA objective:** PC1 retained line closest orthogonal reconstruction deti hai. Hence (A) true; (C) generally false.
+
+**Step 2 — Regression objective:** $\sum_i(y_i-wx_i)^2$ vertical errors ka sum hai. Hence (D) true; (B) generally false. Vertical-distance comparisons mein lines jo y as a function of x define karti hain consider hote hain.
+
+**Step 3 — Why no intercept is okay:** $b^*=\bar y-w\bar x=0$ because both means zero. Origin restriction optimal affine regression line ko exclude nahi karti.
+
+$$\boxed{\text{(A), (D)}}.$$
+
+**Numerical counterexample for (B)/(C):** Centered points $(-2,-1),(-1,-2),(1,2),(2,1)$ have $\sum x^2=\sum y^2=10$, $\sum xy=8$. Regression slope $8/10=0.8$; PCA slope 1. Regression SSVD $=3.6<4$ (PCA), whereas PCA SSPD $=2<3.6/1.64\approx2.195$ (regression). Same dataset, different best distances.
 
 ## 4. Gradient descent and stochastic gradient descent
 
@@ -724,6 +941,30 @@ For half-SSE, bound becomes $0<\eta<2/a_{max}$. Large steps can oscillate or div
 
 Normal-equation dense solve/inversion has roughly $O(d^3)$ solve cost after forming $XX^T$ (formation roughly $O(nd^2)$). Direct full-gradient evaluation $2X(X^Tw-y)$ costs roughly $O(nd)$ per iteration. Different data sizes favour different methods; normal equations are not always the most numerically stable solver compared with QR/SVD.
 
+### Q41 — Reaching the minimum versus detecting a stopped update
+
+**Source:** Week 5 — Solve With Instructors, Q7.
+
+**Question:**
+
+$f(x)=x^2-2x+1$. We are trying to find an $x$ at which the function's value is minimum. Use gradient descent initialized at $x_0=0$. After how many iterations does the algorithm stop? Use $\eta=0.5$.
+
+**Solution:**
+
+**Step 1:** $f'(x)=2x-2$ and $f(x)=(x-1)^2$, so minimum at 1.
+
+**Step 2 — First update:**
+
+$$x_1=x_0-0.5(2x_0-2)=0-0.5(-2)=1.$$
+
+Minimum **one update** mein reach ho gaya.
+
+**Step 3 — Next update:**
+
+$$x_2=1-0.5(2-2)=1.$$
+
+Now $x_2=x_1$. Agar algorithm update ke baad consecutive iterates compare karta hai, **2 rounds** count honge, jo PDF ka answer hai. Agar gradient zero check karke next update se pehle stop kare, only **1 actual update** required hai. Stopping rule question mein explicit nahi hai; minimum reach karna aur unchanged step detect karna distinguish karo.
+
 ### Q30 — SSE versus MSE changes trajectory, not minimizers
 
 **Source:** 2026 Aug 14 Quiz 2, Q30.
@@ -771,6 +1012,57 @@ For half-mean squared loss, uniform single-sample gradient $(w^Tx_i-y_i)x_i$ is 
 - Suitable diminishing learning rates and regularity assumptions can yield convergence; unconditional guarantee nahi.
 - Averaging iterates can reduce stochastic fluctuation in appropriate settings.
 - Iterations, epochs and wall-clock time different: n single-sample updates are roughly one pass/epoch.
+
+### Q42 — Full-batch update versus two sequential mini-batches
+
+**Source:** Week 5 — Solve With Instructors, Q2.
+
+**Question:**
+
+For the dataset
+
+$$X_{d\times n}=\begin{bmatrix}1&2&3&4\\2&1&4&3\end{bmatrix},\qquad y=\begin{bmatrix}2\\3\\1\\3\end{bmatrix},$$
+
+initialize $w_0=[0,0]^T$ with learning rate $\eta=0.01$. Let $w_{gd}$ be the updated weight after one iteration of gradient descent and $w_{sgd}$ the updated weight after one full iteration of stochastic gradient descent, taking the first two and then the next two data points as samples. Compute $\|w_{gd}-w_{sgd}\|$. For all calculations, use $\frac12\|X^Tw-y\|^2$ as the loss function.
+
+**Solution:**
+
+**Step 1 — Fix the convention:** Two points per update means mini-batch GD. One complete pass has two sequential updates. Given loss half-**sum** hai; batch gradient mein batch size se divide nahi karenge.
+
+$$g_B(w)=X_B(X_B^Tw-y_B),\qquad w_{next}=w-0.01g_B(w).$$
+
+**Step 2 — Full batch at zero:**
+
+$$Xy=(23,20)^T,\qquad w_{gd}=0+0.01Xy=(0.23,0.20)^T.$$
+
+**Step 3 — First mini-batch:**
+
+$$X_1=\begin{bmatrix}1&2\\2&1\end{bmatrix},\quad y_1=(2,3)^T,\quad X_1y_1=(8,7)^T.$$
+
+$$w^{(1)}=(0.08,0.07)^T.$$
+
+**Step 4 — Second mini-batch uses the updated weight:**
+
+$$X_2=\begin{bmatrix}3&4\\4&3\end{bmatrix},\quad y_2=(1,3)^T.$$
+
+Predictions $X_2^Tw^{(1)}=(0.52,0.53)^T$, residuals $(-0.48,-2.47)^T$.
+
+$$g_2=\begin{bmatrix}3&4\\4&3\end{bmatrix}\begin{bmatrix}-0.48\\-2.47\end{bmatrix}=\begin{bmatrix}-11.32\\-9.33\end{bmatrix}.$$
+
+$$w_{sgd}=w^{(2)}=\begin{bmatrix}0.08\\0.07\end{bmatrix}+0.01\begin{bmatrix}11.32\\9.33\end{bmatrix}=\begin{bmatrix}0.1932\\0.1633\end{bmatrix}.$$
+
+**Step 5 — Distance:**
+
+$$\boxed{\|w_{gd}-w_{sgd}\|=\sqrt{0.0368^2+0.0367^2}\approx0.05197}.$$
+
+**PDF calculation correction:** PDF second coordinate 0.1632 likhta hai; correct 0.1633 hai. Phir intermediate weights average karta hai, although question averaged-SGD specify nahi karta. Agar explicitly $\bar w=(w^{(1)}+w^{(2)})/2$ use karein, $\bar w=(0.1366,0.11665)^T$ aur distance approximately **0.12518** hoga. PDF ka **0.073** neither calculation se follow hota hai.
+
+**Properties:**
+
+- Epoch end weight normally last iterate hai; average ek separately specified algorithm hai.
+- Second gradient ko $w_0$ par evaluate karna sequential update nahi hoga.
+- Batch order generally final iterate affect karta hai, because gradients changing weights par evaluate hote hain.
+- Batch-size normalization change karoge toh same learning rate par numerical answer change hoga.
 
 ### Q1 — GD versus SGD convergence claims
 
@@ -1266,6 +1558,8 @@ $$\boxed{\hat y=2.3-1.0+0.4-0.7=1}.$$
 
 **Assumption matters:** A homogeneous polynomial kernel $(x^Tz)^3$ instead gives zero. The question says degree but omits offset; its answer assumes the standard +1 kernel used in these notes.
 
+**Same variety also appears:** Week 5 — Solve With Instructors, Q4 uses degree 3, $\alpha=(1.3,0.6,-0.2,-0.7)^T$ and query $(0,0,0,0)^T$. For the slide solution's $k(x,z)=(1+x^Tz)^3$, every kernel value at zero is 1, so $\hat y=\sum\alpha_i=1$. Q4 above already explains this method, so full solution repeat nahi kiya. Homogeneous convention $(x^Tz)^3$ hota toh answer 0 hota.
+
 ### Q8 — Solve one unknown kernel coefficient
 
 **Source:** 2024 Aug 04 Quiz 2, Q8.
@@ -1427,6 +1721,53 @@ $$\boxed{y_{pred}=49+307.2+0+34.3-128=262.5}.$$
 Same prediction method as Q17; additional features don't change the formula. Negative coefficients subtract contributions; zero coefficient point contributes zero even if its kernel value is large.
 
 ---
+
+### 7.3 Gaussian/RBF kernel: Distance becomes similarity
+
+**Definition:** Gaussian kernel nearby inputs ko high similarity aur far inputs ko low similarity deta hai:
+
+$$\boxed{k(x,z)=\exp\!\left(-\frac{\|x-z\|^2}{2\sigma^2}\right)},\qquad \sigma^2>0.$$
+
+**Real-life connection:** Similar-sized, similarly located houses ek doosre ke prediction mein relevant ho sakte hain. RBF Euclidean distance ko smooth similarity mein convert karta hai.
+
+- $k(x,x)=1$; finite inputs ke liye $0<k(x,z)\le1$.
+- Equal distance means equal similarity, direction irrelevant.
+- Smaller $\sigma$ fixed nonzero distance ko more strongly downweight karta hai. Larger $\sigma$ similarities ko 1 ke closer laata hai.
+- Kernel values positive hone se predictions positive hona guaranteed nahi: $\alpha_i$ negative ho sakte hain.
+- $\hat y(x)=\sum_i\alpha_i k(x_i,x)$ mein similarity sum se divide **nahi** karte. Yeh specified kernel least-squares model hai, normalized weighted-average estimator nahi.
+
+### Q43 — Gaussian kernel prediction with cancelling contributions
+
+**Source:** Week 5 — Solve With Instructors, Q9 (image-based question).
+
+**Question:**
+
+Gaussian kernel regression with parameter $\sigma^2=\frac12$ was applied to the following dataset with two features:
+
+$$X=\begin{bmatrix}1&0&1&0\\0&1&1&0\end{bmatrix},\qquad y=\begin{bmatrix}2.1\\1\\2\\1.2\end{bmatrix}.$$
+
+The weight vector can be written as $w=\phi(X)\alpha$, where $\phi$ is the transformation mapping corresponding to the kernel. The vector $\alpha=[2.1,-2.1,3,0]^T$ is given, stated to be obtained as $K^{-1}y$, where $K$ is the kernel matrix. What will be the prediction for $[1,1]^T$?
+
+**Solution:**
+
+**Step 1 — Kernel denominator:** $2\sigma^2=1$, so $k(x,z)=e^{-\|x-z\|^2}$.
+
+**Step 2 — Compare the query with each column:**
+
+| Training input | Squared distance from $(1,1)$ | Kernel value | Contribution $\alpha_i k_i$ |
+|---|---:|---:|---:|
+| $(1,0)$ | 1 | $e^{-1}$ | $2.1e^{-1}$ |
+| $(0,1)$ | 1 | $e^{-1}$ | $-2.1e^{-1}$ |
+| $(1,1)$ | 0 | 1 | 3 |
+| $(0,0)$ | 2 | $e^{-2}$ | 0 |
+
+**Step 3 — Add contributions:**
+
+$$\boxed{\hat y(1,1)=2.1e^{-1}-2.1e^{-1}+3+0=3}.$$
+
+Equal distances ki wajah se first two kernel values equal hain; opposite coefficients contributions cancel kar dete hain.
+
+**Given-data inconsistency:** Question says $\alpha=K^{-1}y$, but this cannot hold for the supplied values: query third training input hai, whose target is 2, while given coefficients produce 3. In fact $(K\alpha)_3=3\ne y_3=2$. **Given coefficients use karne par answer 3** (PDF's calculation); truly solving the stated unregularized invertible system $K\alpha=y$ would predict **2** at that training point. Dono incompatible assumptions ko ek saath true mat maano.
 
 ## 8. Quick revision
 

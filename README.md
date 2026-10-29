@@ -30,10 +30,11 @@ python3 -m venv .venv
 .venv/bin/python notes-site/build.py
 .venv/bin/python notes-site/check.py
 node notes-site/check-theme.cjs
+node notes-site/check-performance.cjs
 python3 -m http.server 8000 --directory notes-site/dist
 ```
 
-Open http://localhost:8000. Node is only used for the theme test; Python builds the site. CSS, theme script and MathJax are in `notes-site/dist`, which must be kept when rebuilding. Commit note changes and generated pages together; both deployment workflows rebuild from the Markdown sources.
+Open http://localhost:8000. Node is only used for the theme and performance behavior tests; Python builds the site. CSS, theme/navigation/math scripts and MathJax are in `notes-site/dist`, which must be kept when rebuilding. Commit note changes and generated pages together; both deployment workflows rebuild from the Markdown sources.
 
 Original reference PDFs are retained locally. Only byte-identical website content copies were removed. Local `notes-site/.git` belongs to the earlier Sites deployment; use the clean ZIP for a new GitHub repository, not that nested Git repository.
 

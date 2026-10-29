@@ -3,7 +3,9 @@
 <title>Week 11 · Soft-Margin SVM and Ensemble Methods | MLT Notes</title>
 <script src="theme.js"></script>
 <link rel="stylesheet" href="style.css">
-<script>window.MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']],processEscapes:true},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']},svg:{fontCache:'global'}};</script>
+<script>window.MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']],processEscapes:true},startup:{typeset:false, pageReady:() => window.renderNotesMath()},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']},svg:{fontCache:'global'}};</script>
+<script defer src="navigation.js"></script>
+<script defer src="math.js"></script>
 <script defer src="vendor/tex-svg.js"></script></head>
 <body><a class="skip" href="#notes">Skip to notes</a>
 <header><a class="brand" href="index.html"><span class="brand-mark">m</span> MLT <span class="brand-muted">/ study notes</span></a><label class="theme-control">Theme <select id="theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label></header>
@@ -54,6 +56,16 @@
 <td>7. AdaBoost</td>
 <td>Weighted error, learner weights, normalized sample updates</td>
 <td>Q6, Q11, Q15, Q3</td>
+</tr>
+<tr>
+<td>Added SVM varieties</td>
+<td>Mixed-label slack graph; equality traps; support/slack counterexamples</td>
+<td>Q20–Q22</td>
+</tr>
+<tr>
+<td>Added ensemble varieties</td>
+<td>Stump criterion, unnormalized versus sampling weights, claim review</td>
+<td>Q23–Q25</td>
 </tr>
 <tr>
 <td>8. Revision</td>
@@ -254,8 +266,66 @@ For each point, consider $\xi_i$ to represent the slack variable or the “minim
 <p><strong>Answers:</strong> (i) 1; (ii) 0; (iii) 0; (iv) 2; (v) <strong>(a), (b)</strong>.</p>
 <p><strong>Extra connection:</strong> Point 3 lies between decision boundary and positive support plane, so $0&lt;\xi_3&lt;1$. It is correct-side but still pays positive slack.</p>
 <hr />
-<h2 id="topic-10">2. Dual, KKT and soft-margin support vectors</h2>
-<h3 id="topic-11">2.1 Lagrangian: Two constraints per point</h3>
+<h3 id="topic-10">1.8 Q20 — Count violations and add the total slack</h3>
+<p><strong>Source:</strong> Week 11 — Solve With Instructors, Q1.</p>
+<p><strong>Question:</strong></p>
+<p>Based on the following graph, answer:</p>
+<p><img src="assets/week11/new_slack_source.png" loading="lazy" alt="Supplied soft-margin graph with score levels" /></p>
+<p>(i) How many points exhibit margin violations but are still classified on the correct side of the linear classifier?</p>
+<p>(ii) How many points are misclassified?</p>
+<p>(iii) What is the total bribe (penalty)?</p>
+<p><strong>Solution:</strong> Green points are positive and red points negative, as used in the supplied solution. Write $f=w^Tx$ and compute <strong>signed</strong> margin $m=yf$ before slack.</p>
+<p><strong>Step 1 — Locate the four points with nonzero slack:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Point</th>
+<th style="text-align:right">Label</th>
+<th style="text-align:right">Score f</th>
+<th style="text-align:right">Signed margin</th>
+<th style="text-align:right">Minimum slack $\max(0,1-m)$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Green on $f=-4$</td>
+<td style="text-align:right">+1</td>
+<td style="text-align:right">−4</td>
+<td style="text-align:right">−4</td>
+<td style="text-align:right">5</td>
+</tr>
+<tr>
+<td>Red on decision boundary</td>
+<td style="text-align:right">−1</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td>Green on $f=0.5$</td>
+<td style="text-align:right">+1</td>
+<td style="text-align:right">0.5</td>
+<td style="text-align:right">0.5</td>
+<td style="text-align:right">0.5</td>
+</tr>
+<tr>
+<td>Red on $f=1$</td>
+<td style="text-align:right">−1</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">−1</td>
+<td style="text-align:right">2</td>
+</tr>
+</tbody>
+</table>
+<p>Other points satisfy their required margin and have slack 0.</p>
+<p><strong>Step 2 — Correct-side strict margin violation:</strong> Only green at $f=0.5$ satisfies $0&lt;m&lt;1$. Answer <strong>1</strong>. A boundary point is not strictly on either side.</p>
+<p><strong>Step 3 — Misclassification count:</strong> Green at −4 and red at +1 are definitely wrong. Red at 0 is wrong if zero score predicts +1. Thus <strong>source answer 3 assumes zero → +1 (or counts a boundary point as an error)</strong>. If zero predicts −1, it is correct and the error count is <strong>2</strong>. Graph alone does not specify the tie rule.</p>
+<p><strong>Step 4 — Total slack:</strong></p>
+<p>$$\boxed{\sum_i\xi_i=5+1+0.5+2=8.5}.$$</p>
+<p>Slack total unaffected by boundary tie rule. If asked for the objective's weighted penalty, it is <strong>$8.5C$</strong>, not necessarily 8.5; full objective additionally contains $\frac12\|w\|^2$.</p>
+<p><strong>Property:</strong> Classification mistakes count labels; hinge loss measures margin shortfalls. A correctly predicted inside-margin point can pay slack, and a boundary point has slack 1 whichever label tie rule is used.</p>
+<h2 id="topic-11">2. Dual, KKT and soft-margin support vectors</h2>
+<h3 id="topic-12">2.1 Lagrangian: Two constraints per point</h3>
 <p>Standard forms:</p>
 <p>$$1-y_if_i-\xi_i\le0,\qquad-\xi_i\le0.$$</p>
 <p>Assign $\alpha_i\ge0$ to first, $\beta_i\ge0$ to second:</p>
@@ -265,11 +335,11 @@ For each point, consider $\xi_i$ to represent the slack variable or the “minim
 <p>Since both multipliers nonnegative:</p>
 <p>$$\boxed{0\le\alpha_i\le C},\qquad\beta_i=C-\alpha_i.$$</p>
 <p><strong>Week 10 connection:</strong> Hard margin had $\alpha_i\ge0$ only. Soft margin adds an upper cap $C$.</p>
-<h3 id="topic-12">2.2 Dual objective</h3>
+<h3 id="topic-13">2.2 Dual objective</h3>
 <p>Let $X$ have samples as columns, $Y=\operatorname{diag}(y_i)$, $G=X^TX$.</p>
 <p>$$\boxed{\max_{0\le\alpha_i\le C}\mathbf1^T\alpha-\frac12\alpha^TYGY\alpha}.$$</p>
 <p>Free bias $b$ train ho toh extra constraint $\sum_i\alpha_i y_i=0$. No-bias formulation mein yeh equality nahi hoti. Kernel SVM mein $G$ ko kernel Gram matrix $K$ se replace karte hain.</p>
-<h3 id="topic-13">2.3 Complementary slackness</h3>
+<h3 id="topic-14">2.3 Complementary slackness</h3>
 <p>$$\boxed{\alpha_i(1-m_i-\xi_i)=0},\qquad\boxed{\beta_i\xi_i=0}.$$</p>
 <p>Yeh two equations, $\alpha_i+\beta_i=C$, aur minimum-slack formula se saare region rules milte hain. Assume optimum and <strong>$C&gt;0$</strong> in the following table.</p>
 <table>
@@ -324,7 +394,48 @@ For each point, consider $\xi_i$ to represent the slack variable or the “minim
 <p><strong>Support-vector definition:</strong> Positive dual coefficient $\alpha_i&gt;0$. Soft-margin support vectors can lie on the correct supporting plane, inside margin, or on the wrong side. They are not restricted to the two supporting planes as in the usual hard-margin picture.</p>
 <p><strong>Counterexample:</strong> Correctly classified point with $m=0.5$ has $\xi=0.5$ and $\alpha=C$. Thus “$\alpha=C$ means misclassified” is false.</p>
 <p><strong>On-margin subtlety:</strong> $m=1$ can have $\alpha=0$ in degenerate/redundant cases; graph position alone does not always establish strict positivity.</p>
-<h3 id="topic-14">2.4 Q17 — Interior dual coefficient</h3>
+<h3 id="topic-15">2.3A Q21 — Strict versus non-strict margin inequalities</h3>
+<p><strong>Source:</strong> Week 11 — Solve With Instructors, Q5.</p>
+<p><strong>Question:</strong></p>
+<p>Assume $w^*,\xi^*$ are primal optimal solutions and $\alpha^*,\beta^*$ are dual optimal solutions of the soft-margin SVM. Choose the correct options.</p>
+<p>(A) If $y_iw^{*T}x_i\ge1$, the ith point pays positive bribe $\xi_i^*$.</p>
+<p>(B) If $y_iw^{*T}x_i\ge1$, the ith point pays no bribe.</p>
+<p>(C) If $y_iw^{*T}x_i\le1$, the ith point pays positive bribe.</p>
+<p>(D) If $y_iw^{*T}x_i\le1$, the ith point pays no bribe.</p>
+<p><strong>Solution:</strong> Assume standard $C&gt;0$, so $\xi_i^*=\max(0,1-m_i)$.</p>
+<p><strong>Step 1:</strong> For $m_i\ge1$, $1-m_i\le0$, hence slack 0. A false, B true.</p>
+<p><strong>Step 2:</strong> For $m_i\le1$, split the equality case from strict inequality:</p>
+<ul>
+<li>At $m_i=1$, slack 0: counterexample to C.</li>
+<li>At $m_i=0.5$, slack 0.5: counterexample to D.</li>
+</ul>
+<p>$$\boxed{\text{B only}}.$$</p>
+<p><strong>Rule:</strong> Positive slack iff <strong>$m_i&lt;1$</strong>, not $m_i\le1$, at an optimum with $C&gt;0$.</p>
+<h3 id="topic-16">2.3B Q22 — Support vectors may have zero slack</h3>
+<p><strong>Source:</strong> Week 11 — Solve With Instructors, Q6 and Q7.</p>
+<p><strong>Question — Q6:</strong></p>
+<p>Assume primal and dual optimal solutions of soft-margin SVM. Choose the correct options.</p>
+<p>(A) A support vector does not pay any bribe.</p>
+<p>(B) A support vector may or may not pay any bribe.</p>
+<p>(C) A support vector definitely pays positive bribe.</p>
+<p>(D) If a point pays bribe, it is not a support vector.</p>
+<p>(E) If a point pays bribe, it may or may not be a support vector.</p>
+<p>(F) If a point pays bribe, it is a support vector.</p>
+<p><strong>Solution:</strong> With $C&gt;0$ and support criterion $\alpha_i&gt;0$:</p>
+<p><strong>Step 1:</strong> Support point at $m_i=1$ can have zero slack; support point with $m_i&lt;1$ has positive slack. Hence B true; A/C are false universal claims.</p>
+<p><strong>Step 2:</strong> Positive slack implies $\beta_i\xi_i=0\Rightarrow\beta_i=0$. Since $\alpha_i+\beta_i=C$, we get $\alpha_i=C&gt;0$. Thus F true, D/E false.</p>
+<p>$$\boxed{\text{B, F}}.$$</p>
+<p><strong>Question — Q7:</strong></p>
+<p>Under the same optimal-solution setup, choose the correct options.</p>
+<p>(A) It is possible that $\alpha_i^*&gt;0$ and $\xi_i^*=0$.</p>
+<p>(B) It is possible that $\alpha_i^*=C$ and $\xi_i^*=0$.</p>
+<p>(C) Both A and B.</p>
+<p>(D) None.</p>
+<p><strong>Step 1 — Concrete example:</strong> Inputs $-1,+1$, labels $-1,+1$, use free bias and $C=0.5$. A primal/dual optimum is $w=1,b=0$, both slacks 0, and $\alpha_1=\alpha_2=0.5=C$.</p>
+<p><strong>Step 2 — Check:</strong> Both signed margins 1, $w=\sum\alpha_i y_ix_i=1$, dual balance holds, and complementary slackness holds. Thus A and B genuinely possible.</p>
+<p><strong>Answer:</strong> If single choice, <strong>C (both A and B)</strong>. If all true options must be selected, <strong>A, B, C</strong>, as the supplied key lists.</p>
+<p><strong>Property:</strong> $\xi_i&gt;0\Rightarrow\alpha_i=C$; its converse is false. Upper-bound coefficient does not prove a mistake or positive slack. At $C=0$, positive slack need not imply a positive-coefficient support vector, since every alpha is zero.</p>
+<h3 id="topic-17">2.4 Q17 — Interior dual coefficient</h3>
 <p><strong>Source:</strong> 2026 Sep 13 ET, Q17.</p>
 <p><strong>Question:</strong></p>
 <blockquote>
@@ -338,7 +449,7 @@ For each point, consider $\xi_i$ to represent the slack variable or the “minim
 <p><strong>Step 2:</strong> $\beta_i\xi_i=0$ with positive $\beta_i$ forces $\xi_i=0$.</p>
 <p><strong>Step 3:</strong> $\alpha_i&gt;0$ forces $1-m_i-\xi_i=0$. Substitute slack 0 → $m_i=1$.</p>
 <p><strong>Answer: (c).</strong> (d) is opposite of step 1; point is on its correct support plane, not misclassified.</p>
-<h3 id="topic-15">2.5 Q5 — Slacks and multipliers with C = 3</h3>
+<h3 id="topic-18">2.5 Q5 — Slacks and multipliers with C = 3</h3>
 <p><strong>Source:</strong> 2024 Sep 01 ET, Q5.</p>
 <p><strong>Question:</strong></p>
 <blockquote>
@@ -398,7 +509,7 @@ For each point, consider $\xi_i$ to represent the slack variable or the “minim
 <p><strong>Step 3 — Multipliers:</strong> Point 1 has positive slack → $\alpha_1=C=\boxed3$. Point 3 strictly beyond correct margin → $\alpha_3=\boxed0$.</p>
 <p><strong>Step 4:</strong> Point 4 on correct support plane, so $0\le\alpha_4\le3$, but exact value not determined. Enter $\boxed{-1}$ as instructed.</p>
 <p><strong>Answers:</strong> 2, 1, 0, 3, 0, -1. Final -1 is an <strong>answer code</strong>, not an allowed dual multiplier.</p>
-<h3 id="topic-16">2.6 Q1 — Which points affect the SVM weight?</h3>
+<h3 id="topic-19">2.6 Q1 — Which points affect the SVM weight?</h3>
 <p><strong>Source:</strong> 2024 Apr 28 ET, Q1.</p>
 <p><strong>Question:</strong></p>
 <blockquote>
@@ -461,7 +572,7 @@ For each point, consider $\xi_i$ to represent the slack variable or the “minim
 </ul>
 <p><strong>Expected answer: (b), (c), (d).</strong></p>
 <p><strong>Graph qualification:</strong> Supporting lines in the image are labelled scores $\pm8$; they are drawn in a noncanonical score scale. Normalize that score by 8 before applying canonical $\pm1$ slack numbers. Only region membership is needed here. Also an on-margin point can have zero coefficient in a degenerate solution, so F's strict support status is an intended assumption, not something its position alone proves.</p>
-<h3 id="topic-17">2.7 Q9 — “Always true” and the correct supporting plane</h3>
+<h3 id="topic-20">2.7 Q9 — “Always true” and the correct supporting plane</h3>
 <p><strong>Source:</strong> 2025 Apr 13 ET (QIM4), Q9.</p>
 <p><strong>Question:</strong></p>
 <blockquote>
@@ -479,7 +590,7 @@ For each point, consider $\xi_i$ to represent the slack variable or the “minim
 <p><strong>Step 4:</strong> (d) as literally written is <strong>false</strong>: positive point on $f=-1$ pays slack 2. It becomes true if “one of the supporting hyperplanes” means <strong>its correct supporting hyperplane</strong>.</p>
 <p><strong>Step 5:</strong> Strictly between support planes means $-1&lt;f&lt;1$. For either label, $-1&lt;m&lt;1$, so $1-m&gt;0$ → (e) true.</p>
 <p><strong>Strict answers as written: (b), (e). Supplied key: (b), (d), (e).</strong> The key assumes the missing word <strong>correct</strong> in option (d). Remember the actual rule from the counterexample.</p>
-<h3 id="topic-18">2.8 Q2 — Soft-margin formulation and constraint count</h3>
+<h3 id="topic-21">2.8 Q2 — Soft-margin formulation and constraint count</h3>
 <p><strong>Source:</strong> 2024 Apr 28 ET, Q2.</p>
 <p><strong>Question:</strong></p>
 <blockquote>
@@ -503,7 +614,15 @@ Which of the following statements about the soft-margin SVM is correct?</p>
 <p><strong>Step 5:</strong> (e) needs separability. Without it, hard-margin problem is infeasible, so not universally true.</p>
 <p><strong>Step 6:</strong> (f) false: negative $C$ makes objective unbounded below by increasing slack.</p>
 <p><strong>Supported answers: (b), (d). Supplied key lists only (b), omitting the explicitly present slack constraints in (d).</strong> Don't memorize that there are only $n$ inequalities in this primal formulation.</p>
-<h3 id="topic-19">2.9 Q12 — Support-vector counts at extreme C</h3>
+<p><strong>Related claim check:</strong> Week 11 — Solve With Instructors, Q2 asks which statements are <strong>incorrect</strong>:</p>
+<p>(a) Violating points farther from the correct support plane suffer greater penalty.</p>
+<p>(b) Correct points beyond the margin suffer no penalty.</p>
+<p>(c) Small $\|w\|$ means small margin.</p>
+<p>(d) Large $\|w\|$ means small margin.</p>
+<p>(e) Very small C encourages wider margin.</p>
+<p>(f) Strict margin violators have $\alpha_i^*=C$.</p>
+<p><strong>Answer: (c).</strong> Width $2/\|w\|$ decreases with nonzero weight norm. For fixed w, slack is $\|w\|$ times the required geometric distance toward the correct support plane, so (a) concerns that fixed model. For (f), use <strong>$y_if_i&lt;1$</strong>, not $f_i&lt;1$ without the label; the positive-slack KKT argument is given above. Small positive C encourages a wide nominal margin, but $w=0$ has no meaningful separating hyperplane.</p>
+<h3 id="topic-22">2.9 Q12 — Support-vector counts at extreme C</h3>
 <p><strong>Source:</strong> 2025 Aug 31 ET (QDF4), Q12.</p>
 <p><strong>Question:</strong></p>
 <blockquote>
@@ -521,7 +640,8 @@ Select the correct options from the following:</p>
 <p><strong>Step 3 — Signed margins:</strong> Inputs $1,2,-3,-2,-1$ have signed margins $1,2,3,2,1$. Closest points are $x=1$ and $x=-1$; support-vector count <strong>2</strong> in the usual free-bias or nondegenerate interpretation.</p>
 <p><strong>Answer expected: (a), (d).</strong></p>
 <p><strong>No-bias degeneracy detail:</strong> The displayed model has no bias. Its two active margin constraints at $x=1$ and $x=-1$ are algebraically identical ($w\ge1$), so the optimal dual contribution can be split between them or assigned to only one. Hence <strong>2 geometric margin points</strong>, but positive-dual-coefficient count may be 1 or 2 depending on the chosen optimum. The key uses the usual geometric count for this limit. With a free bias, dual balance requires both positive coefficients here.</p>
-<h3 id="topic-20">2.10 Q18 — Missing coordinate, but weight is recoverable</h3>
+<p><strong>Same extreme-C variety:</strong> Week 11 PDF, Practice Assignment Q6–7, uses positives $\{1,2,3,4\}$ and negatives $\{-3,-2,-1\}$. Additional faraway positives do not change the nearest opposite inputs ±1. Intended answers: <strong>2 support vectors as $C\to\infty$; 0 at $C=0$</strong>. Q12's same distinction applies: two geometric margin points, but a no-bias dual can assign positive mass to only one redundant active constraint. With free bias both are required. At C=0 slack is unpenalized, not uniquely fixed, although the no-bias optimum w=0 requires every slack at least 1.</p>
+<h3 id="topic-23">2.10 Q18 — Missing coordinate, but weight is recoverable</h3>
 <p><strong>Source:</strong> 2026 Sep 13 ET, Q18.</p>
 <p><strong>Question:</strong></p>
 <blockquote>
@@ -543,13 +663,13 @@ Consider a soft-margin SVM for binary classification in $\mathbb R^3$ with no bi
 <p>$$\text{Width}=\frac2{\sqrt{0.54}}\approx2.721655\to\boxed{2.72}.$$</p>
 <p><strong>Question se shortcut:</strong> Coordinates missing hon toh pehle check karo corresponding multiplier zero hai ya nahi. Unknown irrelevant contribution ko reconstruct karne ki zaroorat nahi.</p>
 <hr />
-<h2 id="topic-21">3. Ensemble foundations: Multiple models ko combine karna</h2>
-<h3 id="topic-22">3.1 Ensemble kya hai?</h3>
+<h2 id="topic-24">3. Ensemble foundations: Multiple models ko combine karna</h2>
+<h3 id="topic-25">3.1 Ensemble kya hai?</h3>
 <p><strong>Definition:</strong> Multiple base models ki predictions combine karke final prediction banana.</p>
 <p><strong>Real life:</strong> Ek difficult question par ek person ki opinion ke badle multiple people ki opinions combine karna. Benefit tab zyada hota hai jab sab exactly same mistake na karte hon.</p>
 <p>Base classifiers $h_1,\ldots,h_B$ ho sakte hain. Combination simple average, majority vote, probability average ya weighted vote ho sakta hai.</p>
 <p><strong>Important:</strong> More models automatically better nahi. Agar sab identical prediction dete hain, averaging same answer hi degi.</p>
-<h3 id="topic-23">3.2 Weak learner, strong learner and decision stump</h3>
+<h3 id="topic-26">3.2 Weak learner, strong learner and decision stump</h3>
 <p><strong>Weak learner:</strong> Relevant training distribution par random-guessing baseline se slightly better perform karne wala learner. Binary balanced/random-coin baseline ke context mein weighted error $\epsilon&lt;0.5$ chahiye.</p>
 <p><strong>Example:</strong> Error 0.48 means accuracy 0.52; small edge over a fair random classifier.</p>
 <p><strong>Strong learner:</strong> Combined procedure much lower error achieve kar sakta hai under suitable assumptions. “Strong” ka matlab every future point par guaranteed correct/high confidence nahi.</p>
@@ -557,7 +677,7 @@ Consider a soft-margin SVM for binary classification in $\mathbb R^3$ with no bi
 <p>Example:</p>
 <p>$$h(x)=\begin{cases}+1,&amp;x_1&lt;3,\\-1,&amp;x_1\ge3.\end{cases}$$</p>
 <p>Simple stump often high-bias model hota hai; deep tree usually lower training bias but higher variance. <strong>Weakness architecture alone se decide nahi hoti:</strong> Easy dataset par stump perfect classifier bhi ho sakta hai.</p>
-<h3 id="topic-24">3.3 Q10 — Weak learner definition</h3>
+<h3 id="topic-27">3.3 Q10 — Weak learner definition</h3>
 <p><strong>Source:</strong> 2025 Apr 13 ET (QIM4), Q10.</p>
 <p><strong>Question:</strong></p>
 <blockquote>
@@ -568,7 +688,7 @@ Consider a soft-margin SVM for binary classification in $\mathbb R^3$ with no bi
 <p><strong>Step 1:</strong> Weak learner ka required advantage small ho sakta hai, but chance se better hona chahiye on the relevant distribution.</p>
 <p><strong>Step 2:</strong> Binary AdaBoost example: $\epsilon=0.48&lt;0.5$ valid weak advantage.</p>
 <p><strong>Answer: (a), TRUE.</strong> Imbalanced datasets mein “50% accuracy is useful” automatically assume mat karo; yahan standard binary weak-learning definition ka context hai.</p>
-<h3 id="topic-25">3.4 Bias and variance: Dono ka meaning alag hai</h3>
+<h3 id="topic-28">3.4 Bias and variance: Dono ka meaning alag hai</h3>
 <p><strong>Bias:</strong> Training datasets ke across model ki average prediction aur actual underlying function ke beech systematic difference.</p>
 <p><strong>Variance:</strong> Training data change hone par fitted prediction kitni change hoti hai.</p>
 <p><strong>Real-life connection:</strong> Archer ke shots consistently target se left jaate hain → bias. Shots different directions mein widely spread hain → variance.</p>
@@ -599,14 +719,14 @@ Consider a soft-margin SVM for binary classification in $\mathbb R^3$ with no bi
 </tbody>
 </table>
 <p><strong>Counterexample:</strong> Deep tree training labels memorize kar sakta hai, yet small training change se different splits bana sakta hai. Low training error does not imply low variance.</p>
-<h3 id="topic-26">3.5 Correct bias–variance decomposition</h3>
+<h3 id="topic-29">3.5 Correct bias–variance decomposition</h3>
 <p>For squared-error regression at a fixed input, under the usual zero-mean noise model:</p>
 <p>$$\boxed{\mathbb E[(Y-\hat f(X))^2]=\operatorname{Bias}^2+\operatorname{Variance}+\text{irreducible noise}}.$$</p>
 <p><strong>Do not memorize “Error = Bias + Variance” literally.</strong> Standard squared-error identity uses <strong>bias squared</strong> and also includes noise. Classification zero-one loss does not have this same simple additive formula.</p>
 <p><strong>Trade-off is a tendency, not a universal law:</strong> Increasing model complexity often reduces bias and raises variance, but every pair of models need not follow an exact inverse relation. Good modelling/ensembles can improve both in some situations.</p>
 <hr />
-<h2 id="topic-27">4. Bagging: Different bags, independent models, combined prediction</h2>
-<h3 id="topic-28">4.1 Bootstrap sampling</h3>
+<h2 id="topic-30">4. Bagging: Different bags, independent models, combined prediction</h2>
+<h3 id="topic-31">4.1 Bootstrap sampling</h3>
 <p><strong>Definition:</strong> Dataset se samples <strong>with replacement</strong> draw karke a new training bag banana.</p>
 <p>For dataset size $N$, standard bag size also $N$. Repeat this independently for $B$ bags.</p>
 <p><strong>Example:</strong> Dataset $\{A,B,C,D,E\}$ se one possible bag $\{A,C,A,E,C\}$. Bag mein 5 draws hain, but only 3 distinct observations. Some points repeat, some absent.</p>
@@ -618,7 +738,7 @@ Consider a soft-margin SVM for binary classification in $\mathbb R^3$ with no bi
 <li>Combine their predictions.</li>
 </ol>
 <p>Models independently train ho sakte hain, so training can run in parallel.</p>
-<h3 id="topic-29">4.2 Bootstrap mein kitne unique points?</h3>
+<h3 id="topic-32">4.2 Bootstrap mein kitne unique points?</h3>
 <p>A particular sample ke one draw mein not selected hone ka probability $1-1/N$.</p>
 <p>Across $N$ independent replacement draws:</p>
 <p>$$\boxed{P(\text{not included})=\left(1-\frac1N\right)^N}.$$</p>
@@ -631,7 +751,7 @@ Consider a soft-margin SVM for binary classification in $\mathbb R^3$ with no bi
 <p><img src="assets/week11/06_bootstrap.png" loading="lazy" alt="Probability that a sample occurs in a bootstrap bag" /></p>
 <p><strong>Practice:</strong> $N=5$ ho toh absent probability $(4/5)^5=0.32768$, included probability 0.67232, expected unique count $5(0.67232)=3.3616$. Finite-size answer exactly 0.632 nahi.</p>
 <p><strong>Out-of-bag (OOB):</strong> A tree's bootstrap bag mein absent observations us tree ke evaluation ke liye use ho sakte hain. Each observation ke OOB predictions only un trees se lo jinhone us observation ko train bag mein nahi liya.</p>
-<h3 id="topic-30">4.3 Aggregation rules</h3>
+<h3 id="topic-33">4.3 Aggregation rules</h3>
 <p><strong>Regression average:</strong></p>
 <p>$$\boxed{\hat f(x)=\frac1B\sum_{b=1}^{B}h_b(x)}.$$</p>
 <p><strong>Binary hard-label majority vote, $h_b\in\{-1,+1\}$:</strong></p>
@@ -639,7 +759,7 @@ Consider a soft-margin SVM for binary classification in $\mathbb R^3$ with no bi
 <p>Even number of trees par tie possible hai; tie convention specify karni padegi. Multiclass mein most votes wala label choose karo.</p>
 <p><strong>Probability averaging:</strong> Class probabilities average karo, then largest average choose karo. This is a different rule from hard-label vote.</p>
 <p><strong>Counterexample:</strong> Three models' positive probabilities are 0.51, 0.51, 0.01. Hard majority gives positive (2 of 3), but average probability $1.03/3\approx0.343$ gives negative. Question ka aggregation rule follow karo.</p>
-<h3 id="topic-31">4.4 Variance reduction and correlation</h3>
+<h3 id="topic-34">4.4 Variance reduction and correlation</h3>
 <p><strong>Definition:</strong> Different unstable models ki averaging unke individual fluctuations ko partially cancel kar sakti hai.</p>
 <p>For $B$ scalar predictions with equal variance $\sigma^2$ and common pairwise correlation $\rho$:</p>
 <p>$$\boxed{\operatorname{Var}(\bar h)=\sigma^2\left[\rho+\frac{1-\rho}{B}\right]}.$$</p>
@@ -652,7 +772,7 @@ Consider a soft-margin SVM for binary classification in $\mathbb R^3$ with no bi
 <p><img src="assets/week11/05_bagging_variance.png" loading="lazy" alt="Averaging variance decreases more when base learners are less correlated" /></p>
 <p><strong>Example:</strong> $\sigma^2=1$, $B=10$, $\rho=0.3$ → variance $0.3+0.7/10=0.37$. Independent case would give 0.1; correlated errors reduce the benefit.</p>
 <p><strong>Best typical candidates:</strong> High-variance, low-bias learners, such as deep unpruned trees. Bagging mainly reduces variance; it is not primarily a systematic bias-removal method.</p>
-<h3 id="topic-32">4.5 Q19 — Bagging properties</h3>
+<h3 id="topic-35">4.5 Q19 — Bagging properties</h3>
 <p><strong>Source:</strong> 2026 Sep 13 ET, Q19.</p>
 <p><strong>Question:</strong></p>
 <blockquote>
@@ -670,14 +790,14 @@ Consider a soft-margin SVM for binary classification in $\mathbb R^3$ with no bi
 <p><strong>Step 5 — Counterexample for (e):</strong> If every $h_b(x)=h(x)$, their average is exactly $h(x)$. Variance unchanged, also seen by $\rho=1$ in formula → (e) false.</p>
 <p><strong>Answer: (a), (c), (d).</strong> Read (a) as the usual benefit, not a strict reduction guarantee even for identical learners.</p>
 <hr />
-<h2 id="topic-33">5. Random forest: Bagging ke saath feature randomness</h2>
-<h3 id="topic-34">5.1 Basic idea</h3>
+<h2 id="topic-36">5. Random forest: Bagging ke saath feature randomness</h2>
+<h3 id="topic-37">5.1 Basic idea</h3>
 <p><strong>Definition:</strong> Random forest multiple decision trees combine karta hai, typically bootstrap bags aur random feature subsets use karke.</p>
 <p>At <strong>each split</strong>, all $p$ features evaluate karne ke badle randomly selected $m$ features mein best split search karo.</p>
 <p><strong>Real life:</strong> Har expert ko same dominant clue dene par sab same judgement kar sakte hain. Different clues consider karne ka chance dene se predictions less correlated ho sakti hain.</p>
 <p><strong>Important:</strong> Feature subset generally each node/split par newly chosen hota hai; one fixed subset for the entire tree assume mat karo unless question says so.</p>
 <p>Common classification heuristic $m\approx\sqrt p$ hai, but universal required value nahi; tune according to data/task.</p>
-<h3 id="topic-35">5.2 Why feature randomness helps</h3>
+<h3 id="topic-38">5.2 Why feature randomness helps</h3>
 <p>A very strong feature har tree ke root par choose hoti rahe, toh bootstrap bags different hote hue bhi trees similar ho sakte hain. Subsampling features reduces that repeated dominance.</p>
 <p><strong>Trade-off:</strong></p>
 <ul>
@@ -687,7 +807,7 @@ Consider a soft-margin SVM for binary classification in $\mathbb R^3$ with no bi
 <li>More randomness always better, yeh guarantee nahi.</li>
 </ul>
 <p>Random forest trees can train independently in parallel. Feature randomness makes trees <strong>less correlated</strong>, not necessarily statistically independent or exactly uncorrelated.</p>
-<h3 id="topic-36">5.3 Q13 — Average class probabilities</h3>
+<h3 id="topic-39">5.3 Q13 — Average class probabilities</h3>
 <p><strong>Source:</strong> 2025 Aug 31 ET (QDF4), Q13.</p>
 <p><strong>Question:</strong></p>
 <blockquote>
@@ -704,7 +824,7 @@ Consider a soft-margin SVM for binary classification in $\mathbb R^3$ with no bi
 <p><strong>Step 3:</strong> Positive average higher → predicted class $+1$. Enter $\boxed1$.</p>
 <p><strong>Check:</strong> Averages sum to 1. Hard vote happens to give same answer here, but use specified probability averaging.</p>
 <p><img src="assets/week11/07_forest_probabilities.png" loading="lazy" alt="Q13 probabilities for three trees and their average" /></p>
-<h3 id="topic-37">5.4 Q14 — Change the number of candidate features</h3>
+<h3 id="topic-40">5.4 Q14 — Change the number of candidate features</h3>
 <p><strong>Source:</strong> 2025 Dec 18 ET, Q14.</p>
 <p><strong>Question:</strong></p>
 <blockquote>
@@ -720,13 +840,14 @@ Consider a soft-margin SVM for binary classification in $\mathbb R^3$ with no bi
 <p><strong>Step 3:</strong> Larger $m$ also changes correlation; “always decreases variance” is too strong → (d) false.</p>
 <p><strong>Answer: (b), (c).</strong> Correlation reduction in (b) is a statistical tendency; the phrase “any two trees” is not a deterministic guarantee for every dataset/random seed.</p>
 <hr />
-<h2 id="topic-38">6. Boosting: Next learner ko previous mistakes par focus karna</h2>
-<h3 id="topic-39">6.1 Definition and connection</h3>
+<p><strong>Same feature-subsampling variety:</strong> Week 11 PDF, Practice Assignment Q1, calls the number of candidate features <strong>p</strong> and total features d. Its options are: (A) increasing p reduces correlation, (B) decreasing p reduces correlation, (C) increasing p improves individual-tree performance, (D) decreasing p improves individual-tree performance. Intended <strong>B, C</strong> express the usual diversity-versus-tree-strength trade-off. Increasing p offers more split candidates and can strengthen individual fits, while smaller p usually reduces shared split choices. These are tendencies, not guaranteed test-accuracy improvements or deterministic correlation inequalities; Q14 explains the same trade-off.</p>
+<h2 id="topic-41">6. Boosting: Next learner ko previous mistakes par focus karna</h2>
+<h3 id="topic-42">6.1 Definition and connection</h3>
 <p><strong>Definition:</strong> Boosting weak learners ko sequentially train karta hai, with later learners focusing on errors/difficult observations from earlier rounds.</p>
 <p><strong>Real life:</strong> First revision test mein galti wale topics identify karo; next practice un topics par extra attention de. Final answer sirf last test se nahi, multiple learners ke weighted combination se banta hai.</p>
 <p>Typical AdaBoost base learner decision stump hai. Boosting often reduces bias by combining simple rules into a richer decision function.</p>
 <p><strong>Qualification:</strong> Bagging = variance reduction, boosting = bias reduction useful exam summary hai; real boosting can also affect variance and can overfit noisy labels. Neither method guarantees error reduction on every dataset.</p>
-<h3 id="topic-40">6.2 Bagging vs boosting</h3>
+<h3 id="topic-43">6.2 Bagging vs boosting</h3>
 <table>
 <thead>
 <tr>
@@ -769,7 +890,7 @@ Consider a soft-margin SVM for binary classification in $\mathbb R^3$ with no bi
 </tbody>
 </table>
 <p><strong>Random forest:</strong> Bagging-style trees plus per-split feature randomness. It does not use AdaBoost's sequential error-weight updates.</p>
-<h3 id="topic-41">6.3 Q4 — Match methods and characteristics</h3>
+<h3 id="topic-44">6.3 Q4 — Match methods and characteristics</h3>
 <p><strong>Source:</strong> 2024 Sep 01 ET, Q4.</p>
 <p><strong>Question:</strong></p>
 <blockquote>
@@ -788,7 +909,7 @@ Consider a soft-margin SVM for binary classification in $\mathbb R^3$ with no bi
 <p><strong>Step 1:</strong> Bagging deep unstable trees ka variance reduce karta hai; bags independently train hote hain → (2), (3).</p>
 <p><strong>Step 2:</strong> Boosting stumps ki simple rules sequentially combine karta hai → (1), (4).</p>
 <p><strong>Answer: (a).</strong> Base-learner choices are typical, not restrictions that forbid other learner types.</p>
-<h3 id="topic-42">6.4 Q7 — Bias, tree depth and bagging</h3>
+<h3 id="topic-45">6.4 Q7 — Bias, tree depth and bagging</h3>
 <p><strong>Source:</strong> 2024 Dec 22 ET, Q7.</p>
 <p><strong>Question:</strong></p>
 <blockquote>
@@ -803,7 +924,7 @@ Consider a soft-margin SVM for binary classification in $\mathbb R^3$ with no bi
 <p><strong>Step 3:</strong> Weak learner slightly better than chance → (c) true; same concept as Q10.</p>
 <p><strong>Step 4:</strong> Independent bag fits → (d) true.</p>
 <p><strong>Answer: (b), (c), (d).</strong></p>
-<h3 id="topic-43">6.5 Q16 — Main effects</h3>
+<h3 id="topic-46">6.5 Q16 — Main effects</h3>
 <p><strong>Source:</strong> 2026 May 06 ET, Q16.</p>
 <p><strong>Question:</strong></p>
 <blockquote>
@@ -817,8 +938,8 @@ Consider a soft-margin SVM for binary classification in $\mathbb R^3$ with no bi
 <p><strong>Step 2:</strong> Boosting adds weak rules to address systematic mistakes → often bias reduction.</p>
 <p><strong>Answer: (a).</strong> Options with “only” overstate the distinction. This is the same conceptual mapping used in Q4; no new numerical calculation needed.</p>
 <hr />
-<h2 id="topic-44">7. AdaBoost: Har round ka exact calculation</h2>
-<h3 id="topic-45">7.1 Two different kinds of weights</h3>
+<h2 id="topic-47">7. AdaBoost: Har round ka exact calculation</h2>
+<h3 id="topic-48">7.1 Two different kinds of weights</h3>
 <p><strong>Definition:</strong> AdaBoost sample weights update karta hai aur har fitted weak learner ko final vote weight assign karta hai.</p>
 <table>
 <thead>
@@ -851,7 +972,7 @@ Consider a soft-margin SVM for binary classification in $\mathbb R^3$ with no bi
 </tbody>
 </table>
 <p>Notes mein boosting coefficient ko <strong>$a_t$</strong> likhenge, jo commonly $\alpha_t$ bhi likha jaata hai. Yeh SVM ke per-sample dual multiplier $\alpha_i$ se different quantity hai.</p>
-<h3 id="topic-46">7.2 Full algorithm, one round at a time</h3>
+<h3 id="topic-49">7.2 Full algorithm, one round at a time</h3>
 <p><strong>Step 1 — Initialize:</strong></p>
 <p>$$D_1(i)=\frac1N.$$</p>
 <p>Source may start numbering at $D_0$; round ki meaning same hai. Har round ka starting distribution clearly identify karo.</p>
@@ -872,7 +993,7 @@ Consider a soft-margin SVM for binary classification in $\mathbb R^3$ with no bi
 <p><strong>Step 6 — Final model after T rounds:</strong></p>
 <p>$$\boxed{H_T(x)=\operatorname{sign}\left(\sum_{t=1}^{T}a_th_t(x)\right)}.$$</p>
 <p>Score exactly zero par tie rule chahiye. Last stump alone generally final ensemble nahi hai.</p>
-<h3 id="topic-47">7.3 Important properties and shortcuts</h3>
+<h3 id="topic-50">7.3 Important properties and shortcuts</h3>
 <p>For the usual coefficient above:</p>
 <p>$$Z_t=2\sqrt{\epsilon_t(1-\epsilon_t)}.$$</p>
 <p>Equivalent <strong>normalized</strong> updates:</p>
@@ -881,14 +1002,14 @@ Consider a soft-margin SVM for binary classification in $\mathbb R^3$ with no bi
 <p><strong>Equal-weight rule:</strong> If two samples had equal old weights and same correct/wrong status, updated weights equal. Same true label alone is not sufficient.</p>
 <p><strong>Counterexample:</strong> Both points label +1, but stump predicts one correctly and the other incorrectly. Their equal starting weights become unequal.</p>
 <p><strong>Weighted error is not always wrong-count/N:</strong> Later rounds have nonuniform $D_t$. One wrong example of weight 0.4 contributes error 0.4 even if dataset has 100 points.</p>
-<h3 id="topic-48">7.4 Edge cases</h3>
+<h3 id="topic-51">7.4 Edge cases</h3>
 <ul>
 <li>$\epsilon=0$: perfect current weak learner; coefficient formula tends to infinity. Practical procedure can stop or use numerical safeguards, not literally divide by zero.</li>
 <li>$\epsilon=0.5$: coefficient 0; no useful weighted vote or redistribution.</li>
 <li>$\epsilon&gt;0.5$: coefficient negative. Standard binary weak-learning setup seeks error below 0.5; flipping all predictions gives error $1-\epsilon$ if such a reversed classifier is permitted.</li>
 <li>Mislabelled/noisy outliers can receive repeatedly increasing attention; boosting is not automatically robust to label noise.</li>
 </ul>
-<h3 id="topic-49">7.5 Q6 — Which samples lose weight?</h3>
+<h3 id="topic-52">7.5 Q6 — Which samples lose weight?</h3>
 <p><strong>Source:</strong> 2024 Dec 22 ET, Q6.</p>
 <p><strong>Question:</strong></p>
 <blockquote>
@@ -901,7 +1022,7 @@ Consider a soft-margin SVM for binary classification in $\mathbb R^3$ with no bi
 <p><strong>Step 1:</strong> Update formula uses <strong>current</strong> $h_t(x_i)$, not majority of earlier learners.</p>
 <p><strong>Step 2:</strong> Correct sample multiplier before normalization is $e^{-a_t}$; normalized factor is $1/[2(1-\epsilon_t)]&lt;1$ for $\epsilon_t&lt;0.5$.</p>
 <p><strong>Answer: (b).</strong> The usual positive-edge AdaBoost condition is being assumed.</p>
-<h3 id="topic-50">7.6 Q11 — Choose a classifier and calculate its vote weight</h3>
+<h3 id="topic-53">7.6 Q11 — Choose a classifier and calculate its vote weight</h3>
 <p><strong>Source:</strong> 2025 Apr 13 ET (QIM4), Q11.</p>
 <p><strong>Question:</strong></p>
 <blockquote>
@@ -969,7 +1090,7 @@ Consider a soft-margin SVM for binary classification in $\mathbb R^3$ with no bi
 <p><strong>Part (ii): (b)</strong>, whose coefficient 0.202 is a coarse approximation. Since it is positive, one-round ensemble predictions equal $h_1$.</p>
 <p><strong>Step 5 — Weight update connection:</strong> Wrong points $x_1,x_2$ each get $(1/5)/(2\cdot0.4)=1/4$. Correct points $x_3,x_4,x_5$ each get $(1/5)/(2\cdot0.6)=1/6$. Check $2(1/4)+3(1/6)=1$.</p>
 <p><strong>Trap:</strong> $h_2$ ka negative coefficient calculate karke choose karna given lower-error-candidate instruction ko change karega. Allowing the flipped classifier $-h_2$ would enlarge the candidate set; that is not this question.</p>
-<h3 id="topic-51">7.7 Q15 — One error receives half the next-round weight</h3>
+<h3 id="topic-54">7.7 Q15 — One error receives half the next-round weight</h3>
 <p><strong>Source:</strong> 2025 Dec 18 ET, Q15.</p>
 <p><strong>Question:</strong></p>
 <blockquote>
@@ -1080,7 +1201,7 @@ At iteration $t=1$, AdaBoost chooses the decision stump</p>
 <p><img src="assets/week11/08_adaboost_weights.png" loading="lazy" alt="Q15 sample weights before and after the AdaBoost update" /></p>
 <p><strong>Part (ii): (a), (b).</strong> Both pairs contain only correctly classified points. Pairs containing point 5 don't have equal smallest weights.</p>
 <p><strong>Connection:</strong> Same update pattern as Q11, but error 0.2 instead of 0.4. One wrong point alone receives the full wrong-group total weight 1/2.</p>
-<h3 id="topic-52">7.8 Q3 — Two-dimensional stump and missing table weight</h3>
+<h3 id="topic-55">7.8 Q3 — Two-dimensional stump and missing table weight</h3>
 <p><strong>Source:</strong> 2024 Apr 28 ET, Q3.</p>
 <p><strong>Question:</strong></p>
 <blockquote>
@@ -1220,7 +1341,114 @@ At iteration $t=1$, AdaBoost chooses the decision stump</p>
 <p>$$D&#x27;(x_2)=1-\frac12-\frac14=\frac14.$$</p>
 <p><strong>Step 2 — Algorithm consistency:</strong> $x_2$ is correctly classified. Given weights indicate one wrong point ($x_1$) and two correct points. Starting uniform, error $1/3$, coefficient $\frac12\ln2$. Normalized wrong weight is $(1/3)/(2/3)=1/2$; each correct weight is $(1/3)/(4/3)=1/4$.</p>
 <p><strong>Answer: $\boxed{0.25}$.</strong> This part is consistent with the supplied key. Do not carry the 15-point graph's weights into this separate three-sample table.</p>
-<h3 id="topic-53">7.9 Training-error bound: What it actually guarantees</h3>
+<h3 id="topic-56">7.8A Q23 — Choose a first-feature stump, then keep weights unnormalized</h3>
+<p><strong>Source:</strong> Week 11 — Solve With Instructors, Q3.</p>
+<p><strong>Question:</strong></p>
+<p>AdaBoost is trained on the following binary classification dataset:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:right">$X_1$</th>
+<th style="text-align:right">$X_2$</th>
+<th>Label</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right">2</td>
+<td style="text-align:right">5</td>
+<td>true</td>
+</tr>
+<tr>
+<td style="text-align:right">2.5</td>
+<td style="text-align:right">6</td>
+<td>false</td>
+</tr>
+<tr>
+<td style="text-align:right">3</td>
+<td style="text-align:right">5</td>
+<td>true</td>
+</tr>
+<tr>
+<td style="text-align:right">4</td>
+<td style="text-align:right">3</td>
+<td>false</td>
+</tr>
+<tr>
+<td style="text-align:right">4</td>
+<td style="text-align:right">4</td>
+<td>false</td>
+</tr>
+</tbody>
+</table>
+<p>Split according to the first feature $X_1$ to create the first stump. Assign equal initial sample weights.</p>
+<p>(i) How many points are misclassified by the trained stump?</p>
+<p>(ii) What weight is assigned to the first example for creating the next stump? Do not normalize. Give two decimal places.</p>
+<p><strong>Solution:</strong></p>
+<p><strong>Step 1 — Candidate splits:</strong> Distinct $X_1$ values are 2,2.5,3,4. Midpoint thresholds 2.25,2.75,3.5 represent every nontrivial partition. Equal $X_1=4$ samples must stay together.</p>
+<p><strong>Step 2 — Compare splits:</strong> Source uses maximum information gain, with majority leaf predictions. Parent has 2 true and 3 false labels.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:right">Threshold, left is $X_1&lt;t$</th>
+<th>Left labels</th>
+<th>Right labels</th>
+<th style="text-align:right">Best error count</th>
+<th style="text-align:right">Information gain (bits)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right">2.25</td>
+<td>T</td>
+<td>F,T,F,F</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0.321928</td>
+</tr>
+<tr>
+<td style="text-align:right">2.75</td>
+<td>T,F</td>
+<td>T,F,F</td>
+<td style="text-align:right">2</td>
+<td style="text-align:right">0.019973</td>
+</tr>
+<tr>
+<td style="text-align:right">3.5</td>
+<td>T,F,T</td>
+<td>F,F</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right"><strong>0.419973</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Therefore source chooses partition $X_1&lt;4$: predict true on the left, false on the right. Threshold 3.5 and strict threshold 4 give the same training partition, but can differ on new inputs between them.</p>
+<p><strong>Step 3 — Mistakes:</strong> Only row 2, $(2.5,6)$, is wrong. Thus <strong>1 mistake</strong>, $\epsilon=1/5=0.2$.</p>
+<p><strong>Step 4 — Learner weight:</strong></p>
+<p>$$a=\frac12\ln\frac{0.8}{0.2}=\ln2,\quad e^{-a}=1/2,\quad e^a=2.$$</p>
+<p><strong>Step 5 — First sample is correct:</strong></p>
+<p>$$\boxed{\tilde D_2(1)=\frac15\cdot\frac12=0.10}.$$</p>
+<p>Question explicitly says <strong>do not normalize</strong>. All unnormalized weights are $(0.1,0.4,0.1,0.1,0.1)$, sum 0.8. Normalized first weight would be 0.125, not the requested answer.</p>
+<p><strong>Selection caveat:</strong> If base learner minimizes only misclassification error, thresholds 2.25 and 3.5 tie. Both classify row 1 correctly and make one error, so both requested answers stay the same, though the identity of the misclassified point can differ. Do not assume information-gain and error rankings always coincide.</p>
+<h3 id="topic-57">7.8B Q24 — Thirty mistakes: Sampling weights require normalization</h3>
+<p><strong>Source:</strong> Week 11 PDF, Practice Assignment Q5.</p>
+<p><strong>Question:</strong></p>
+<p>The first AdaBoost decision stump wrongly classifies 30 out of 100 points. What weights are assigned to the incorrectly classified points for sampling data to train the second stump? Error is the proportion of incorrectly classified examples.</p>
+<p>(A) $\sqrt{7/3}/100$</p>
+<p>(B) $\sqrt{3/7}/100$</p>
+<p>(C) $\dfrac{\sqrt{7/3}}{30\sqrt{7/3}+70\sqrt{3/7}}$</p>
+<p>(D) $\dfrac{\sqrt{7/3}}{30\sqrt{3/7}+70\sqrt{7/3}}$</p>
+<p><strong>Solution:</strong></p>
+<p><strong>Step 1:</strong> Uniform initial weights $D_1(i)=1/100$; $\epsilon=30/100=0.3$.</p>
+<p><strong>Step 2:</strong></p>
+<p>$$a=\frac12\ln\frac{0.7}{0.3},\quad e^a=\sqrt{7/3},\quad e^{-a}=\sqrt{3/7}.$$</p>
+<p><strong>Step 3:</strong> Each wrong point has unnormalized weight $\sqrt{7/3}/100$; each correct point has $\sqrt{3/7}/100$.</p>
+<p><strong>Step 4 — Sum all weights:</strong></p>
+<p>$$Z=\frac{30\sqrt{7/3}+70\sqrt{3/7}}{100}.$$</p>
+<p><strong>Step 5 — Divide each wrong weight by Z:</strong></p>
+<p>$$\boxed{D_2(\text{wrong point})=\frac{\sqrt{7/3}}{30\sqrt{7/3}+70\sqrt{3/7}}=\frac1{60}\approx0.016667\quad\text{(C)}}.$$</p>
+<p>Each correct point gets $1/140$. Check $30/60+70/140=1$. Wrong group total 0.5; <strong>each wrong point</strong> is not assigned 0.5.</p>
+<p><strong>Source correction:</strong> Solution's starting $1/1000$ is a typo for $1/100$. The square roots in its coefficient/options matter: $\ln\sqrt{7/3}=\frac12\ln(7/3)$, not $\ln(7/3)$. Use visual formula, not faulty extracted text.</p>
+<h3 id="topic-58">7.9 Training-error bound: What it actually guarantees</h3>
 <p>For standard binary AdaBoost with $0&lt;\epsilon_t&lt;1/2$, define edge:</p>
 <p>$$\gamma_t=\frac12-\epsilon_t.$$</p>
 <p>A standard training-error upper bound after $T$ rounds is:</p>
@@ -1231,8 +1459,79 @@ At iteration $t=1$, AdaBoost chooses the decision stump</p>
 <p><strong>Example:</strong> Every learner weighted error at most 0.4 means $\gamma\ge0.1$. At 100 rounds, bound $e^{-2(100)(0.1)^2}=e^{-2}\approx0.1353$.</p>
 <p><strong>Two limits:</strong> This is a training-error bound, not a test-accuracy guarantee. A decreasing upper bound also does not prove the actual zero-one training error decreases on every individual round. The round index sum is over $t=1,\ldots,T$, not over the number of training samples.</p>
 <hr />
-<h2 id="topic-54">8. Revision</h2>
-<h3 id="topic-55">8.1 Formula sheet</h3>
+<h3 id="topic-59">7.10 Q25 — Ensemble properties and AdaBoost conventions</h3>
+<p><strong>Source:</strong> Week 11 — Solve With Instructors, Q4.</p>
+<p><strong>Question:</strong> Select all true statements about ensemble techniques.</p>
+<p>(a) A weak learner does slightly better than a random model.</p>
+<p>(b) Ensembles aggregate or combine multiple models to arrive at a decision.</p>
+<p>(c) Bagging tries to reduce variance.</p>
+<p>(d) A point's probability of appearing at least once in a bootstrap bag for a very large dataset is around 36%.</p>
+<p>(e) Bagging can be done in parallel.</p>
+<p>(f) Bagging always uses decision trees as base learners.</p>
+<p>(g) Random forest uses all features at each split of each tree.</p>
+<p>(h) Boosting trains sequentially, each new model focusing on previous errors.</p>
+<p>(i) Mistakes in boosting are boosted by $e^a$, where $a=\frac12\ln((1-\epsilon)/\epsilon)$.</p>
+<p>(j) A boosting classifier with higher error receives a lower final-ensemble weight.</p>
+<p>(k) Boosting's final prediction combines individual models with weights depending on their training performance.</p>
+<p><strong>Solution — Apply the earlier concepts:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Evaluation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>a</td>
+<td>True in the intended weak-learning sense: better than the appropriate chance baseline/current weighted distribution.</td>
+</tr>
+<tr>
+<td>b</td>
+<td>True: predictions are combined.</td>
+</tr>
+<tr>
+<td>c</td>
+<td>True: variance reduction is the main bagging motivation.</td>
+</tr>
+<tr>
+<td>d</td>
+<td>False: for N replacement draws from N points, inclusion probability is $1-(1-1/N)^N\to1-e^{-1}\approx63.2\%$. About 36.8% is exclusion.</td>
+</tr>
+<tr>
+<td>e</td>
+<td>True: base bag fits are independent.</td>
+</tr>
+<tr>
+<td>f</td>
+<td>False: other base learner types are allowed.</td>
+</tr>
+<tr>
+<td>g</td>
+<td>False for standard feature-subsampled RF: each split considers a random subset. Choosing subset size d is a possible special setting, not the defining general rule.</td>
+</tr>
+<tr>
+<td>h</td>
+<td>True as the intended boosting principle.</td>
+</tr>
+<tr>
+<td>i</td>
+<td>True for the <strong>unnormalized discrete AdaBoost</strong> update. Final normalized multiplier is $e^a/Z$.</td>
+</tr>
+<tr>
+<td>j</td>
+<td>True for AdaBoost: $a(\epsilon)$ decreases as weighted error increases in $0&lt;\epsilon&lt;1/2$.</td>
+</tr>
+<tr>
+<td>k</td>
+<td>True for the AdaBoost weighted-vote model being discussed.</td>
+</tr>
+</tbody>
+</table>
+<p>$$\boxed{\text{a, b, c, e, h, i, j, k}}.$$</p>
+<p><strong>Scope:</strong> The exact exponential update and vote coefficient are AdaBoost rules, not formulas shared by every boosting algorithm. “Training performance” here means current <strong>weighted</strong> error, not necessarily raw error count divided by N. Earlier sections already develop the bootstrap and update calculations, so they are not repeated here.</p>
+<h2 id="topic-60">8. Revision</h2>
+<h3 id="topic-61">8.1 Formula sheet</h3>
 <table>
 <thead>
 <tr>
@@ -1351,7 +1650,7 @@ At iteration $t=1$, AdaBoost chooses the decision stump</p>
 </tr>
 </tbody>
 </table>
-<h3 id="topic-56">8.2 Common mistakes</h3>
+<h3 id="topic-62">8.2 Common mistakes</h3>
 <table>
 <thead>
 <tr>
@@ -1446,7 +1745,7 @@ At iteration $t=1$, AdaBoost chooses the decision stump</p>
 </tr>
 </tbody>
 </table>
-<h3 id="topic-57">8.3 Last-minute solving checklist</h3>
+<h3 id="topic-63">8.3 Last-minute solving checklist</h3>
 <ol>
 <li><strong>SVM:</strong> Read true label and score; calculate signed margin first.</li>
 <li><strong>Slack:</strong> Use $\max(0,1-m)$, not distance guessed from pixels.</li>
@@ -1457,6 +1756,6 @@ At iteration $t=1$, AdaBoost chooses the decision stump</p>
 <li><strong>Check:</strong> Weights sum 1; equal-weight claims compare correctness groups; round only at the end.</li>
 </ol>
 </article><nav class="next-prev" aria-label="Previous and next weeks"><a href="week10.html">← Week 10</a><a href="week12.html">Week 12 →</a></nav></main>
-<aside class="contents"><details open><summary>On this page</summary><nav aria-label="Topic index"><a class="level-h2" href="#topic-1">Topic index</a><a class="level-h2" href="#topic-2">1. Soft-margin SVM: Perfect separation possible na ho toh?</a><a class="level-h3" href="#topic-3">1.1 Week 10 se connection</a><a class="level-h3" href="#topic-4">1.2 Slack variable: “Minimum bribe”</a><a class="level-h3" href="#topic-5">1.3 Position-to-slack table</a><a class="level-h3" href="#topic-6">1.4 Primal objective and C</a><a class="level-h3" href="#topic-7">1.5 Hinge-loss form</a><a class="level-h3" href="#topic-8">1.6 What happens when C changes?</a><a class="level-h3" href="#topic-9">1.7 Q8 — Read slack values from a graph</a><a class="level-h2" href="#topic-10">2. Dual, KKT and soft-margin support vectors</a><a class="level-h3" href="#topic-11">2.1 Lagrangian: Two constraints per point</a><a class="level-h3" href="#topic-12">2.2 Dual objective</a><a class="level-h3" href="#topic-13">2.3 Complementary slackness</a><a class="level-h3" href="#topic-14">2.4 Q17 — Interior dual coefficient</a><a class="level-h3" href="#topic-15">2.5 Q5 — Slacks and multipliers with C = 3</a><a class="level-h3" href="#topic-16">2.6 Q1 — Which points affect the SVM weight?</a><a class="level-h3" href="#topic-17">2.7 Q9 — “Always true” and the correct supporting plane</a><a class="level-h3" href="#topic-18">2.8 Q2 — Soft-margin formulation and constraint count</a><a class="level-h3" href="#topic-19">2.9 Q12 — Support-vector counts at extreme C</a><a class="level-h3" href="#topic-20">2.10 Q18 — Missing coordinate, but weight is recoverable</a><a class="level-h2" href="#topic-21">3. Ensemble foundations: Multiple models ko combine karna</a><a class="level-h3" href="#topic-22">3.1 Ensemble kya hai?</a><a class="level-h3" href="#topic-23">3.2 Weak learner, strong learner and decision stump</a><a class="level-h3" href="#topic-24">3.3 Q10 — Weak learner definition</a><a class="level-h3" href="#topic-25">3.4 Bias and variance: Dono ka meaning alag hai</a><a class="level-h3" href="#topic-26">3.5 Correct bias–variance decomposition</a><a class="level-h2" href="#topic-27">4. Bagging: Different bags, independent models, combined prediction</a><a class="level-h3" href="#topic-28">4.1 Bootstrap sampling</a><a class="level-h3" href="#topic-29">4.2 Bootstrap mein kitne unique points?</a><a class="level-h3" href="#topic-30">4.3 Aggregation rules</a><a class="level-h3" href="#topic-31">4.4 Variance reduction and correlation</a><a class="level-h3" href="#topic-32">4.5 Q19 — Bagging properties</a><a class="level-h2" href="#topic-33">5. Random forest: Bagging ke saath feature randomness</a><a class="level-h3" href="#topic-34">5.1 Basic idea</a><a class="level-h3" href="#topic-35">5.2 Why feature randomness helps</a><a class="level-h3" href="#topic-36">5.3 Q13 — Average class probabilities</a><a class="level-h3" href="#topic-37">5.4 Q14 — Change the number of candidate features</a><a class="level-h2" href="#topic-38">6. Boosting: Next learner ko previous mistakes par focus karna</a><a class="level-h3" href="#topic-39">6.1 Definition and connection</a><a class="level-h3" href="#topic-40">6.2 Bagging vs boosting</a><a class="level-h3" href="#topic-41">6.3 Q4 — Match methods and characteristics</a><a class="level-h3" href="#topic-42">6.4 Q7 — Bias, tree depth and bagging</a><a class="level-h3" href="#topic-43">6.5 Q16 — Main effects</a><a class="level-h2" href="#topic-44">7. AdaBoost: Har round ka exact calculation</a><a class="level-h3" href="#topic-45">7.1 Two different kinds of weights</a><a class="level-h3" href="#topic-46">7.2 Full algorithm, one round at a time</a><a class="level-h3" href="#topic-47">7.3 Important properties and shortcuts</a><a class="level-h3" href="#topic-48">7.4 Edge cases</a><a class="level-h3" href="#topic-49">7.5 Q6 — Which samples lose weight?</a><a class="level-h3" href="#topic-50">7.6 Q11 — Choose a classifier and calculate its vote weight</a><a class="level-h3" href="#topic-51">7.7 Q15 — One error receives half the next-round weight</a><a class="level-h3" href="#topic-52">7.8 Q3 — Two-dimensional stump and missing table weight</a><a class="level-h3" href="#topic-53">7.9 Training-error bound: What it actually guarantees</a><a class="level-h2" href="#topic-54">8. Revision</a><a class="level-h3" href="#topic-55">8.1 Formula sheet</a><a class="level-h3" href="#topic-56">8.2 Common mistakes</a><a class="level-h3" href="#topic-57">8.3 Last-minute solving checklist</a></nav></details></aside></div>
-<footer>MLT Notes <span>Learn one concept at a time.</span></footer>
+<aside class="contents"><details open><summary>On this page</summary><nav aria-label="Topic index"><a class="level-h2" href="#topic-1">Topic index</a><a class="level-h2" href="#topic-2">1. Soft-margin SVM: Perfect separation possible na ho toh?</a><a class="level-h3" href="#topic-3">1.1 Week 10 se connection</a><a class="level-h3" href="#topic-4">1.2 Slack variable: “Minimum bribe”</a><a class="level-h3" href="#topic-5">1.3 Position-to-slack table</a><a class="level-h3" href="#topic-6">1.4 Primal objective and C</a><a class="level-h3" href="#topic-7">1.5 Hinge-loss form</a><a class="level-h3" href="#topic-8">1.6 What happens when C changes?</a><a class="level-h3" href="#topic-9">1.7 Q8 — Read slack values from a graph</a><a class="level-h3" href="#topic-10">1.8 Q20 — Count violations and add the total slack</a><a class="level-h2" href="#topic-11">2. Dual, KKT and soft-margin support vectors</a><a class="level-h3" href="#topic-12">2.1 Lagrangian: Two constraints per point</a><a class="level-h3" href="#topic-13">2.2 Dual objective</a><a class="level-h3" href="#topic-14">2.3 Complementary slackness</a><a class="level-h3" href="#topic-15">2.3A Q21 — Strict versus non-strict margin inequalities</a><a class="level-h3" href="#topic-16">2.3B Q22 — Support vectors may have zero slack</a><a class="level-h3" href="#topic-17">2.4 Q17 — Interior dual coefficient</a><a class="level-h3" href="#topic-18">2.5 Q5 — Slacks and multipliers with C = 3</a><a class="level-h3" href="#topic-19">2.6 Q1 — Which points affect the SVM weight?</a><a class="level-h3" href="#topic-20">2.7 Q9 — “Always true” and the correct supporting plane</a><a class="level-h3" href="#topic-21">2.8 Q2 — Soft-margin formulation and constraint count</a><a class="level-h3" href="#topic-22">2.9 Q12 — Support-vector counts at extreme C</a><a class="level-h3" href="#topic-23">2.10 Q18 — Missing coordinate, but weight is recoverable</a><a class="level-h2" href="#topic-24">3. Ensemble foundations: Multiple models ko combine karna</a><a class="level-h3" href="#topic-25">3.1 Ensemble kya hai?</a><a class="level-h3" href="#topic-26">3.2 Weak learner, strong learner and decision stump</a><a class="level-h3" href="#topic-27">3.3 Q10 — Weak learner definition</a><a class="level-h3" href="#topic-28">3.4 Bias and variance: Dono ka meaning alag hai</a><a class="level-h3" href="#topic-29">3.5 Correct bias–variance decomposition</a><a class="level-h2" href="#topic-30">4. Bagging: Different bags, independent models, combined prediction</a><a class="level-h3" href="#topic-31">4.1 Bootstrap sampling</a><a class="level-h3" href="#topic-32">4.2 Bootstrap mein kitne unique points?</a><a class="level-h3" href="#topic-33">4.3 Aggregation rules</a><a class="level-h3" href="#topic-34">4.4 Variance reduction and correlation</a><a class="level-h3" href="#topic-35">4.5 Q19 — Bagging properties</a><a class="level-h2" href="#topic-36">5. Random forest: Bagging ke saath feature randomness</a><a class="level-h3" href="#topic-37">5.1 Basic idea</a><a class="level-h3" href="#topic-38">5.2 Why feature randomness helps</a><a class="level-h3" href="#topic-39">5.3 Q13 — Average class probabilities</a><a class="level-h3" href="#topic-40">5.4 Q14 — Change the number of candidate features</a><a class="level-h2" href="#topic-41">6. Boosting: Next learner ko previous mistakes par focus karna</a><a class="level-h3" href="#topic-42">6.1 Definition and connection</a><a class="level-h3" href="#topic-43">6.2 Bagging vs boosting</a><a class="level-h3" href="#topic-44">6.3 Q4 — Match methods and characteristics</a><a class="level-h3" href="#topic-45">6.4 Q7 — Bias, tree depth and bagging</a><a class="level-h3" href="#topic-46">6.5 Q16 — Main effects</a><a class="level-h2" href="#topic-47">7. AdaBoost: Har round ka exact calculation</a><a class="level-h3" href="#topic-48">7.1 Two different kinds of weights</a><a class="level-h3" href="#topic-49">7.2 Full algorithm, one round at a time</a><a class="level-h3" href="#topic-50">7.3 Important properties and shortcuts</a><a class="level-h3" href="#topic-51">7.4 Edge cases</a><a class="level-h3" href="#topic-52">7.5 Q6 — Which samples lose weight?</a><a class="level-h3" href="#topic-53">7.6 Q11 — Choose a classifier and calculate its vote weight</a><a class="level-h3" href="#topic-54">7.7 Q15 — One error receives half the next-round weight</a><a class="level-h3" href="#topic-55">7.8 Q3 — Two-dimensional stump and missing table weight</a><a class="level-h3" href="#topic-56">7.8A Q23 — Choose a first-feature stump, then keep weights unnormalized</a><a class="level-h3" href="#topic-57">7.8B Q24 — Thirty mistakes: Sampling weights require normalization</a><a class="level-h3" href="#topic-58">7.9 Training-error bound: What it actually guarantees</a><a class="level-h3" href="#topic-59">7.10 Q25 — Ensemble properties and AdaBoost conventions</a><a class="level-h2" href="#topic-60">8. Revision</a><a class="level-h3" href="#topic-61">8.1 Formula sheet</a><a class="level-h3" href="#topic-62">8.2 Common mistakes</a><a class="level-h3" href="#topic-63">8.3 Last-minute solving checklist</a></nav></details></aside></div>
+<footer>MLT Notes · Notes by Shiva <span>Learn one concept at a time.</span></footer>
 </body></html>

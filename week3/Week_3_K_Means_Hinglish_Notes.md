@@ -311,6 +311,64 @@ Different initialization same result de **sakti** hai, always de yeh guarantee n
 
 ---
 
+### Q46 — Two iterations, exact WCSS, and a shared dataset
+
+**Question:** Consider the following 2D dataset: $[(1,1),(2,1),(4,3),(5,4),(6,6),(8,7)]$. Let us select two initial cluster centroids at $(2,1)$ and $(6,6)$. Based on the above information answer the following questions:
+
+(i) After two iteration of k-means, let $C=C_1+C_2$, where $C_1$ and $C_2$ denotes the updated centroids. What is the value of $|\sum_{i=1}^2 C_i|$?
+
+(ii) What is the value of objective function after two iteration?
+
+(iii) If we choose k-means++, with $k=3$, then with what probability the third cluster centroids will be chosen if the first two are $(2,1)$ and $(6,6)$ based on k-means++ initialization?
+
+`Week 3.pdf`, Q2, pp. 4–14. Part (i) mein source notation overloaded hai: source solution $C$ ke **coordinate sum ka absolute value** leta hai. Isi intended scalar quantity ko calculate karenge. Part (iii) ko initialization section ke Q46(iii) mein isi dataset se solve karenge.
+
+**Step 1 — Initial squared distances:**
+
+| Point | To $(2,1)$ | To $(6,6)$ | Cluster |
+|---|---:|---:|---:|
+| $(1,1)$ | 1 | 50 | 1 |
+| $(2,1)$ | 0 | 41 | 1 |
+| $(4,3)$ | 8 | 13 | 1 |
+| $(5,4)$ | 18 | 5 | 2 |
+| $(6,6)$ | 41 | 0 | 2 |
+| $(8,7)$ | 72 | 5 | 2 |
+
+**Step 2 — First update:**
+
+$$\mu_1=\left(\frac{1+2+4}{3},\frac{1+1+3}{3}\right)=\left(\frac73,\frac53\right),$$
+
+$$\mu_2=\left(\frac{5+6+8}{3},\frac{4+6+7}{3}\right)=\left(\frac{19}3,\frac{17}3\right).$$
+
+**Step 3 — Second assignment, without early rounding:**
+
+| Point | To $\mu_1$, squared | To $\mu_2$, squared | Cluster |
+|---|---:|---:|---:|
+| $(1,1)$ | $20/9$ | $452/9$ | 1 |
+| $(2,1)$ | $5/9$ | $365/9$ | 1 |
+| $(4,3)$ | $41/9$ | $113/9$ | 1 |
+| $(5,4)$ | $113/9$ | $41/9$ | 2 |
+| $(6,6)$ | $290/9$ | $2/9$ | 2 |
+| $(8,7)$ | $545/9$ | $41/9$ | 2 |
+
+Assignments unchanged, so second update same centroids deta hai.
+
+**Step 4 — Part (i):**
+
+$$C=\mu_1+\mu_2=\left(\frac{26}3,\frac{22}3\right),\qquad\boxed{|C_x+C_y|=16}.$$
+
+Agar question Euclidean norm poochhta, answer $\sqrt{26^2+22^2}/3$ hota; coordinate sum ko vector norm mat samjho.
+
+**Step 5 — Part (ii):** Assigned-center column se costs lo:
+
+$$J=\frac{20+5+41+41+2+41}{9}=\boxed{\frac{50}3\approx16.6667}.$$
+
+PDF ka 16.68 rounded intermediate distances ka sum hai; exact answer $50/3$ hai. Source mein ek line $(8,8)$ likhti hai, lekin given point **$(8,7)$** hai. Second-iteration table mein kuch cross-distances bhi incorrect hain; upar exact values hain.
+
+**Useful property:** Equal-size clusters (here 3 each) mein $\mu_1+\mu_2=2\bar x$. Unequal sizes par simple average of means generally wrong; use $\bar x=\sum_j |C_j|\mu_j/n$.
+
+---
+
 ### 2.2 Iteration counting ka trap
 
 Jul 2023 Quiz 1 Q23 mein points $(1,1),(2,1),(4,3),(5,4)$ aur initial centers $(0,0),(4,4)$ hain. Initial squared-distance pairs $(2,18),(5,13),(25,1),(41,1)$ se groups first two / last two bante hain. Means $(1.5,1),(4.5,3.5)$.
@@ -523,6 +581,80 @@ Yeh objective-minimum ka answer hai; meaningful grouping ke liye 1000 clusters z
 
 ---
 
+### Q47 — WCSS trend aur strict inequality ka trap
+
+**Question:** Suppose you have 300 data points. After performing K-means clustering, for $k=3,5,10,50$, you calculate the sum of squared distances between points and their respective cluster centroids as follows:
+
+| Number of clusters | SSD |
+|---|---|
+| 3 | $a$ |
+| 5 | $b$ |
+| 10 | $c$ |
+| 50 | $d$ |
+
+What type of relation among $a,b,c$ and $d$ holds true in a general scenario?
+
+(i) $a<b<c<d$
+
+(ii) $a=b=c=d$
+
+(iii) $b<d$
+
+(iv) $a>d$
+
+(v) $a<b$
+
+(vi) None of the above
+
+`Week 3.pdf`, Q1, pp. 2–3; options column-wise listed hain.
+
+**Step 1:** Section 3.3 ka rule optimal costs ke liye $a\ge b\ge c\ge d$ hai. Typical improving fit mein **(iv) $a>d$** intended choice hai.
+
+**Step 2 — Strict guarantee nahi:** 300 identical points hon toh all costs zero; $a>d$ false. Independent local runs ka ordering bhi guaranteed nahi. Thus agar “holds true” ka meaning **every dataset/run par guaranteed** hai, **(vi)** correct interpretation hai. PDF explanation typical decreasing trend batati hai, strict theorem nahi.
+
+Same property ke liye separate long proof nahi chahiye; $K$ badhana aur Lloyd iterations badhana alag comparisons hain.
+
+### 3.4 Loss plus complexity penalty se K choose karna
+
+**Definition:** Penalized score fit error ke saath extra clusters ka cost add karta hai:
+
+$$\boxed{F(K)=J(K)+P(K),\qquad K_{\rm chosen}\in\arg\min_K F(K)}.$$
+
+**Real life:** Har customer ke liye separate service branch distance error kam karegi, lekin har branch ka cost bhi hai. Penalty isi complexity cost ko represent karti hai.
+
+- Typical loss decreases as $K$ increases; increasing penalty extra clusters discourage karti hai.
+- $P(K)=\lambda K$ ek possible choice hai, universal formula nahi.
+- Penalty specify kiye bina unique best $K$ claim nahi kar sakte.
+- Minimum **sum** dekho; loss aur penalty ka intersection necessarily optimum nahi.
+
+### Q48 — Identify loss, penalty and best K from the graph
+
+**Question:** After running k-means clustering on a dataset, we get the following plots. The blue plots are the sum of the red and black plots.
+
+![Supplied PDF Q7 loss, penalty and combined score](images/new_penalty_source.png)
+
+Based on the general behaviour of the k-means algorithm, answer the following questions:
+
+(i) Which coloured plot could possibly represent the loss function for different choices of $k$?
+
+(ii) Which coloured plot could possibly represent the penalty function for different choices of $k$?
+
+(iii) What could be a good choice of $k$ from the given scatter plots?
+
+`Week 3.pdf`, Q7, pp. 33–34.
+
+**Step 1:** Red decreases with $K$: loss $J(K)$.
+
+**Step 2:** Black increases with $K$: penalty $P(K)$.
+
+**Step 3:** Blue is $F(K)=J(K)+P(K)$. Graph ka lowest blue point $K=13$ par hai.
+
+$$\boxed{\text{Loss: red; penalty: black; selected }K=13}.$$
+
+**Property:** Fixed candidate $K$ par one-cluster improvement worthwhile tab hai jab loss reduction penalty increase se greater ho: $J(K)-J(K+1)>P(K+1)-P(K)$. Yeh local comparison hai; global choice ke liye sab candidate totals compare karo.
+
+---
+
 ## 4. Cluster geometry: Boundary aur convexity
 
 ### 4.1 Nearest-center boundary
@@ -536,6 +668,62 @@ Boundary centers ko join karne wale segment ki perpendicular bisector hai. Examp
 ![Perpendicular bisector example](images/bisector.png)
 
 Sep 2024 End Term Q13 mein recorded boundary $2x_1+x_2=0$ hai. Yeh valid **linear form** hai, lekin exact centers/figure available nahi; sirf linear hone se isi specific equation ko correct option prove nahi kar sakte.
+
+### Q49 — PCA scores par K-Means, phir updated boundary
+
+**Question:** You are working with a dataset containing 1000 data points, each with 50 features. Directly applying K-means to the full 50-dimensional dataset is computationally expensive. To address this, you decide to use Principal Component Analysis (PCA) to reduce the dimensionality of the dataset before applying K-means.
+
+After performing PCA, you retain only the first 2 principal components (PC1 and PC2), which together explain 90% of the variance in the dataset. Let the first four transformed data-points are:
+
+$$X_{\rm PCA}=\begin{bmatrix}1&2&0&2\\2&1&2&3\end{bmatrix}.$$
+
+Run the k-means with $k=2$ using the following centroids on the above given four data-points:
+
+$$C_1=(1,2),\qquad C_2=(2.5,3).$$
+
+What is the equation of Voronoi regions boundary?
+
+`Week 3.pdf`, Q3, pp. 15–20. Columns are the four points; remaining 996 points are not supplied or used in this requested run.
+
+**Step 1 — Assign to given centers:**
+
+| Point | To $(1,2)$, squared | To $(2.5,3)$, squared | Group |
+|---|---:|---:|---:|
+| $(1,2)$ | 0 | $13/4$ | 1 |
+| $(2,1)$ | 2 | $17/4$ | 1 |
+| $(0,2)$ | 1 | $29/4$ | 1 |
+| $(2,3)$ | 2 | $1/4$ | 2 |
+
+PDF gives $7.25=29/4$ for third point; use exact values throughout.
+
+**Step 2 — Updated means:**
+
+$$\mu_1=(1,5/3),\qquad\mu_2=(2,3).$$
+
+Updated squared-distance pairs are $(1/9,2)$, $(13/9,4)$, $(10/9,5)$, $(25/9,0)$ respectively. Same groups, so means stable.
+
+**Step 3 — Equidistance equation:** For a test score $(u,v)$,
+
+$$2(u,v)^T(\mu_2-\mu_1)=\|\mu_2\|^2-\|\mu_1\|^2.$$
+
+$$2u+\frac83v=13-\frac{34}{9}=\frac{83}{9}.$$
+
+$$\boxed{18u+24v=83},\qquad\boxed{v=-\frac34u+\frac{83}{24}}.$$
+
+**Step 4 — Region sides:** Substituting $\mu_1$ gives 58, below 83; substituting $\mu_2$ gives 108, above 83. Thus cluster 1 side $18u+24v<83$, cluster 2 side $>83$; equality needs tie handling.
+
+![PCA-space data, stable means and their boundary](images/new_pca_boundary.png)
+
+**Stage check:** Boundary of the **initial** centers would be $3u+2v=41/4$. Question solution runs the update first, so answer uses updated means.
+
+**PCA-to-clustering properties:**
+
+- One Lloyd assignment pass costs roughly $O(nKd)$; retained dimension 2 replaces 50 in the clustering pass. PCA itself also has a cost.
+- 90% retained variance is not 90% clustering accuracy and does not guarantee the same clusters. Low-variance discarded directions can contain separating information.
+- Full orthonormal rotation preserves Euclidean distances; truncating to two PCs generally changes them.
+- Boundary above lives in PC-score coordinates. Raw-space boundary needs the fitted loadings $W$ and training mean $m$: scores $W^T(x-m)$ can be substituted into it. Those quantities are not provided.
+
+---
 
 ### 4.2 Voronoi cell aur convex hull
 
@@ -554,6 +742,74 @@ Boundary ties par consistent center-priority rule use karo; arbitrary point-depe
 **Counterexample:** Ring-shaped region ka opposite ends join karne wala segment empty middle se guzarta hai, so region non-convex. Standard Euclidean nearest-center cell aisa ring nahi ho sakta. $K=2$ mein do distinct centers ke regions ko ek straight line separate karti hai.
 
 Oct 2022 Quiz 1 Q24 impossible-shape question isi property par based hai. Supplied MD aur PDF mein option figures absent hain; recorded A,B,D ko option-wise verify nahi kiya ja sakta.
+
+---
+
+### Q50 — Three complete Voronoi regions from half-spaces
+
+**Question:** We have 12 data points in $\mathbb R^2$. There are three clusters. Each color in the image below represents a cluster.
+
+![Supplied three colored clusters](images/new_regions_source.png)
+
+(i) Find the center of every cluster.
+
+(ii) Have a look at the following sets and find all the Voronoi regions using the sets above.
+
+| Set | Condition on $(x,y)\in\mathbb R^2$ |
+|---|---|
+| $S_1$ | $3x+5y<34$ |
+| $S_2$ | $3x+5y>34$ |
+| $S_3$ | $5x-3y>17$ |
+| $S_4$ | $5x-3y<17$ |
+| $S_5$ | $x<8$ |
+| $S_6$ | $x>8$ |
+| $S_7$ | $y>5$ |
+| $S_8$ | $y<5$ |
+| $S_9$ | $5y-3x>16$ |
+| $S_{10}$ | $5y-3x<16$ |
+| $S_{11}$ | $5x+3y>47$ |
+| $S_{12}$ | $5x+3y<47$ |
+
+`Week 3.pdf`, Q5, pp. 24–30.
+
+**Step 1 — Read points and calculate means:**
+
+- Green: $(7,9),(9,7),(7,7),(9,9)$; mean $G=(32/4,32/4)=(8,8)$.
+- Red: $(3,4),(3,6),(1,5),(5,5)$; mean $R=(12/4,20/4)=(3,5)$.
+- Violet: $(7,2),(9,2),(8,3),(8,1)$; mean $V=(32/4,8/4)=(8,2)$.
+
+**Step 2 — Green versus violet:** Centers vertical hain; midpoint $(8,5)$ se horizontal bisector $y=5$. Green side $y>5$, violet side $y<5$.
+
+**Step 3 — Red versus violet:** Equidistance formula gives
+
+$$2(x,y)^T(V-R)=\|V\|^2-\|R\|^2=68-34,$$
+
+$$10x-6y=34\Rightarrow\boxed{5x-3y=17}.$$
+
+At violet center value 34, hence violet side $>17$; at red center value 0, hence red side $<17$.
+
+**Step 4 — Red versus green:**
+
+$$2(x,y)^T(G-R)=128-34\Rightarrow10x+6y=94,$$
+
+$$\boxed{5x+3y=47}.$$
+
+At green center value 64, hence green side $>47$; at red center value 30, hence red side $<47$.
+
+**Step 5 — Beat both competitors, so intersect:**
+
+$$\boxed{V_{\rm violet}^{\circ}=S_3\cap S_8},\qquad
+\boxed{V_{\rm green}^{\circ}=S_7\cap S_{11}},\qquad
+\boxed{V_{\rm red}^{\circ}=S_4\cap S_{12}}.$$
+
+![Actual Voronoi cells and active boundary rays](images/new_voronoi_regions.png)
+
+**Properties and traps:**
+
+- $S_1,S_2,S_5,S_6,S_9,S_{10}$ describe sides of lines **joining centers**, not their perpendicular bisectors. They are distractors.
+- A point must beat **every** competing center: use intersection, not union.
+- Given sets use strict inequalities, so answers describe cell interiors. Include equality for closed Voronoi cells; hard labels on ties need an explicit rule.
+- Bisectors meet at $(32/5,5)$. Only appropriate rays form actual cell boundaries: the other portion of a pairwise bisector can be closer to the third center.
 
 ---
 
@@ -599,6 +855,45 @@ $$\boxed{A,C,D}.$$
 **B not guaranteed** ka matlab B definitely kisi aur cluster mein hai nahi. Actual cell square se bada bhi ho sakta hai.
 
 Same convexity pattern: Jan 2025 Quiz 1 Q7 mein $(0,1),(1,1)$ ke between $(0.2,1)$ guaranteed; Sep 2026 End Term Q18 mein $(2,2),(2,-2)$ ka midpoint $(2,0)$ guaranteed. Alag full solution ki need nahi; segment rule same hai.
+
+---
+
+### Q51 — Coincident centroids: A tie-handling exception
+
+**Question:** There are 8 data points, $d_1,\ldots,d_8$. Let $k=2$. After running the Lloyd's k-means algorithm, is it possible to have the following:
+
+(i) Data points in cluster 1: $\{d_1,d_3,d_6,d_8\}$.
+
+(ii) Data points in cluster 2: $\{d_2,d_4,d_5,d_7\}$.
+
+![Supplied eight-point dataset](images/new_tie_source.png)
+
+`Week 3.pdf`, Q6, pp. 31–32. Figure coordinates:
+
+$$d_1=(1,1),\ d_2=(3,1),\ d_3=(1,3),\ d_4=(3,3),$$
+$$d_5=(5,3),\ d_6=(7,3),\ d_7=(5,5),\ d_8=(7,5).$$
+
+**Step 1 — Calculate both means:**
+
+$$\mu_1=\frac{(1,1)+(1,3)+(7,3)+(7,5)}4=(4,3),$$
+
+$$\mu_2=\frac{(3,1)+(3,3)+(5,3)+(5,5)}4=(4,3).$$
+
+**Step 2 — Every assignment is tied:** Since centers coincide, every point is equally distant from both. Equal centers do **not** automatically mean “no reassignment.”
+
+**Step 3 — State the tie rule:** Initialize with the listed groups and retain a point's previous label on a tie. All labels remain unchanged; means stay $(4,3)$. Thus $\boxed{\text{Yes, possible under retain-previous-label ties}}$.
+
+If all ties go to the lowest-index center, all points go to cluster 1 instead; cluster 2 becomes empty and needs handling. Result is not guaranteed for every implementation.
+
+**Step 4 — Stability does not imply best clustering:** Current cost is
+
+$$J=13+5+9+1+1+9+5+13=56.$$
+
+Alternative left four / right four groups have means $(2,2),(6,4)$, with each of eight squared distances equal to 2, so cost 16. Hence this stable tied result is worse than an available partition.
+
+**Geometry property:** Distinct centers have a proper separating bisector. Identical centers tie everywhere; their closed nearest-center cells both equal the whole space. History-based tie labels can interleave, so the usual disjoint convex-region picture cannot be applied blindly to those labels.
+
+Source answer's second label list accidentally repeats $d_6,d_8$; question's groups and its computed second mean use $d_2,d_4,d_5,d_7$ as above.
 
 ---
 
@@ -757,6 +1052,31 @@ Mar 2026 Quiz 1 Q34 bhi third-center minimum-distance rule test karta hai. Uske 
 
 ---
 
+### Q46(iii) — Same six points, third-center sampling
+
+Use Q46 ka original dataset and **given initial centers** $(2,1),(6,6)$, not its updated Lloyd means. Yeh already-stated question ka remaining subpart hai.
+
+**Step 1 — Nearest selected-center squared scores:** Q46 ki initial table se row-wise minimum:
+
+$$D_i^2=(1,0,8,5,0,5).$$
+
+**Step 2 — Normalize:** Total $1+0+8+5+0+5=19$.
+
+| Candidate | Probability |
+|---|---:|
+| $(1,1)$ | $1/19$ |
+| $(2,1)$ | 0 |
+| $(4,3)$ | $8/19$ |
+| $(5,4)$ | $5/19$ |
+| $(6,6)$ | 0 |
+| $(8,7)$ | $5/19$ |
+
+**Step 3 — Interpret:** Most likely candidate $\boxed{(4,3)}$, probability $\boxed{8/19\approx0.4211}$. All probabilities sum to 1. Question target point specify nahi karta, isliye full distribution diya hai; PDF most likely point ka answer deta hai.
+
+PDF ka “take maximum” sentence deterministic selection suggest karta hai. Standard K-Means++ **samples**; most likely point select hona guaranteed nahi. Pehle se selected two centers ki probability dobara multiply nahi karni.
+
+---
+
 ### Q31 — Probabilities aur assignment ties
 
 **Question:**
@@ -905,6 +1225,45 @@ Unordered pair $\{a,b\}$ ke liye $P(a,b)+P(b,a)$; second direction ka denominato
 **Example:** Points $\{0,1,3\}$, ordered pair $(0,3)$: first probability $1/3$, conditional second $9/(1+9)$, joint $3/10$. Reverse $(3,0)$: $(1/3)\cdot9/(9+4)=3/13$. Unordered pair probability $3/10+3/13=69/130$.
 
 Oct 2022 Quiz 1 Q22 isi ordered-pair skill par hai. Uske six-point coordinates/figure MD aur PDF mein missing hain; listed 0.033,0.017,0.067 ko reconstruct nahi kiya ja sakta. Formula ke complete numerical example se method samjho.
+
+### 5.3 Expected approximation guarantee: Average guarantee, exact optimum nahi
+
+**Definition:** Expected cost means initialization randomness par average objective. Ek individual run ka objective expectation ke equal hona required nahi.
+
+Standard squared-Euclidean K-Means++ ke liye classical bound:
+
+$$\boxed{\mathbb E[J_{\rm seed}]\le8(\ln K+2)J_K^*}.$$
+
+$J_K^*$ same dataset aur same $K$ ka globally minimum cost hai. Subsequent Lloyd steps cost increase nahi karte, so $\mathbb E[J_{\rm final}]\le\mathbb E[J_{\rm seed}]$ and same upper bound applies. [Arthur–Vassilvitskii theorem](https://theory.stanford.edu/~sergei/papers/kMeansPP-soda.pdf).
+
+**Properties:**
+
+- Guarantee **expectation** par hai, every random run par nahi.
+- Factor $K$ par logarithmically depend karta hai. Fixed $K$ ke liye constant multiplier hai; all $K$ ke liye one universal constant ka claim nahi.
+- Guarantee global optimum exactly attain karna nahi kehti.
+- Poor initialization slow convergence laa sakti hai; bound fixed iteration count promise nahi karta.
+
+### Q52 — Deterministic initialization versus expected-cost bound
+
+**Question:** Which of the following is/are true?
+
+(i) The initialization of cluster centers is done in a deterministic way in k-means++ algorithm.
+
+(ii) A constant multiple of the objective function's value for the best possible k-clusters gives an upper bound for the expected value of the objective function after the convergence of k-means++ algorithm.
+
+`Week 3.pdf`, Q8, pp. 35–36.
+
+**Step 1:** First center uniform random; later centers $D^2$-weighted random samples. Statement (i) false. Fixing a random seed makes a run reproducible, not the underlying method deterministic.
+
+**Step 2:** For fixed $K$, the stated expected upper bound follows from the property above and non-increasing Lloyd updates. Statement (ii) true in that sense.
+
+$$\boxed{\text{Only statement (ii), with the fixed-}K\text{ interpretation}}.$$
+
+Question theorem identify karna poochhta hai, proof nahi; full approximation-proof ki need nahi.
+
+**Related repeat — PDF Q4 (pp. 21–23):** Different starts can give different clusters; nearest-center assignment; poor initialization can slow convergence: **true**. Non-convergence under standard assumptions and guaranteed global optimum: **false**. “K-Means++ initializes randomly, just like standard K-Means” ambiguous hai: **both randomized** hain, but same uniform seeding scheme nahi. PDF last interpretation mein false marks karta hai; K-Means++ ko deterministic mat samjho.
+
+---
 
 ## 6. Distance variants: Question ka metric follow karo
 
@@ -1093,5 +1452,9 @@ Low WCSS alone strong separation prove nahi karta; two compact groups bahut paas
 | Ordered selection | First probability × conditional next probability |
 | Manhattan | Sum of absolute coordinate differences |
 | Silhouette | $(b-a)/\max(a,b)$; $b$ uses cluster-average distances |
+| Penalized K selection | Minimize $J(K)+P(K)$, not just WCSS |
+| Three-center region | Intersect half-spaces against every competing center |
+| Coincident centers | All points tie; state tie and empty-cluster rules |
+| K-Means++ expected cost | Classical bound $8(\ln K+2)J_K^*$, not per-run optimality |
 
 Question solve karne se pehle four things circle karo: **given centers ya assignments, distance metric, asked iteration/stage, tie convention**. Final means nikalne ke baad assignment stability check karo. Initialization, final partition aur optimality teen separate ideas hain.

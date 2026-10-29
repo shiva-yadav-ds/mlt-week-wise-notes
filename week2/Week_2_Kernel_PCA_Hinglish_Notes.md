@@ -98,6 +98,8 @@ PDF mein $\alpha^T\alpha=1$ written hai; general correct condition **kernel-weig
 
 If covariance eigenvalue $\lambda_j$ given ho, $\mu_j=n\lambda_j$, so denominator $\sqrt{n\lambda_j}$. Symbols se nahi, matrix ki definition se scale decide karo.
 
+**Same question:** `Week 2.pdf`, Q5 (pp. 14–15), isi Q2 ke three subparts repeat karta hai. Trace option **(b)** hai; supplied new PDF bhi PC2 variance **8** deta hai. Upar ka centered-rank caveat phir bhi apply hota hai.
+
 ### Q3 — Coefficient normalization with inconsistent printed data
 
 **Question:** For $d>n$, a principal direction is written as $w=\sum_i\alpha_i x_i$. The eigenvalue of $X^TX$ is 10, and the corresponding vector, described as a unit eigenvector, is $(2,3,4,6)^T/\sqrt{54}$. Find $\alpha_2$.
@@ -133,6 +135,26 @@ Identify the errors and give the corrected procedure.
 **Correct flow:** Center → points as columns → $X^TX$ → positive eigenpairs → $Xe_i/\sqrt{\lambda_i}$.
 
 $XX^T$ ordinary PCA ke liye inherently wrong nahi. But is stated dual algorithm mein expensive bhi hai aur step 4 ke dimensions se incompatible bhi: its eigenvector has length $d$, while $X$ needs a length-$n$ multiplier.
+
+#### Q4 ka extra error — Eigenvalue versus square-root eigenvalue
+
+`Week 2.pdf`, Q7 (p. 19), mein same algorithm hai, lekin last line mein ek additional error hai.
+
+**Question:** “The $i^{th}$ principal component is given by $Xe_i/l_i$.” Find the error.
+
+**Step 1 — Correct matrix first:** Upar Q4 ke according centered $X$ se $K=X^TX$ banao; $Ke_i=l_i e_i$, $l_i>0$, aur $\|e_i\|=1$ use karo.
+
+**Step 2 — Actual length check:**
+
+$$\|Xe_i\|^2=e_i^TX^TXe_i=l_i,\qquad\|Xe_i\|=\sqrt{l_i}.$$
+
+**Step 3 — Unit direction:**
+
+$$\boxed{w_i=\frac{Xe_i}{\sqrt{l_i}}}.$$
+
+$l_i$ se divide karne par length $1/\sqrt{l_i}$ hogi, generally 1 nahi. Example: $l_i=4$ ho toh $Xe_i$ ki length 2; divide by 4 gives length $1/2$, divide by 2 gives length 1.
+
+**Three errors to catch together:** missing centering; $XX^T$ instead of smaller $X^TX$ for this dual algorithm; $l_i$ instead of $\sqrt{l_i}$.
 
 ### Q5 — Projection using a unit Gram eigenvector
 
@@ -228,6 +250,12 @@ Higher degree more feature interactions represent karta hai, so nonlinear flexib
 
 **Step 3:** Yes, higher degree allows higher-order interactions. In case (d), $n=1000,d=20,D=1771$ are three different quantities. Another source revision case $d=2,p=3$ gives $\binom53=10$.
 
+**Same feature-count types:** `Week 2.pdf`, Q11 (p. 23), mein **200 examples, 3 features, degree 2** hai: Q8(b) ka same $\binom52=10$. Q9 (p. 23) Q8(c) ka graph-based version hai; naya numerical solve repeat nahi karna.
+
+![Week 2 PDF Q9: the supplied curved two-dimensional dataset](images/08_source_quadratic_dataset.png)
+
+**Graph ko kaise read karein:** Points approximately U-shaped quadratic trend par hain. Degree 2 ka inhomogeneous kernel six monomial coordinates deta hai. Figure se exact $x_2=x_1^2$ equation ya exact zero reconstruction error infer nahi karna—scale aur scatter bhi matter karte hain. Ambient dimension **6** hai; points ka actual rank alag quantity hai.
+
 ### 4.2 Expand → match → square-root coefficients
 
 Feature maps need not be unique. Coordinate reordering or an orthogonal transformation gives the same dot products. Valid map check ka best method: $\phi(x)^T\phi(y)$ expand karke compare karo.
@@ -264,6 +292,54 @@ No $\sqrt2$ needed. Six entries, but kernel differs from A: same feature count d
 
 **Numerical check:** $x=(1,2),y=(3,4)$ has dot product 11. Thus $k_A=144$, $k_B=122$, while $k_C=1+3+8+9+64+24=109$. Distinct answers catch bracket/coefficient mistakes.
 
+### Q9A — Homogeneous quadratic kernel: Constant feature bhi remove hota hai
+
+**Connection:** Q9 mein $(x^Ty+1)^2$ aur $(x^Ty)^2+1$ dekhe. Ab third bracket pattern $(x^Ty)^2$ ko compare karo: ismein linear aur constant terms dono absent hain.
+
+**Question:** Consider the following kernel
+
+$$k:\mathbb R^2\times\mathbb R^2\to\mathbb R,\qquad k(x,y)=(x^Ty)^2,$$
+
+where $x=(x_1,x_2)$ and $y=(y_1,y_2)$. Which of the following transformation $\phi$ may corresponds to $k$?
+
+(i) $\phi([x_1,x_2]^T)=[x_1,x_1x_2,x_2]^T$
+
+(ii) $\phi([x_1,x_2]^T)=[x_1^2,x_1+x_2,x_2^2]^T$
+
+(iii) $\phi([x_1,x_2]^T)=[x_1,\sqrt2x_1^2x_2^2,x_2]^T$
+
+(iv) $\phi([x_1,x_2]^T)=[x_1^2,\sqrt2x_1x_2,x_2^2]^T$
+
+`Week 2.pdf`, Q2, pp. 6–7; options source order mein hain.
+
+**Step 1 — Dot product expand karo:**
+
+$$x^Ty=x_1y_1+x_2y_2.$$
+
+$$k(x,y)=x_1^2y_1^2+2x_1x_2y_1y_2+x_2^2y_2^2.$$
+
+**Step 2 — Har product ki feature identify karo:**
+
+- $x_1^2y_1^2$ ke liye coordinate $x_1^2$.
+- $2x_1x_2y_1y_2$ ke liye coordinate $\sqrt2x_1x_2$.
+- $x_2^2y_2^2$ ke liye coordinate $x_2^2$.
+
+**Step 3 — Verify:**
+
+$$\phi(x)^T\phi(y)=x_1^2y_1^2+(\sqrt2x_1x_2)(\sqrt2y_1y_2)+x_2^2y_2^2=k(x,y).$$
+
+$$\boxed{\text{Option (iv)},\quad D=\binom{2+2-1}{2}=3}.$$
+
+**Step 4 — Wrong options ka short check:**
+
+- (i) $x=y=(2,0)$ par map norm squared 4, required kernel value 16.
+- (ii) $x=y=(1,0)$ par map norm squared 2, required 1.
+- (iii) $x=y=(2,0)$ par map norm squared 4, required 16.
+
+**Property:** Same degree 2 hone se same feature count nahi hota: $(x^Ty)^2$ has **3**, $(x^Ty)^2+1$ has **4**, and $(x^Ty+1)^2$ has **6** standard features in $\mathbb R^2$.
+
+`Week 2.pdf`, Q10 (p. 23), exactly Q9 Part C ka six-term kernel hai; uska map aur calculation wahin covered hai.
+
 ### Q10 — Hyperbola becomes a linear constraint
 
 **Question:** All points satisfy $x_1^2/a^2-x_2^2/b^2=1$, where $a,b\ne0$. For
@@ -281,6 +357,87 @@ $$\boxed{u=(1/a^2,0,0,-1/b^2,0,-1)^T}.$$
 **Step 3:** $u^T\phi(x)=x_1^2/a^2-x_2^2/b^2-1=0$. Hence all mapped points normal $u$ ke perpendicular subspace mein hain.
 
 Unit direction requested ho toh $u/\sqrt{a^{-4}+b^{-4}+1}$ use karo. Nonzero scalar multiple bhi orthogonal vector hai. Nonlinear raw relation ka linear feature-space constraint mil gaya.
+
+### 4.3 Reverse connection: Feature-space normal se raw-space curve
+
+**Definition:** $u^T\phi(x)=0$ feature space ka linear constraint hai. $\phi(x)$ substitute karne par original coordinates mein nonlinear equation mil sakti hai.
+
+**Real-life connection:** Raw measurements curved pattern follow karein, toh squared/interaction features mein woh same relation ek linear equation ban sakta hai. Ab Q10 ka direction reverse karenge: curve se normal nahi, normal se curve nikaalenge.
+
+**Property:** Coordinate order fixed rakhna. $\phi(x)$ reorder karoge toh $u$ bhi same order mein reorder karna padega. “Nullspace of vector $u$” ka precise meaning yahan $\ker(u^T)$ hai.
+
+### Q10A — Shifted ellipse from a feature-space constraint
+
+**Question:** Every element in a dataset $D$ is a vector of $\mathbb R^3$. $k:D\times D\to\mathbb R$ is defined as follows:
+
+$$k(x,x')=(x^Tx'+1)^2.$$
+
+Every data point in a dataset is an element of $\mathbb R^2$. Every column vector is a data point. Using $\phi:\mathbb R^2\to\mathbb R^6$, we map every data point to $\mathbb R^6$.
+
+The following observation is made:
+
+$$\phi(x)^T\phi(y)=k(x,y),$$
+
+where $k(x,y)=(x^Ty+1)^2$ for every $x$ and $y$ in the data set.
+
+Every data point in the mapped space is in the nullspace of vector $u$, where
+
+$$u=\left(\frac1{a^2},\frac{-\sqrt2h}{a^2},\frac1{b^2},\frac{-\sqrt2k}{b^2},0,\frac{h^2}{a^2}+\frac{y^2}{k^2}-r^2\right)^T,\quad a,b,k,h\in\mathbb R.$$
+
+(i) What could possibly be $\phi(x)$, if $x=(x_1,x_2)$?
+
+(ii) What could possibly be the relationship between the features of every data point in $\mathbb R^2$?
+
+`Week 2.pdf`, Q6, pp. 16–18. Upar printed question preserve kiya hai; PDF ke handwritten corrections mein first $\mathbb R^3$ ko $\mathbb R^2$ aur last coordinate ke $y^2/k^2$ ko $k^2/b^2$ kiya gaya hai. Neeche **isi corrected interpretation** ko solve kar rahe hain. Printed $y$ otherwise unspecified hai; silently usse $k$ assume nahi karna. Require $a,b\ne0$, and take real $r$.
+
+**Step 1 — Map ko $u$ ke order se match karo:**
+
+$$\boxed{\phi(x)=(x_1^2,\sqrt2x_1,x_2^2,\sqrt2x_2,\sqrt2x_1x_2,1)^T}.$$
+
+Yeh Q9 Part A ka reordered map hai. Its dot product:
+
+$$x_1^2y_1^2+2x_1y_1+x_2^2y_2^2+2x_2y_2+2x_1x_2y_1y_2+1=(x^Ty+1)^2.$$
+
+**Step 2 — Corrected normal likho:**
+
+$$u_c=\left(\frac1{a^2},\frac{-\sqrt2h}{a^2},\frac1{b^2},\frac{-\sqrt2k}{b^2},0,\frac{h^2}{a^2}+\frac{k^2}{b^2}-r^2\right)^T.$$
+
+**Step 3 — $u_c^T\phi(x)=0$ term by term:**
+
+$$\frac{x_1^2}{a^2}-\frac{2hx_1}{a^2}+\frac{x_2^2}{b^2}-\frac{2kx_2}{b^2}+\frac{h^2}{a^2}+\frac{k^2}{b^2}-r^2=0.$$
+
+Cross term absent hai because $u_c$ ka fifth coordinate zero hai. $\sqrt2\times\sqrt2=2$ linear coefficients mein use hua.
+
+**Step 4 — Complete squares:**
+
+$$\frac{x_1^2-2hx_1+h^2}{a^2}+\frac{x_2^2-2kx_2+k^2}{b^2}=r^2.$$
+
+$$\boxed{\frac{(x_1-h)^2}{a^2}+\frac{(x_2-k)^2}{b^2}=r^2}.$$
+
+**Step 5 — Geometry read karo:**
+
+- $r\ne0$: ellipse centered at $(h,k)$.
+- Horizontal semi-axis $|ar|$; vertical semi-axis $|br|$.
+- $r=1$: familiar form with right-hand side 1.
+- $r=0$: equation sirf single point $(h,k)$ deti hai; nondegenerate ellipse nahi.
+
+PDF ki printed solution mein $x_2$ ki jagah $y_1$, aur general $r^2$ ki jagah 1 aa gaya hai. Right-hand side 1 sirf $r^2=1$ par valid hai; handwritten correction bhi $r^2$ retain karti hai.
+
+![Shifted ellipse in raw space and its linear relation after transformation](images/09_shifted_ellipse.png)
+
+**Step 6 — Concrete check:** Figure ke liye $a=2,b=1,h=1,k=-1,r=1$ choose kiya. Point $(3,-1)$ par
+
+$$\frac{(3-1)^2}{4}+(-1+1)^2=1.$$
+
+Corrected normal aur map ka dot product bhi zero milta hai. Is tarah equation aur feature-space constraint independently match kar sakte hain.
+
+**Printed expression ko literally use karne par:** Last coordinate ko fixed constant $c$ likho. Same steps se
+
+$$\frac{(x_1-h)^2}{a^2}+\frac{(x_2-k)^2}{b^2}=\frac{h^2}{a^2}+\frac{k^2}{b^2}-c.$$
+
+Thus fixed $c=h^2/a^2+y^2/k^2-r^2$ ho toh RHS $r^2+k^2/b^2-y^2/k^2$ hai, automatically $r^2$ nahi. Agar $y$ varying input hai, $u$ fixed normal hi nahi rahega.
+
+**Same question:** `Week 2.pdf`, Q8 (pp. 20–22), Q10 ka hyperbola-to-normal direction repeat karta hai; usko dobara solve nahi kiya.
 
 ## 5. Valid kernels: Symmetry plus PSD
 
@@ -376,6 +533,8 @@ $$\boxed{\text{Invalid: symmetry fails}}.$$
 
 No eigendecomposition needed after finding this counterexample.
 
+**Same symmetry-test type:** `Week 2.pdf`, Q3 (pp. 8–9), mein expression $k(s,t)=st+s^2t^2+s^3t+1$ hai. Q15 ka swap-input method directly apply hota hai: $k(1,2)=9$ aur $k(2,1)=15$, so **No**. Formula different hai, lekin solution technique same—alag full worked question ki zarurat nahi.
+
 ### Q16 — Kernel validity plus matrix properties
 
 **Question:** Which statements are true?
@@ -440,6 +599,81 @@ Negative off-diagonal possible: if $x_i^Tx_j=-3$, polynomial contribution $3(-2)
 
 PDF quotes $k(x_2,x_4)\approx-24$ but does not give the needed pair coordinates/bandwidth there; that particular entry cannot be independently recomputed. Weighted sum kernel is valid because both components valid and weights nonnegative.
 
+### Q18A — Full four-point mixed-kernel matrix
+
+**Connection:** Q18 mein diagonal aur individual entries ka method covered hai. Naye PDF ne complete coordinates aur exact Gaussian exponent de diya hai; ab missing full matrix determine ho sakti hai.
+
+**Question:** Suppose $k_1(x,y)=\exp(-\|x-y\|^2)$ is a Gaussian (RBF) kernel and $k_2(x,y)=(x^Ty+1)^3$ is a polynomial kernel of degree 3. If a new kernel function $k$ is defined as
+
+$$k(x,y)=k_1(x,y)+3k_2(x,y),$$
+
+then find the kernel matrix $K$ for the following dataset:
+
+$$\left\{\begin{bmatrix}1\\2\end{bmatrix},\begin{bmatrix}-1\\2\end{bmatrix},\begin{bmatrix}1\\-2\end{bmatrix},\begin{bmatrix}-1\\-2\end{bmatrix}\right\}.$$
+
+`Week 2.pdf`, Q4, pp. 10–12.
+
+**Step 1 — Label and read the exponent:**
+
+$$x_1=(1,2)^T,\quad x_2=(-1,2)^T,\quad x_3=(1,-2)^T,\quad x_4=(-1,-2)^T.$$
+
+Given Gaussian is $e^{-\|x-y\|^2}$, so extra $1/2$ mat insert karo. Standard $e^{-\|x-y\|^2/(2\sigma^2)}$ notation mein $\sigma=1/\sqrt2$.
+
+**Step 2 — All diagonals:** Har point ki squared norm 5; Q18 ki same diagonal calculation gives $K_{ii}=649$.
+
+**Step 3 — Horizontal pair $(1,2)$:**
+
+$$x_1^Tx_2=1(-1)+2(2)=3,\qquad\|x_1-x_2\|^2=2^2+0^2=4.$$
+
+$$K_{12}=e^{-4}+3(3+1)^3=\boxed{192+e^{-4}\approx192.01831564}.$$
+
+Pair $(3,4)$ ki geometry same, so $K_{34}=K_{12}$.
+
+**Step 4 — Vertical pair $(1,3)$:**
+
+$$x_1^Tx_3=1(1)+2(-2)=-3,\qquad\|x_1-x_3\|^2=0^2+4^2=16.$$
+
+$$K_{13}=e^{-16}+3(-3+1)^3=\boxed{-24+e^{-16}\approx-23.99999989}.$$
+
+Similarly $K_{24}=K_{13}$. This supplies the previously missing data behind Q18's $k(x_2,x_4)\approx-24$.
+
+**Step 5 — Opposite-corner pair $(1,4)$:**
+
+$$x_1^Tx_4=1(-1)+2(-2)=-5,\qquad\|x_1-x_4\|^2=2^2+4^2=20.$$
+
+$$K_{14}=e^{-20}+3(-5+1)^3=\boxed{-192+e^{-20}\approx-191.999999998}.$$
+
+Similarly $K_{23}=K_{14}$.
+
+**Step 6 — Fill using symmetry:** Define $A=192+e^{-4}$, $B=-24+e^{-16}$, $C=-192+e^{-20}$.
+
+$$\boxed{K=\begin{bmatrix}
+649&A&B&C\\
+A&649&C&B\\
+B&C&649&A\\
+C&B&A&649
+\end{bmatrix}}.$$
+
+Two-decimal representation:
+
+$$\boxed{K\approx\begin{bmatrix}
+649.00&192.02&-24.00&-192.00\\
+192.02&649.00&-192.00&-24.00\\
+-24.00&-192.00&649.00&192.02\\
+-192.00&-24.00&192.02&649.00
+\end{bmatrix}}.$$
+
+PDF prints **192.01**; correct rounding of $192+e^{-4}$ to two decimals is **192.02**. Keep exponentials until the final step.
+
+![The four data points and their mixed-kernel matrix](images/10_mixed_kernel_matrix.png)
+
+**Checks and properties:**
+
+- $K=K^T$ and all diagonal entries equal 649.
+- Negative off-diagonals valid hain; PSD ka matlab entry-wise positive nahi.
+- Kernel valid hai because it is a nonnegative weighted sum of two valid kernels.
+- Yeh **raw** kernel matrix hai. Raw points ka mean zero hone ke bawajood nonlinear feature mean generally zero nahi—next section mein isi difference ko center karenge.
+
 ## 7. Kernel centering: Mean feature vector subtract karna
 
 ### 7.1 Raw centering is not feature-space centering
@@ -451,6 +685,28 @@ Let $\Phi=[\phi(x_1)\ \cdots\ \phi(x_n)]$, mean $m=\frac1n\sum_i\phi(x_i)$. Cent
 Kernel PCA uses their Gram matrix, without explicitly constructing $m$:
 
 $$\boxed{K_c=HKH},\qquad\boxed{H=I-\frac1n\mathbf1\mathbf1^T}.$$
+
+#### PDF Q1 ka hint — Mean subtraction se centering formula
+
+`Week 2.pdf`, Q1 (pp. 2–5), exactly Q20 ka matrix poochhta hai. Uska hint feature-space centering se formula obtain karne ko kehta hai; numerical solve Q20 mein ek hi baar rahega.
+
+**Question:** “First try to find how to center $\phi(X)$ using above hint and apply that idea to $K=\phi(X)^T\phi(X)$.” The hint gives the mean vector as $X\mathbf1/n$.
+
+**Step 1 — Mean ki repeated columns:** Put $\Phi=\phi(X)$ and $J=\mathbf1\mathbf1^T/n$. Then $\Phi J$ ki every column feature mean $m=\Phi\mathbf1/n$ hai.
+
+**Step 2 — Subtract from every feature vector:**
+
+$$\Phi_c=\Phi-\Phi J=\Phi(I-J)=\Phi H.$$
+
+**Step 3 — Centered inner products lo:** $J^T=J$, hence $H^T=H$.
+
+$$K_c=\Phi_c^T\Phi_c=H\Phi^T\Phi H=HKH.$$
+
+**Step 4 — Expand only the required identity:**
+
+$$\boxed{K_c=(I-J)K(I-J)=K-KJ-JK+JKJ}.$$
+
+$KJ$ row means repeat karta hai, $JK$ column means, aur $JKJ$ grand mean. Isi identity ka entry-wise version next subsection mein hai.
 
 ### 7.2 Entry-wise calculation
 
@@ -555,6 +811,8 @@ $$\boxed{k\leq\operatorname{rank}(K_c)\leq\min(D,n-1)}.$$
 Here upper bound 999 (or lower if feature rank smaller). **50 possible, 1001 impossible.** Source's $k\leq n$ is a loose bound; the sharper centered bound is $n-1$.
 
 For the final three-point master example, $n-1=2$, so $k>2$ nonzero PCs impossible even though feature space is 6D.
+
+**Same question:** `Week 2.pdf`, Q12 (p. 24), asks whether the first $k$ kernel PCs can exceed raw dimension $d$ for 1000 points. Q22 answers **Yes, if transformed rank permits it**. Naye PDF ke solution ka initial “No” standard PCA ke liye hai; Kernel PCA ke final answer ko “No” mat read karna. Centering ke baad sharper sample limit $999$ hai.
 
 ### 8.2 Complete training pipeline
 
@@ -783,6 +1041,10 @@ Raw $\alpha_j^Tq$ would give zero for both because coefficients sum to zero; it 
 | Q21–Q23 | Covariance scaling, rank bound, complete small eigensystem |
 | Q24–Q25 | Projection assumptions and linear-kernel consistency |
 | Q26 | Complete nonlinear pipeline plus properly centered new-point prediction |
+| Q4 extra error | Gram eigenvalue versus square-root normalization |
+| Q9A → Q10A | Homogeneous quadratic map → feature-space normal se shifted ellipse |
+| Q18A | Four-point mixed-kernel matrix with all distinct pair calculations |
+| Section 7.1 hint | Feature mean subtraction se kernel-centering identity |
 
 ### 11.1 Formula sheet
 

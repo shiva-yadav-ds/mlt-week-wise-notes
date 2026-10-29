@@ -44,14 +44,16 @@ for n,title,file,text in weeks:
 <title>Week {n} · {html.escape(title)} | MLT Notes</title>
 <script src="theme.js"></script>
 <link rel="stylesheet" href="style.css">
-<script>window.MathJax={{tex:{{inlineMath:[['$','$']],displayMath:[['$$','$$']],processEscapes:true}},options:{{skipHtmlTags:['script','noscript','style','textarea','pre','code']}},svg:{{fontCache:'global'}}}};</script>
+<script>window.MathJax={{tex:{{inlineMath:[['$','$']],displayMath:[['$$','$$']],processEscapes:true}},startup:{{typeset:false, pageReady:() => window.renderNotesMath()}},options:{{skipHtmlTags:['script','noscript','style','textarea','pre','code']}},svg:{{fontCache:'global'}}}};</script>
+<script defer src="navigation.js"></script>
+<script defer src="math.js"></script>
 <script defer src="vendor/tex-svg.js"></script></head>
 <body><a class="skip" href="#notes">Skip to notes</a>
 <header><a class="brand" href="index.html"><span class="brand-mark">m</span> MLT <span class="brand-muted">/ study notes</span></a><label class="theme-control">Theme <select id="theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label></header>
 <div class="layout"><aside class="weeks"><details open><summary>Course weeks <span>12</span></summary><nav aria-label="Course weeks">{nav}</nav></details></aside>
 <main id="notes"><div class="eyebrow">MACHINE LEARNING TECHNIQUES <span>/ WEEK {n:02}</span></div><article>{body}</article><nav class="next-prev" aria-label="Previous and next weeks">{prev}{nxt}</nav></main>
 <aside class="contents"><details open><summary>On this page</summary><nav aria-label="Topic index">{index}</nav></details></aside></div>
-<footer>MLT Notes <span>Learn one concept at a time.</span></footer>
+<footer>MLT Notes · Notes by Shiva <span>Learn one concept at a time.</span></footer>
 </body></html>'''
  (DIST/page_name(n)).write_text(page)
 print('Built 12 weeks with complete notes and topic indexes.')
