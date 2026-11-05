@@ -2,6 +2,8 @@
 
 **Flow:** Week 1 ki PCA → large feature dimension ka computational issue → Gram matrix → eigenvector normalization → nonlinear feature maps → valid kernels → feature-space centering → Kernel PCA scores → complete master problem.
 
+**Kernel PCA connection:** Ordinary PCA works with explicit centered coordinates. Kernel PCA uses their pairwise inner products instead. Form raw $K$, center to $K_c$, solve its positive eigenpairs, then divide each unit eigenvector by the square root of its eigenvalue. Kernel entries, Gram eigenvalues, covariance eigenvalues and sample scores are different quantities; every conversion below states its normalization.
+
 ## 1. PCA ko sample space mein solve karna
 
 ### 1.1 Why a second matrix?
@@ -42,6 +44,8 @@ Symmetry + nonnegative diagonal alone enough nahi: $\begin{bmatrix}1&2\\2&1\end{
 $$B=\begin{bmatrix}-2&-1&0\\-1&-3&-1\\0&-1&-1\end{bmatrix},\qquad
 C=\begin{bmatrix}1&-2&1\\2&5&-2\\1&-2&2\end{bmatrix}.$$
 
+**Two necessary Gram checks:** $G=X^TX$ implies $G_{ij}=x_i^Tx_j=x_j^Tx_i$, so symmetry is compulsory. Also $G_{ii}=\|x_i\|^2\ge0$ and $a^TGa=\|Xa\|^2\ge0$. A single negative diagonal or unequal mirrored entries rejects a candidate immediately; passing those simple checks alone would not prove PSD.
+
 **Step 1 — B:** Diagonal negative. For $a=(1,0,0)^T$, $a^TBa=-2<0$. Hence B cannot be Gram.
 
 **Step 2 — C:** $C_{12}=-2$ but $C_{21}=2$, so not symmetric. Reject C.
@@ -67,6 +71,8 @@ Useful connection: $G\beta=\mu\beta$ implies $(XX^T)(X\beta)=\mu(X\beta)$. For $
 ### Q2 — Sample count, covariance trace and PC2 variance
 
 **Question:** Mean-zero data have a $3\times3$ matrix $P$ with $P_{ij}=x_i^Tx_j$. Find (i) the number of data points, (ii) the covariance trace in terms of eigenvalues $l_1,l_2,l_3$ of $P$, and (iii) the variance along PC2 if the listed eigenvalues are $15,30,24$.
+
+**Identify matrix size and scale:** $P_{ij}$ compares sample $i$ with sample $j$, so a $3\times3$ $P$ means three samples. Its positive eigenvalues divide by $n=3$ to give covariance eigenvalues. Sort before identifying PC2. Independently, centered columns sum to zero, so $P\mathbf1=0$ must supply a zero eigenvalue; use this to audit the premise.
 
 **Step 1:** Gram size $n\times n$, so $\boxed{n=3}$.
 
@@ -104,6 +110,8 @@ If covariance eigenvalue $\lambda_j$ given ho, $\mu_j=n\lambda_j$, so denominato
 
 **Question:** For $d>n$, a principal direction is written as $w=\sum_i\alpha_i x_i$. The eigenvalue of $X^TX$ is 10, and the corresponding vector, described as a unit eigenvector, is $(2,3,4,6)^T/\sqrt{54}$. Find $\alpha_2$.
 
+**Two normalizations are required:** First make the listed eigenvector unit by dividing its direction by $\sqrt{2^2+3^2+4^2+6^2}=\sqrt{65}$. Then convert that unit Gram eigenvector to PC coefficients by dividing by $\sqrt{10}$. The first operation normalizes the sample-space vector; the second normalizes its mapped feature-space direction.
+
 **Step 1 — Unit check:** Squared norm $(4+9+16+36)/54=65/54\ne1$. Given vector is not unit; PDF also reuses $\alpha$ for both the eigenvector and reconstruction coefficients.
 
 **Step 2 — Preserve the listed direction:** If $(2,3,4,6)$ is the intended eigenvector direction, normalize it to $\beta=(2,3,4,6)/\sqrt{65}$.
@@ -125,6 +133,8 @@ $$\alpha=\beta/\sqrt{10},\qquad
 4. Output principal directions $Xe_i/\sqrt{\lambda_i}$.
 
 Identify the errors and give the corrected procedure.
+
+**Dimension check exposes the error:** With $X:d\times n$, multiplication $Xe$ needs $e:n\times1$. An eigenvector of $XX^T$ instead has $d$ entries. Use $X^TX:n\times n$, then $Xe:d\times1$. Its squared norm is $e^TX^TXe=\lambda$, so divide by $\sqrt\lambda$ to obtain a unit PC.
 
 **Step 1:** Columns convention correct: $X\in\mathbb R^{d\times n}$. Raw data ho toh center first.
 
@@ -162,6 +172,8 @@ January 2025 question pattern in the supplied notes.
 
 **Question:** Let $X\in\mathbb R^{d\times n}$ contain centered points, with $d>n$. Let $\lambda>0$ be the $k$-th largest eigenvalue of $X^TX$ and let $a_k$ be its unit eigenvector. Find the scalar projection of $x_i$ onto PC $k$.
 
+**Derive the coordinate in two stages:** Unit Gram eigenvector $a_k$ maps to feature direction $Xa_k$, whose length is $\sqrt\lambda$. Normalize it to $w_k=Xa_k/\sqrt\lambda$. Project the sample using $z_{ik}=x_i^Tw_k$. For a training point, the eigenvalue equation also gives $z_{ik}=\sqrt\lambda(a_k)_i$, a useful consistency check.
+
 **Step 1:** Actual unit PC is $w_k=Xa_k/\sqrt\lambda$.
 
 **Step 2:** Dot product gives coordinate:
@@ -192,6 +204,8 @@ Without trick: construct $\phi(x),\phi(y)$ → dot product. With trick: evaluate
 
 **Question:** For scalar inputs, find a feature map for $k(x,y)=10x^2y^2$.
 
+**Match a coefficient through multiplication:** Suppose the one-coordinate map is $\phi(x)=a x^2$. Then $\phi(x)\phi(y)=a^2x^2y^2$. Matching the given coefficient requires $a^2=10$, so choose $a=\sqrt{10}$. The same coefficient appears in both mapped inputs, which is why using 10 itself would square it incorrectly.
+
 **Step 1:** Desired same-input feature term $x^2$ hai. Coefficient 10 ko both factors mein split karo.
 
 **Step 2:** Choose $\boxed{\phi(x)=\sqrt{10}\,x^2}$.
@@ -207,6 +221,8 @@ General rule: for $c\geq0$, $k(x,y)=cf(x)f(y)$ admits $\phi(x)=\sqrt c\,f(x)$.
 $$k_1(x,y)=\frac{100k(x,y)}{\sqrt{k(x,x)}\sqrt{k(y,y)}}.$$
 
 Find a feature map for $k_1$.
+
+**Normalize each feature vector first:** $k(x,x)=\|\phi(x)\|^2$. Dividing $\phi(x)$ by its length makes self-inner-product 1. To make it 100, multiply the normalized vector by 10, because dot products multiply both factors: $10\times10=100$. Check nonzero feature norms before dividing.
 
 **Step 1:** $k(x,x)=\|\phi(x)\|^2$, so denominator is $\|\phi(x)\|\|\phi(y)\|$.
 
@@ -236,6 +252,8 @@ Higher degree more feature interactions represent karta hai, so nonlinear flexib
 ### Q8 — Feature dimension: All distinct source cases
 
 **Question:** Find the feature-space dimensions for the inhomogeneous polynomial kernel $k(x,y)=(x^Ty+1)^p$ in these cases: (a) $d=4,p=3$; (b) $d=3,p=2$; (c) two-dimensional data with a quadratic relationship, using degree 2; (d) 1000 points in $\mathbb R^{20}$ with degree 3. Does increasing the degree increase the possible nonlinear interactions?
+
+**Explain the counting formula:** $(1+x^Ty)^p$ contains monomials of total degree at most $p$ in $d$ input coordinates. Their count is $\binom{d+p}{p}$. For $d=3,p=2$, count explicitly: one constant, three linear terms, three squares, three distinct pairwise products → 10. Number of observations affects Gram size, not this ambient feature count.
 
 **Step 1:** Same formula $D=\binom{d+p}{p}$ use karo; sample count ignore for this calculation.
 
@@ -267,6 +285,8 @@ Feature maps need not be unique. Coordinate reordering or an orthogonal transfor
 1. $k_A(x,y)=(x^Ty+1)^2$.
 2. $k_B(x,y)=(x^Ty)^2+1$.
 3. $k_C(x,y)=1+ac+bd+a^2c^2+b^2d^2+abcd$.
+
+**Use the binomial expansion:** $(A+B+C)^2=A^2+B^2+C^2+2AB+2AC+2BC$. Put $A=ac,B=bd,C=1$. Each resulting product must be represented by matching functions of $x$ and $y$; coefficient 2 becomes $\sqrt2$ in each map. Changing bracket placement removes terms, so expand each kernel independently.
 
 **Part A, Step 1:** Expand $(ac+bd+1)^2$:
 
@@ -312,6 +332,8 @@ where $x=(x_1,x_2)$ and $y=(y_1,y_2)$. Which of the following transformation $\p
 
 `Week 2.pdf`, Q2, pp. 6–7; options source order mein hain.
 
+**Match the homogeneous kernel term by term:** Squaring $x_1y_1+x_2y_2$ gives two square products and one cross product with coefficient 2. Thus the map needs $x_1^2$, $x_2^2$, and $\sqrt2x_1x_2$. There is no constant or linear term. Verify a candidate by multiplying its map with the same map of $y$.
+
 **Step 1 — Dot product expand karo:**
 
 $$x^Ty=x_1y_1+x_2y_2.$$
@@ -347,6 +369,8 @@ $$\boxed{\text{Option (iv)},\quad D=\binom{2+2-1}{2}=3}.$$
 $$\phi(x)=(x_1^2,\sqrt2x_1x_2,\sqrt2x_1,x_2^2,\sqrt2x_2,1)^T,$$
 
 find a vector orthogonal to every mapped point.
+
+**Turn the relation into a dot product:** Rearrange to $x_1^2/a^2-x_2^2/b^2-1=0$. In the supplied map, $x_1^2$ is coordinate 1, $x_2^2$ coordinate 4, and constant 1 coordinate 6. Put their coefficients in those positions and zeros elsewhere. Substituting the map back into $u^T\phi(x)$ verifies orthogonality.
 
 **Step 1:** Relation zero form mein: $x_1^2/a^2-x_2^2/b^2-1=0$.
 
@@ -389,6 +413,8 @@ $$u=\left(\frac1{a^2},\frac{-\sqrt2h}{a^2},\frac1{b^2},\frac{-\sqrt2k}{b^2},0,\f
 (ii) What could possibly be the relationship between the features of every data point in $\mathbb R^2$?
 
 `Week 2.pdf`, Q6, pp. 16–18. Upar printed question preserve kiya hai; PDF ke handwritten corrections mein first $\mathbb R^3$ ko $\mathbb R^2$ aur last coordinate ke $y^2/k^2$ ko $k^2/b^2$ kiya gaya hai. Neeche **isi corrected interpretation** ko solve kar rahe hain. Printed $y$ otherwise unspecified hai; silently usse $k$ assume nahi karna. Require $a,b\ne0$, and take real $r$.
+
+**Why coordinate scaling matters:** The normal's coefficient $-\sqrt2h/a^2$ multiplies map entry $\sqrt2x_1$, producing $-2hx_1/a^2$. Together with $x_1^2/a^2$ and $h^2/a^2$, this forms $(x_1-h)^2/a^2$. Repeat for the second coordinate, using the explicitly corrected constant from the source before completing squares.
 
 **Step 1 — Map ko $u$ ke order se match karo:**
 
@@ -457,6 +483,8 @@ Subtraction **not guaranteed**. Counterexample: $k_1=1,k_2=2$ both valid constan
 
 **Question:** If $k$ is a valid kernel, is $k'(x,y)=\sin(x)\cos(y)k(x,y)$ necessarily valid?
 
+**A universal claim needs only one counterexample to fail:** Choose valid base kernel $k=1$. Then test $x=0,y=\pi/2$: $\sin0\cos(\pi/2)=0$, while swapped inputs give $\sin(\pi/2)\cos0=1$. Since a real feature inner product is symmetric, this asymmetry disproves validity of the proposed construction in general.
+
 **Step 1:** Swap inputs: multiplier becomes $\sin(y)\cos(x)$, generally different.
 
 **Step 2 — Explicit counterexample:** Choose valid $k(x,y)=1$, $x=0,y=\pi/2$. Then $k'(x,y)=0$, but $k'(y,x)=1$.
@@ -475,6 +503,8 @@ $$k_1=x_1y_1+x_2y_2+(x_1+x_2)(y_1+y_2),$$
 
 $$k_2=x_1y_1+x_2y_2+x_1^2+y_2^2+3.$$
 
+**Validity versus rejection strategy:** For a candidate that is a sum of products $f_j(x)f_j(y)$, collect $f_j(x)$ as a feature map; its Gram form proves PSD. For the other candidate, swap inputs or find a specific pair with different forward/reverse values. A proven symmetry failure is enough; no eigenvalue calculation is needed.
+
 **Step 1:** For $k_1$, choose $\phi(x)=(x_1,x_2,x_1+x_2)$. Its dot product exactly $k_1$, so valid.
 
 **Step 2:** For $k_2$, take $x=(1,0),y=(0,0)$: $k_2(x,y)=4$, $k_2(y,x)=3$. Not symmetric.
@@ -486,6 +516,8 @@ $$\boxed{k_1\text{ valid},\quad k_2\text{ invalid}}.$$
 May 2024 pattern.
 
 **Question:** Are both $k_1(x,y)=x_1y_1+x_2y_2+x_1x_2y_1y_2$ and $k_2(x,y)=k_1(x,y)+1$ valid kernels?
+
+**Build coordinates for each product:** The terms $x_1y_1$, $x_2y_2$ and $(x_1x_2)(y_1y_2)$ correspond to coordinates $x_1,x_2,x_1x_2$. Adding constant 1 corresponds to appending feature 1, since $1\cdot1=1$. Both expressions therefore have explicit real inner-product representations.
 
 **Step 1:** $\phi_1(x)=(x_1,x_2,x_1x_2)$ gives $k_1$.
 
@@ -509,6 +541,8 @@ C. $\|x-y\|$
 
 D. $e^{-\|x-y\|/\sigma}$
 
+**Use valid constructions and an invalidity witness:** Gaussian and exponential-distance kernels are PSD kernels; a nonnegative-offset integer-degree polynomial is also valid. Raw distance has zero diagonal but positive off-diagonal for two distinct points. For coefficients $(1,-1)$, its quadratic form is $0-r-r+0=-2r<0$, violating PSD.
+
 **A:** Gaussian/RBF kernel, valid.
 
 **B:** Polynomial kernel with nonnegative constant and integer degree, valid.
@@ -524,6 +558,8 @@ Distance being symmetric is not enough to make it a valid dot-product kernel.
 ### Q15 — Asymmetric polynomial expression
 
 **Question:** For scalar inputs, is $k(x,y)=xy+x^2y+y^2x^3+1$ a valid kernel?
+
+**Swap the entire expression:** A valid real kernel must give the same result under $x\leftrightarrow y$. The terms $xy$ and 1 are symmetric, but mixed powers require checking. Substitute $x=1,y=2$ in both orders and evaluate every term separately. Different totals immediately disprove the required symmetry.
 
 **Step 1:** Swap: $k(y,x)=xy+y^2x+x^2y^3+1$.
 
@@ -546,6 +582,8 @@ B. $k(x,y)=e^{-\|x-y\|^2}$ is a valid kernel.
 C. $\operatorname{tr}(XX^T)=\operatorname{tr}(X^TX)$.
 
 D. $XX^T$ and $X^TX$ have the same eigenvectors.
+
+**Separate kernel and matrix statements:** Polynomial degree 3 and Gaussian kernels have valid feature-inner-product constructions. Trace equality follows by expanding either trace as $\sum_{ij}X_{ij}^2$. Eigenvectors belong to different spaces: $XX^T$ has length-$d$ eigenvectors, $X^TX$ length-$n$ eigenvectors. Shared positive eigenvalues do not imply shared eigenvectors.
 
 **Step 1:** A homogeneous degree-three polynomial kernel: valid, even though entries can be negative. B is RBF with $\sigma=1/\sqrt2$: valid.
 
@@ -573,6 +611,12 @@ RBF has an infinite-dimensional feature-space representation on the continuous E
 
 **Question:** Using the Gaussian kernel with $\sigma=1$, calculate $k((0,1),(1,0))$.
 
+**Substitute in the stated Gaussian formula:**
+
+$$\|x-y\|^2=(0-1)^2+(1-0)^2=2,\quad 2\sigma^2=2.$$
+
+Thus exponent $=-2/2=-1$ and kernel $e^{-1}$. Identical points would give 1; this nonzero distance gives a value strictly between 0 and 1, checking the sign and denominator.
+
 **Step 1:** Difference $(-1,1)$.
 
 **Step 2:** Squared distance $1+1=2$.
@@ -584,6 +628,8 @@ Square, sum, divide by $2\sigma^2$, then exponentiate. Do not put plain distance
 ### Q18 — Mixed kernel entries
 
 **Question:** Let $k=k_{mathrm{RBF}}+3k_{mathrm{poly}}$, where $k_{mathrm{poly}}(x,y)=(x^Ty+1)^3$. If $x_1^Tx_1=5$, find $k(x_1,x_1)$. Explain how to calculate other entries and whether an off-diagonal entry can be negative.
+
+**Evaluate components separately:** For a diagonal, the RBF distance is zero so its value is 1. The polynomial uses $x_1^Tx_1=5$, giving $(1+5)^3=216$. Apply the outer mixture weight after computing the kernel: $3(216)=648$, then add 1. The sum's validity follows from nonnegative kernel weights, not from entrywise positivity.
 
 **Step 1:** Self RBF value 1.
 
@@ -612,6 +658,8 @@ then find the kernel matrix $K$ for the following dataset:
 $$\left\{\begin{bmatrix}1\\2\end{bmatrix},\begin{bmatrix}-1\\2\end{bmatrix},\begin{bmatrix}1\\-2\end{bmatrix},\begin{bmatrix}-1\\-2\end{bmatrix}\right\}.$$
 
 `Week 2.pdf`, Q4, pp. 10–12.
+
+**Only three off-diagonal geometries:** All four points have squared norm 5. Pairs differ horizontally, vertically, or across opposite corners, giving squared distances 4,16,20. Compute their dot products separately for the polynomial term. Each matrix entry is $e^{-d^2}+3(1+s)^3$ with distance $d$ and dot product $s$; symmetry fills mirrored entries.
 
 **Step 1 — Label and read the exponent:**
 
@@ -722,6 +770,8 @@ Properties: $K_c$ symmetric PSD, $K_c\mathbf1=0$, row/column sums zero, rank $\l
 
 **Question:** Let $X=\begin{bmatrix}1&0\\0&1\\0&0\end{bmatrix}$ contain two points as columns, and use $k(x,y)=(1+x^Ty)^2$. Find the centered kernel matrix.
 
+**Center in feature space:** First form $K_{ij}=(1+x_i^Tx_j)^2$. Then apply $(K_c)_{ij}=K_{ij}-r_i-r_j+g$, where $r_i$ is row mean and $g$ grand mean. Both row means here are 2.5, so each entry becomes $K_{ij}-2.5$. Zero row sums check that the feature mean was removed.
+
 **Step 1:** $x_1=(1,0,0)$, $x_2=(0,1,0)$; self dot products 1, cross dot 0.
 
 $$K=\begin{bmatrix}4&1\\1&4\end{bmatrix}.$$
@@ -739,6 +789,8 @@ $$\boxed{K_c=\begin{bmatrix}1.5&-1.5\\-1.5&1.5\end{bmatrix}}.$$
 **Question:** Center the kernel matrix
 
 $$K=\begin{bmatrix}1&0.8&0.5\\0.8&1&0.6\\0.5&0.6&1\end{bmatrix}.$$
+
+**Compute all centering statistics:** Row sums are $2.3,2.4,2.1$, so divide each by 3. Their total 6.8 divided by $3^2=9$ is grand mean. Entry $(1,3)$, for example, is $1/2-23/30-7/10+34/45=-19/90$. Use the row-specific means; symmetry alone does not make all means equal.
 
 **Step 1:** Row means $r=(23/30,4/5,7/10)$.
 
@@ -788,6 +840,8 @@ Use **centered** kernel values for centered scores. Raw $K\alpha$ generally has 
 
 **Question:** Kernel PCA is performed on 100 data points. The largest eigenvalue of the centered kernel matrix is 10. Find the largest feature-space covariance eigenvalue using the $1/n$ convention.
 
+**Trace the normalization factor:** Centered Gram $K_c=\Phi_c^T\Phi_c$ and feature scatter $\Phi_c\Phi_c^T$ share nonzero eigenvalues. Covariance is scatter divided by 100, hence its eigenvalue is $10/100=0.1$. If the supplied matrix were already $K_c/100$, no further division would be appropriate.
+
 **Step 1:** Identify: given 10 belongs to $K_c$, not $K_c/n$.
 
 **Step 2:** $\boxed{\lambda_{\max}=10/100=0.1}$.
@@ -799,6 +853,8 @@ This exact example recurs in the supplied PDF's eigenvalue section, algorithm an
 ### Q22 — Can the number of kernel PCs exceed d?
 
 **Question:** There are 1000 data points in $\mathbb R^{20}$. Can Kernel PCA produce 50 nonzero components? Can it produce 1001? What is the upper bound after centering?
+
+**Use two independent rank limits:** Feature dimension allows at most $D$ independent directions. Centering $n$ feature vectors makes their sum zero, allowing at most $n-1$ independent directions. Thus nonzero KPCA components are bounded by $\min(D,n-1)$. Raw input dimension 20 need not bound nonlinear feature rank; sample limit 999 still applies.
 
 **Step 1:** Raw linear PCA has at most $\min(d,n-1)=20$ nonzero PCs.
 
@@ -829,6 +885,8 @@ Zero eigenvalues cannot be normalized by this formula. Tiny numerical negatives 
 ### Q23 — Fully worked two-point eigensystem
 
 **Question:** Given centered $K_c=\begin{bmatrix}1&-1\\-1&1\end{bmatrix}$, find its eigenvalues, a unit first eigenvector, normalized coefficients, feature covariance eigenvalue and training scores.
+
+**Solve and normalize explicitly:** $\det(K_c-\mu I)=(1-\mu)^2-1=\mu(\mu-2)$. For $\mu=2$, the eigenvector equation gives $v_2=-v_1$; norm 1 gives $\beta=(1,-1)/\sqrt2$. Then $\alpha=\beta/\sqrt\mu=(1,-1)/2$. Training scores are $K_c\alpha$, and covariance variance is $\mu/n$.
 
 **Step 1:** Characteristic equation $(1-\mu)^2-1=\mu(\mu-2)=0$, so eigenvalues $2,0$.
 
@@ -865,6 +923,8 @@ Using training centering is necessary even if $x_*$ raw input is centered. For p
 
 **Question:** Given coefficients $\alpha=(0.2,0.5,0.3)^T$ and kernel values between three training points and a target point $q=(2,4,1)^T$, compute the weighted projection expression.
 
+**Compute only what the data determine:** A weighted sum is the dot product $\alpha^Tq=\sum_i\alpha_iq_i$. Multiply matching entries before adding, so $0.2(2)+0.5(4)+0.3(1)=2.7$. To interpret this as a centered KPCA coordinate, centered cross-kernel values and valid normalized coefficients are additionally required; the arithmetic alone does not establish those conditions.
+
 **Step 1:** Multiply corresponding entries: $0.2\cdot2=0.4$, $0.5\cdot4=2$, $0.3\cdot1=0.3$.
 
 **Step 2:** Sum:
@@ -876,6 +936,12 @@ $$\boxed{\alpha^Tq=0.4+2+0.3=2.7}.$$
 ### Q25 — Three-point linear kernel: Full consistency check
 
 **Question:** For $x_1=(1,0)^T$, $x_2=(0,1)^T$, $x_3=(1,1)^T$, use $k(x,y)=x^Ty$. Compute the raw and centered Gram matrices, eigenvalues, normalized coefficients and training scores. Verify agreement with ordinary centered PCA.
+
+**Construct the raw matrix from columns:**
+
+$$X=\begin{bmatrix}1&0&1\\0&1&1\end{bmatrix},\quad K=X^TX.$$
+
+For example $K_{13}=1(1)+0(1)=1$ and $K_{33}=1^2+1^2=2$. After centering, verify eigenpairs by multiplication, divide unit eigenvectors by square-root eigenvalues, and confirm score variance equals each Gram eigenvalue divided by three.
 
 **Step 1 — Raw Gram:**
 
@@ -924,6 +990,8 @@ Linear kernel PCA equals ordinary centered PCA. Is dataset ko next question mein
 5. The maximum useful component count, and the scores of a new point $x_*=(0,0)^T$.
 
 The final new-point subpart extends the PDF's master problem using the same trained model.
+
+**Worked setup — Dimensions and order:** Three samples in $\mathbb R^2$ map to six polynomial coordinates, so $\Phi$ is $6\times3$ and $K$ is $3\times3$. Centering limits rank to 2. We will form $K$, subtract row/column means, solve $K_c\beta=\mu\beta$, normalize $\alpha=\beta/\sqrt\mu$, and compute $z=K_c\alpha$. For the new point, center its kernel vector using the **training** means before taking $\alpha^Tq^c$.
 
 ### 10.1 Feature map and validity
 

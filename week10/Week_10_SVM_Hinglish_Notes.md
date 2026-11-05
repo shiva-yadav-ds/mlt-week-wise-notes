@@ -2,6 +2,8 @@
 
 **Flow:** Perceptron se margin ka connection → functional/geometric margin → hard-margin optimization → support vectors → Lagrangian → dual aur KKT → prediction → leave-one-out error → kernels → information-gain question.
 
+**SVM concepts ko alag rakho:** Score $f=w^Tx+b$ tells side; signed margin $yf$ tells correctness relative to label; geometric distance is $|f|/\|w\|$. Canonical hard margin sets closest signed scores to 1, giving full width $2/\|w\|$. The optimum minimizes weight norm subject to all constraints. A visually separating line alone is not proof that its margin is maximum.
+
 ## Topic index
 
 | Topic | Subtopics | Questions |
@@ -116,6 +118,8 @@ $$\boxed{\frac{|a-c|}{\|w\|}}.$$
 
 > A hard-margin SVM is trained on a linearly separable dataset with a positive margin. The features are in $\mathbb R^2$. The optimal weight vector is $[3\ 4]^T$. Find the distance between the two supporting hyperplanes.
 
+**Derive the width formula:** Canonical support planes have scores $+1$ and $-1$. For parallel planes with common normal $w$, perpendicular distance equals score difference divided by $\|w\|$. Thus full width is $(1-(-1))/\|w\|=2/\|w\|$. One-sided distance from the zero-score boundary is only half this width.
+
 **Step 1 — Identify requested distance:** Supporting hyperplanes ke beech full width, so $2/\|w\|$.
 
 **Step 2 — Norm:**
@@ -145,6 +149,8 @@ True label ki zaroorat nahi. Signed side chahiye toh absolute value drop kar sak
 **Question:**
 
 > Consider an SVM classifier with separating hyperplane defined by $w^Tx=0$, where the weight vector is $w=[2\ -3\ 1]^T$. Compute the perpendicular distance from the point $x=[1\ 2\ -1]^T$ to the hyperplane. Enter your answer correct to three decimal places.
+
+**Point-to-plane formula:** Distance from $x$ to $w^Tx+b=0$ is $|w^Tx+b|/\sqrt{\sum_jw_j^2}$. Here no bias is specified. First calculate the signed score, then its absolute value, then divide by normal length. This normalization makes the distance unchanged if the equation's coefficients are all scaled together.
 
 **Step 1 — Score:**
 
@@ -229,6 +235,8 @@ $$\boxed{\min_w\frac12\|w\|^2\quad\text{subject to }y_iw^Tx_i\ge1\ \forall i}.$$
 >
 > (d) The width of the separation between the two supporting hyperplanes is 4. (Hint: Calculate width using formulae $2/\|w\|$.)
 
+**Prove optimality rather than only feasibility:** Construct a separator and verify $y_i(w^Tx_i+b)\ge1$ for every point. Its width is $2/\|w\|$. Then find a pair of opposite-class points whose distance equals that width: supporting planes cannot be farther apart than such a cross-class pair. Matching this upper bound proves maximum margin.
+
 **Step 1 — Labels encode karo:** Class 1 → $+1$, class 0 → $-1$.
 
 **Step 2 — Inspect first coordinate:** All positive-class points $x_1<0$, all negative-class points $x_1>0$. Boundary $x_1=0$ separates → (a) true.
@@ -264,6 +272,8 @@ Thus (d) false, not 4.
 > (c) A soft-margin SVM would be a more robust choice than a hard-margin SVM for this dataset as the dataset is not linearly separable.
 >
 > (d) The width of the separation between the two supporting hyperplanes is 4.
+
+**Check the bias assumption before optimizing:** In the no-bias model the constraints contain only $(a,c)$, so combine $-a+c\ge1$ and $-a-3c\ge1$ with weights $3/4,1/4$. The $c$ terms cancel, giving $-a\ge1$. Hence $\sqrt{a^2+c^2}\ge1$. A feasible weight of norm 1 achieves the smallest norm and largest width.
 
 **Step 1:** Again $x_1=0$ separates left class 1 from right class 0 → (a) true, (c) false.
 
@@ -324,6 +334,8 @@ Matlab supporting hyperplanes par hote hain, decision boundary par nahi.
 > (c) $(-2,-1)$ and $(2,+1)$
 >
 > (d) $(-2,-1)$ and $(1,+1)$
+
+**Compute margins from each scalar input:** For boundary $x=0$, choose canonical $w=1$. A point's signed margin is $ywx$. Inputs $-1,+1$ with matching labels have margin 1; inputs $-2,+2$ have margin 2. The margin-1 points are closest to the boundary and determine its supporting locations.
 
 **Step 1 — Separate feature from label:** Pair $(-1,-1)$ means input $x=-1$, label $y=-1$. It is not a two-dimensional point.
 
@@ -400,6 +412,8 @@ Multipliers $\alpha_i$ constraints ke saath associated hain. Ab **fixed $w$** pa
 > (d) 0
 >
 > (e) None of these
+
+**Apply the inequality sign convention:** For minimization with $g(x)\le0$, Lagrangian is $L=f+\lambda g$, $\lambda\ge0$. At a fixed violated point, $g(x')>0$, so increasing $\lambda$ increases $L$ without bound. At a feasible point $g(x')<0$, the maximizing multiplier would instead be 0. Evaluate feasibility before maximizing.
 
 **Step 1 — Standard constraint form:**
 
@@ -553,6 +567,8 @@ $$\min_w\left(\max_{\alpha\ge0}\frac{\|w\|^2}{2}+\sum_{i=1}^n\alpha_i[1-(w^Tx_i)
 
 (G) Support vectors are the closest data points to the boundary.
 
+**Two equations explain the support claims:** Stationarity gives $w=\sum_i\alpha_i y_ix_i$; complementary slackness gives $\alpha_i(1-y_iw^Tx_i)=0$. Positive $\alpha_i$ forces its other factor to zero. A zero other factor does not force positive $\alpha_i$. Count $d$ coordinates of $w$ as primal variables and $n$ multipliers as dual variables.
+
 **Solution:** Use the question's **hard-margin, no-bias** formulation and the positive-multiplier definition of support vectors.
 
 **Step 1 — Geometry, (A), (B), (G):** Complementary slackness gives
@@ -597,6 +613,8 @@ For how many data points in the figure is $\alpha_i\ne0$?
 
 (iv) Cannot conclude
 
+**Why counting plane contacts is insufficient:** For a point on a support plane, $1-y_if_i=0$, so complementary slackness becomes $\alpha_i\cdot0=0$. Both zero and positive coefficients satisfy it. A point strictly beyond its correct plane has $1-y_if_i<0$, so its coefficient must be zero. The diagram identifies candidates, not a unique dual solution.
+
 **Solution:**
 
 **Step 1 — Read the geometry:** The supplied figure/solution identifies ten points on the two supporting hyperplanes, five on each side. Other points are strictly beyond the margin.
@@ -630,6 +648,8 @@ $$\boxed{\text{(iv) Cannot conclude the exact count}}.$$
 > Given the test point $x_{\mathrm{test}}=(1,1)$, determine the predicted label $\hat y\in\{+1,-1\}$. Enter the answer as either 1 or -1.
 >
 > Hint: The prediction for a test point $x_{\mathrm{test}}$ is given by $\hat y=\operatorname{sign}((w^*)^Tx_{\mathrm{test}})$.
+
+**Expand the labeled contributions:** $\alpha_i$ is nonnegative, but the coefficient multiplying $x_i$ is $\alpha_i y_i$, which may be negative. For point 3, $3(-1)(2,-1)=(-6,3)$. Add contributions coordinate-wise, then compute the query dot product. Omitting the labels would reconstruct a different weight.
 
 **Step 1 — Use given rule:** No bias in hint, so reconstruct $w=\sum_i\alpha_iy_ix_i$.
 
@@ -673,6 +693,8 @@ $$\alpha^*=[0.42,0.57,0,0,0,0.81,0.19,0]^T.$$
 (i) How many support vectors are there?
 
 (ii) Find the label of the test point $(3,-1)^T$.
+
+**Count first, reconstruct second:** Nonzero supplied coefficients identify four contributing indices. For negative-class point 7, $0.19(-1)(-3,-2)=(0.57,0.38)$: two sign changes make both entries positive. After adding all contributions, use $f(3,-1)=3w_1-w_2$ under the no-bias rule, then take its sign.
 
 **Solution:**
 
@@ -763,6 +785,8 @@ Even separable data par small $C$ ka soft-margin optimum hard-margin optimum se 
 >
 > iii. If a soft-margin SVM is trained on this dataset, the optimal weight vector it returns will be the same as the one returned by a hard-margin SVM, irrespective of the value of the hyperparameter $C$.
 
+**Strict inequalities matter:** Dual feasibility requires $\alpha_i\ge0$ for every point, so that alone cannot identify support vectors. Positive contribution requires $\alpha_i>0$. Perceptron integer coefficients come from counting unit updates, a different argument. Finally soft margin permits violations for finite $C$; separability alone does not force its optimum to match hard margin.
+
 **Part (i):** Standard perceptron starts at zero with learning rate 1. Repeated additions $y_ix_i$ give $w=\sum_i m_iy_ix_i$, where $m_i$ counts updates. Coefficients integers → **True**. Different learning rate/arbitrary initialization par this exact integer statement need not hold.
 
 **Part (ii), Step 1:** $\alpha_i\ge0$ holds for **all** dual-feasible training coefficients, including non-support vectors with $\alpha_i=0$.
@@ -792,6 +816,8 @@ Even separable data par small $C$ ka soft-margin optimum hard-margin optimum se 
 > (c) Model will underfit.
 >
 > (d) Accuracy of the model will increase.
+
+**Separate evaluating and retraining:** For an already-trained model, deleting terms with $\alpha_i=0$ leaves the prediction sum unchanged. For exact hard-margin retraining with the same setup, the retained positive multipliers and primal solution still satisfy the optimality conditions. This certifies the same optimum; it is stronger than merely noticing zero terms in a sum.
 
 **Step 1:** Non-support points have $\alpha_i^*=0$ under the dual criterion.
 
@@ -854,6 +880,8 @@ $$\boxed{\#\text{LOOCV errors}\le K\quad\Rightarrow\quad E_{\mathrm{CV}}\le\frac
 > (c) $E_{\mathrm{CV}}=K/N$
 >
 > (d) $E_{\mathrm{CV}}$ is independent of $K$
+
+**Turn stability into an error bound:** LOOCV has $N$ held-out predictions. Removing a non-support point preserves the exact hard-margin solution under the stated assumptions, so those $N-K$ folds are correct. Only the $K$ support-point folds can contribute errors, at most one each. Thus error count $\le K$, and error fraction $\le K/N$.
 
 **Step 1:** There are $N-K$ non-support points; holding these out does not cause an error under the standard assumptions above.
 
@@ -994,6 +1022,8 @@ $$\boxed{IG=H(\text{parent})-\left[\frac{N_L}{N}H(L)+\frac{N_R}{N}H(R)\right]}.$
 > (c) Both trees have equal information gain
 >
 > (d) Cannot be determined without further splits
+
+**Apply the same gain formula to both roots:** $IG=H(parent)-\sum_{child}(N_{child}/N)H(child)$. Recover each right-child count by subtracting left counts from parent counts. Both parents are identical, so lower weighted child entropy implies higher gain. Do not compare unweighted child entropies or confuse root gain with whole-tree entropy reduction.
 
 **Step 1 — Read parent counts:** Both roots have positive 300, negative 200; total 500.
 

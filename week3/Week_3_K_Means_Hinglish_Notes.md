@@ -2,6 +2,8 @@
 
 **Flow:** Similar points ko group karna → centroid aur WCSS → Lloyd's assign–update cycle → convergence → cluster geometry → K-Means++ initialization → distance variants → silhouette.
 
+**K-Means ka calculation cycle:** Current centers se squared distances → nearest-center assignments → assigned points ka mean → new distances aur objective check. Initialization probabilities belong to K-Means++ and are calculated **before** the Lloyd fitting cycle. A cluster label, centroid coordinate, WCSS value and sampling probability answer different questions; har subpart ka requested stage pehle identify karo.
+
 ## 1. Clustering, centroid aur objective
 
 ### 1.1 Clustering kya karti hai?
@@ -54,6 +56,8 @@ C_1=\{(2,2),(3,3),(4,4)\}
 $$
 
 Which is the updated centroid $\mu_1$?
+
+**Why the mean is the update:** For fixed cluster $C$, minimize $J(\mu)=\sum_{x_i\in C}\|x_i-\mu\|^2$. Gradient is $2|C|\mu-2\sum_{i\in C}x_i$. Setting it to zero gives $\mu=\sum x_i/|C|$. Average each coordinate separately; the result is a center location, not a cluster label.
 
 **Solution:**
 
@@ -126,6 +130,8 @@ $$
 
 Find the cluster means after convergence.
 
+**One Lloyd iteration has two parts:** Assign each point using $z_i=\arg\min_k\|x_i-\mu_k\|^2$, then update $\mu_k=\sum_{z_i=k}x_i/N_k$. All assignments in a pass use the current centers. After averaging, repeat the distance comparison to check whether membership changes; the first update is not automatically the final answer.
+
 **Solution:**
 
 Jan 2024 Quiz 1.
@@ -163,6 +169,8 @@ Same assign–average–check pattern: May 2024 Quiz 1 Q3, Jul 2023 Quiz 1 Q25, 
 A new point $(7,0)$ is added. Find the sum of the x-coordinates of the two final cluster means.
 
 Accepted answer range in the notes: 8.18–8.22.
+
+**Update from the old sum:** An old cluster with $m$ points and mean $\mu$ has coordinate sum $m\mu$. Adding one point gives new mean $(m\mu+x)/(m+1)$. Here $4(8.5,0)+(7,0)=(41,0)$, so divide by 5. Recheck the new bisector because adding data can also move other points between clusters.
 
 **Solution:**
 
@@ -203,6 +211,8 @@ $$
 $$
 
 Find the centroids after the first iteration of Lloyd's algorithm.
+
+**Separate assignment, mean and cost:** In 1D, initial centers 1 and 4 split nearest-center regions at $(1+4)/2=2.5$. Average the assigned values, then recompute the midpoint. For final WCSS, use each point minus its final assigned mean: the deviations in cluster 2 are $4-19/3=-7/3$, $7-19/3=2/3$, $8-19/3=5/3$. Square before summing.
 
 **Solution:**
 
@@ -249,6 +259,8 @@ Which cluster should be assigned to $x_3$?
 
 Options: 1, 2, or 3.
 
+**Recover centers from known groups:** First average the points whose memberships are given. Then evaluate $\|(0,0)-\mu_k\|^2$ for each recovered mean. Minimum squared distance determines the missing assignment under this interpretation. A membership identifier has no numerical averaging meaning; average coordinates, not label numbers.
+
 **Solution:**
 
 Oct 2022 Quiz 1.
@@ -286,6 +298,8 @@ Find the final assignment vectors for:
 1. $z^{(0)}=(1,1,2,2)$
 2. $z^{(0)}=(1,2,2,1)$
 
+**Assignments given means update first:** An initial label vector already specifies groups, so compute their coordinate means before doing nearest-center reassignment. With new groups, average again. Keep the sample order fixed when writing the new label vector; equal final groups may be named differently if center labels are swapped, even though the geometric clustering agrees.
+
 **Solution:**
 
 Mar 2026 Quiz 1.
@@ -322,6 +336,8 @@ Different initialization same result de **sakti** hai, always de yeh guarantee n
 (iii) If we choose k-means++, with $k=3$, then with what probability the third cluster centroids will be chosen if the first two are $(2,1)$ and $(6,6)$ based on k-means++ initialization?
 
 `Week 3.pdf`, Q2, pp. 4–14. Part (i) mein source notation overloaded hai: source solution $C$ ke **coordinate sum ka absolute value** leta hai. Isi intended scalar quantity ko calculate karenge. Part (iii) ko initialization section ke Q46(iii) mein isi dataset se solve karenge.
+
+**Use exact fractions through the second pass:** The first centers become $(7/3,5/3)$ and $(19/3,17/3)$. For point $(1,1)$, squared distance to the first is $(-4/3)^2+(-2/3)^2=20/9$. Repeat for both centers and every point, keep the smaller assigned distance for WCSS, then add those fractions before rounding.
 
 **Step 1 — Initial squared distances:**
 
@@ -415,6 +431,8 @@ $$
 \sum_{i=1}^{4} \left\|x_i-\mu_{z_i^{(t+1)}}^{(t)}\right\|^2
 $$
 
+**Read the iteration superscripts:** An assignment-only cost uses new labels but **old** centers. Centers 0 and 10 assign $0,2$ left and $6,8$ right. Therefore residuals for this stage are $0,2,-4,-2$. Squaring gives $0+4+16+4=24$. Replacing centers by 1 and 7 would evaluate the next stage instead.
+
 **Solution:**
 
 Jul 2026 Quiz 1.
@@ -454,6 +472,8 @@ $$
 $$
 
 Find the correct inequality relating these three quantities.
+
+**Prove each inequality separately:** With centers fixed, nearest-center assignment minimizes every point's cost, so their sum cannot increase. With those assignments fixed, each cluster mean minimizes its within-cluster squared sum, so averaging cannot increase it either. Chain these two non-increases. Equality is allowed when the existing assignments or means are already optimal for that stage.
 
 **Solution:**
 
@@ -499,6 +519,8 @@ The following table shows objective values across iterations.
 
 At which iteration has the objective reached its final stable value?
 
+**Identify start versus detection of a plateau:** Compare successive differences: $500-800=-300$, $400-500=-100$, then $400-400=0$ twice. The eventual value first occurs at iteration 3; iteration 4 supplies the first repeated value. If the question asks when a stopping test detects equality, that count differs from when the stable objective first appears.
+
 **Solution:**
 
 May 2025 Quiz 1.
@@ -524,6 +546,8 @@ B. It may fail to converge for one initialization while converging for another.
 C. It is sensitive to outliers.
 
 D. Its solution is always globally optimal.
+
+**Use the objective properties:** Squared distances are nonnegative and Lloyd updates do not increase their sum. Under consistent tie/empty-cluster handling this supports convergence, but not the global optimum. The mean is outlier-sensitive: adding value 100 to $(0,0)$ moves the mean from 0 to $100/3$, illustrating why extreme points can move centers substantially.
 
 **Solution:**
 
@@ -564,6 +588,8 @@ B. $K=10$
 C. $K=100$
 
 D. $K=1000$
+
+**Construct a matching lower bound:** WCSS is a sum of squares, so $J\ge0$. If $K=n=1000$, put a center at every sample and assign each sample to its identical center. Every term is $\|x_i-x_i\|^2=0$, achieving the bound. Thus zero is a global objective minimum, independently of whether these clusters are useful.
 
 **Solution:**
 
@@ -608,6 +634,8 @@ What type of relation among $a,b,c$ and $d$ holds true in a general scenario?
 
 `Week 3.pdf`, Q1, pp. 2–3; options column-wise listed hain.
 
+**Non-increase does not mean strict decrease:** A larger allowed number of clusters can reproduce an old solution, so globally optimal WCSS cannot rise. It need not fall: if all points coincide, one center already gives zero and extra centers leave zero unchanged. Also separate Lloyd runs may end at different local optima, so compare optimal costs only when invoking this monotonicity.
+
 **Step 1:** Section 3.3 ka rule optimal costs ke liye $a\ge b\ge c\ge d$ hai. Typical improving fit mein **(iv) $a>d$** intended choice hai.
 
 **Step 2 — Strict guarantee nahi:** 300 identical points hon toh all costs zero; $a>d$ false. Independent local runs ka ordering bhi guaranteed nahi. Thus agar “holds true” ka meaning **every dataset/run par guaranteed** hai, **(vi)** correct interpretation hai. PDF explanation typical decreasing trend batati hai, strict theorem nahi.
@@ -642,6 +670,8 @@ Based on the general behaviour of the k-means algorithm, answer the following qu
 (iii) What could be a good choice of $k$ from the given scatter plots?
 
 `Week 3.pdf`, Q7, pp. 33–34.
+
+**Selection criterion:** For each candidate $K$, total objective is $F(K)=J(K)+P(K)$. Lower clustering loss favors larger $K$, while increasing penalty charges for that complexity. Read the minimum of the **sum** curve, not its crossing with another curve or the minimum of loss alone. The displayed selected $K$ is the total-objective minimizer.
 
 **Step 1:** Red decreases with $K$: loss $J(K)$.
 
@@ -684,6 +714,13 @@ $$C_1=(1,2),\qquad C_2=(2.5,3).$$
 What is the equation of Voronoi regions boundary?
 
 `Week 3.pdf`, Q3, pp. 15–20. Columns are the four points; remaining 996 points are not supplied or used in this requested run.
+
+**Derive the boundary equation:** Equate squared distances to updated centers:
+
+$$\|z-\mu_1\|^2=\|z-\mu_2\|^2
+\Rightarrow2z^T(\mu_2-\mu_1)=\|\mu_2\|^2-\|\mu_1\|^2.$$
+
+The $z^Tz$ terms cancel. Substitute the updated means, clear fractional denominators, and test each mean in the resulting inequality to identify its side.
 
 **Step 1 — Assign to given centers:**
 
@@ -772,6 +809,8 @@ Oct 2022 Quiz 1 Q24 impossible-shape question isi property par based hai. Suppli
 
 `Week 3.pdf`, Q5, pp. 24–30.
 
+**Build one cell by beating every rival:** Region of center $\mu_k$ satisfies $\|z-\mu_k\|^2\le\|z-\mu_j\|^2$ for every other $j$. Expanding each pair produces a linear half-space. Intersect the two relevant half-spaces for each of the three centers. A line joining centers is different from the perpendicular bisector that defines equal distances.
+
 **Step 1 — Read points and calculate means:**
 
 - Green: $(7,9),(9,7),(7,7),(9,9)$; mean $G=(32/4,32/4)=(8,8)$.
@@ -833,6 +872,8 @@ C. $(-0.5,0.5)$
 
 D. $(0.75,0.9)$
 
+**Apply convexity of a nearest-center cell:** Each pairwise distance comparison is a half-space; their intersection is convex. Therefore a cell containing four square corners contains their entire convex hull. Test whether each candidate satisfies $-1\le x\le1$ and $-1\le y\le1$. Outside the square means not guaranteed, not necessarily excluded from the actual cell.
+
 **Solution:**
 
 Sep 2023 End Term.
@@ -872,6 +913,8 @@ Same convexity pattern: Jan 2025 Quiz 1 Q7 mein $(0,1),(1,1)$ ke between $(0.2,1
 
 $$d_1=(1,1),\ d_2=(3,1),\ d_3=(1,3),\ d_4=(3,3),$$
 $$d_5=(5,3),\ d_6=(7,3),\ d_7=(5,5),\ d_8=(7,5).$$
+
+**Compute before claiming stability:** Both group sums are $(16,12)$ over four points, so both means equal $(4,3)$. Then every point has identical distances to both centers. Assignment is controlled entirely by the tie rule. Keeping prior memberships preserves this state; assigning all ties to one center does not. Cost comparisons still use the supplied group's squared residuals.
 
 **Step 1 — Calculate both means:**
 
@@ -914,6 +957,12 @@ K=3
 $$
 
 What can be said about the positions of the cluster centers minimizing WCSS?
+
+**Average the affine relationship:** Perfect negative correlation with nonzero variances means $x_{i2}=a+bx_{i1}$, $b<0$. For any group of size $m$,
+
+$$\mu_2=\frac1m\sum_i(a+bx_{i1})=a+b\frac1m\sum_i x_{i1}=a+b\mu_1.$$
+
+Thus every cluster mean stays on the same line; the slope depends on measurement scales.
 
 **Solution:**
 
@@ -975,6 +1024,8 @@ The Euclidean distances from the remaining points to the selected centroid are:
 
 Find the probability that $x_2$ is selected as the second centroid.
 
+**Normalize the sampling scores:** K-Means++ uses $P_i=D_i^2/\sum_jD_j^2$, where $D_i$ is distance to the nearest chosen center. Square the supplied distances once, add all candidate scores, then divide the requested point's score by this total. Because the first center is given, this is conditional probability, with no additional uniform first-selection factor.
+
 **Solution:**
 
 May 2024 Quiz 1.
@@ -1016,6 +1067,8 @@ The question asks:
 
 Important: Part (1) explicitly requests the highest-scoring point, rather than a random sample.
 
+**Update distance-to-nearest-center, not just distance to the last center:** After choosing two centers, each candidate score is $\min(\|x-\mu_1\|^2,\|x-\mu_2\|^2)$. Compare both values before normalizing. For $(2,3)$, the minimum changes from 4 to 1 because the new center $(2,4)$ is close. This changes the sampling denominator as well.
+
 **Solution:**
 
 Existing notes mein term labels Sep 2024 / Jan 2025 Quiz 1 hain.
@@ -1055,6 +1108,8 @@ Mar 2026 Quiz 1 Q34 bhi third-center minimum-distance rule test karta hai. Uske 
 ### Q46(iii) — Same six points, third-center sampling
 
 Use Q46 ka original dataset and **given initial centers** $(2,1),(6,6)$, not its updated Lloyd means. Yeh already-stated question ka remaining subpart hai.
+
+**Third-center probability formula:** With two centers already fixed, compute $D_i^2$ as the smaller of their two squared distances for every sample. Selected center locations have score zero. Sum the updated scores and divide the requested point's updated score by that total. Do not reuse the second-center denominator, which only accounted for one existing center.
 
 **Step 1 — Nearest selected-center squared scores:** Q46 ki initial table se row-wise minimum:
 
@@ -1109,6 +1164,8 @@ C. If $(2,2)$ is selected, the algorithm always converges in one iteration.
 
 D. The tie-breaking rule affects the final centers.
 
+**Separate seeding randomness from assignment ties:** From the first corner, squared scores are $4,4,8$, so probabilities are $4/16,4/16,8/16$. Once the opposite corner is selected, the remaining two corners are equidistant from both centers. Seeding probabilities do not resolve these assignment ties; a separate tie policy determines the updated groups.
+
 **Solution:**
 
 Oct 2025 Quiz 1.
@@ -1142,6 +1199,8 @@ $$
 $$
 
 Determine which remaining point has the least chance of becoming the next center, and its probability using the distance-based rule specified in the question.
+
+**State which probability rule is used:** Unsquared-distance sampling uses $p_i=d_i/\sum d_j$; standard K-Means++ uses $p_i=d_i^2/\sum d_j^2$. Both choose the same least-distance candidate, but their denominators and probabilities differ. Here that point has distance 1, so only the denominator changes between the two displayed calculations.
 
 **Solution:**
 
@@ -1196,6 +1255,8 @@ B. May be optimal or worse.
 C. Does not converge.
 
 D. Always unique.
+
+**Initialization is not global optimization:** Farthest-first chooses centers using distances from already selected centers, not by evaluating every possible final partition. Lloyd then improves that starting solution locally. Thus final cost can equal $J^*$ or exceed it; it cannot be below the global minimum by definition. A good initialization heuristic is not a certificate of exact optimality.
 
 **Solution:**
 
@@ -1253,6 +1314,8 @@ $J_K^*$ same dataset aur same $K$ ka globally minimum cost hai. Subsequent Lloyd
 
 `Week 3.pdf`, Q8, pp. 35–36.
 
+**Read the expectation correctly:** Standard K-Means++ samples centers randomly with distance-squared probabilities. Its guarantee bounds the average initialization cost over this randomness. Lloyd updates can only lower each run's cost, so taking expectations preserves the bound for final cost too. For fixed $K$ the factor is fixed; this does not bound each individual run by that same factor.
+
 **Step 1:** First center uniform random; later centers $D^2$-weighted random samples. Statement (i) false. Fixing a random seed makes a run reproducible, not the underlying method deterministic.
 
 **Step 2:** For fixed $K$, the stated expected upper bound follows from the property above and non-increasing Lloyd updates. Statement (ii) true in that sense.
@@ -1301,6 +1364,8 @@ Answer:
 1. Which point has the highest probability of becoming the second center when Manhattan distance is used?
 2. If $(3,3),(10,10),(12,12)$ are the centers, which center is closest to a new point $(-5,10)$ using Euclidean distance?
 
+**Reset the metric between subparts:** First use $d_1((a,b),(2,2))=|a-2|+|b-2|$ and identify the largest score. Second use squared Euclidean distances from $(-5,10)$ to each candidate center; taking square roots is unnecessary for ordering. The most likely seed and the closest assigned center are different operations.
+
 **Solution:**
 
 Oct 2023 Quiz 1.
@@ -1346,6 +1411,8 @@ $$
 $$
 
 To which cluster does point $(2.4,3)$ belong after the assignment step?
+
+**Substitute absolute differences:** For center 1, differences are $1.4,2$, so Manhattan distance 3.4. For center 2, differences are $-2.6,-1$; absolute values give $2.6+1=3.6$. Since 3.4 is smaller, the query joins cluster 1. Do not sum signed differences, which could cancel.
 
 **Solution:**
 
@@ -1419,6 +1486,8 @@ B. $S$ is positive and close to 1.
 C. $S=-1$ exactly.
 
 D. $S$ is negative but need not be exactly $-1$.
+
+**Interpret the sign using the formula:** $s=(b-a)/\max(a,b)$. Denominator is positive in the ordinary case, so $a>b$ gives negative silhouette: the point is closer on average to another cluster than its own. For $a=6,b=3$, $s=-3/6=-0.5$. A dataset score needs all point scores, not merely center coordinates.
 
 **Solution:**
 

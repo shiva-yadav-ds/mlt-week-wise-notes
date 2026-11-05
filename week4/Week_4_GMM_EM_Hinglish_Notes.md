@@ -2,6 +2,8 @@
 
 **Flow:** Data ke peeche probability model → likelihood aur MLE → prior se posterior → posterior mean aur MAP → hidden mixture components → responsibilities → EM updates.
 
+**Probability estimation ka workflow:** Observation model likho → independent samples ki likelihood multiply karo → log lo → parameter differentiate karo → support/boundaries check karo. Bayesian questions mein prior multiply karke posterior identify karo; mean aur MAP alag answers ho sakte hain. GMM mein unknown component labels ko responsibilities replace karti hain: E-step probabilities nikaalta hai, M-step unse weighted parameter estimates.
+
 ## Topic index
 
 | Topic | Subtopics | Questions |
@@ -105,6 +107,8 @@ $$\boxed{\hat p_{\mathrm{MLE}}=\frac{s}{s+f}=\frac{s}{n}}.$$
 
 Consider a dataset with 100 total data points. Each data point is classified as either type A or type B. We model this using a Bernoulli distribution, where p is the probability of a data point being type A. If the maximum likelihood estimate (MLE) of p based on the dataset is 0.4, how many data points of type B are there in this dataset?
 
+**Derive the counting rule:** Bernoulli likelihood is $L(p)=p^{n_A}(1-p)^{n_B}$. Its log derivative is $n_A/p-n_B/(1-p)=0$, which rearranges to $p=n_A/(n_A+n_B)$. With total 100 and estimate 0.4, recover A count as $100(0.4)=40$, then subtract from the total to obtain B count.
+
 **Solution:**
 
 1. Success/type A probability estimate is $\hat p=n_A/n$.
@@ -122,6 +126,8 @@ Same wording aur same numbers Q9 mein repeat hain, isliye separate solution repe
 **Question:**
 
 Consider a dataset for an unsupervised learning problem in which each data-point is either 1 or 0. This dataset is modeled using a Bernoulli distribution with parameter p. The MLE for p is 0.25. If the number of ones in the dataset is 10, find the number of zeros.
+
+**Solve for the unknown denominator:** The MLE is the observed ones fraction, so $1/4=10/n$. Cross-multiply: $n=4(10)=40$. These 40 observations include the ten ones; the remaining $40-10=30$ are zeros. Multiplying 10 by 0.25 would not recover the total.
 
 **Solution:**
 
@@ -142,6 +148,8 @@ $$\boxed{30}.$$
 **Question:**
 
 Suppose you toss a coin four times and observe no heads. You then give the coin to your friend, who tosses it until the first head occurs. Your friend tosses the coin a total of five times. Let p denote the probability that the coin comes up heads. Find the maximum likelihood estimate of p.
+
+**Include both observations in the likelihood:** Four initial tails contribute $(1-p)^4$. Stopping on the fifth subsequent toss means four more tails followed by one head, contributing $(1-p)^4p$. Thus $\ell(p)=\ln p+8\ln(1-p)$. Setting $1/p-8/(1-p)=0$ gives $1-p=8p$, hence $p=1/9$.
 
 **Solution:**
 
@@ -170,6 +178,8 @@ Agar group membership observed hai aur group j ka own $p_j$ hai, har group mein 
 **Question:**
 
 Consider a dataset of n observations $\{x_1,x_2,\ldots,x_n\}$, where each $x_i$ follows a Bernoulli distribution with parameter p, i.e., $x_i\sim\operatorname{Bernoulli}(p)$ for $i=1,2,\ldots,n$. However, you have reason to believe that the parameter p might differ for two distinct groups within the dataset. You suspect that there are two groups in the dataset, each with its own parameter ($p_1$ and $p_2$). Now, develop an algorithm to estimate the parameters $p_1$ and $p_2$ using maximum likelihood estimation. Then, apply your algorithm to a dataset with the following observations and corresponding group labels: {0, 1, 1, 0, 1} and {1, 0, 1, 0, 1} for group 1 and group 2 respectively. Calculate the maximum likelihood estimates of $p_1$ and rounded to two decimal places.
+
+**Separate parameters by observed groups:** Since the memberships are known, group 1 contributes only factors involving $p_1$ and group 2 only factors involving $p_2$. Partial derivatives can therefore be solved independently. Count ones in each sequence: $0+1+1+0+1=3$ and $1+0+1+0+1=3$, each out of five.
 
 **Solution:**
 
@@ -241,6 +251,8 @@ $$x_1=1,\ x_2=2,\ x_3=3,\ x_4=4,\ x_5=5,\ x_6=6.$$
 
 What is the maximum likelihood estimate for $\lambda$? Enter your answer correct to three decimal places.
 
+**Likelihood-to-estimate sequence:** Independence means multiply the six densities: $\lambda^6e^{-\lambda S}$ with $S=\sum_i x_i$. Log gives $6\ln\lambda-\lambda S$. Differentiate, set $6/\lambda-S=0$, and obtain $\lambda=6/S$. The second derivative $-6/\lambda^2$ is negative, confirming a maximum for positive $S$.
+
 **Solution — (i): Product first, then logarithm**
 
 $$L(\lambda)=\prod_{i=1}^6\lambda e^{-\lambda x_i}=\lambda^6e^{-\lambda\sum_i x_i}.$$
@@ -296,6 +308,8 @@ where $k$ is some constant and $\lambda$ is the parameter that we want to estima
 (iv) $\frac1n\sum_{i=1}^n x_i^k$
 
 `Week 4.pdf`, Q1, pp. 2–7; options column-wise transcribed. Standard derivation assumes IID positive observations, so log terms are finite.
+
+**Track the scale parameter powers:** The Weibull scale enters both $\lambda^{-k}$ and the exponent $-x_i^k/\lambda^k$. Across $n$ samples these become $\lambda^{-nk}$ and $-S\lambda^{-k}$. Differentiate $-nk\ln\lambda-S\lambda^{-k}$ carefully: the second derivative term in the first derivative is $+kS\lambda^{-k-1}$. This yields a mean of $x_i^k$, followed by a $k$th root.
 
 **Step 1 — Separate parameter powers:**
 
@@ -380,6 +394,8 @@ Here $\lambda$ is a parameter. Based on the above data, answer the given subques
 
 In case the table is not clear: the value 0 appears once in the dataset, the value 1 appears four times in the dataset, and so on. Find the maximum likelihood estimate for the parameter $\lambda$ of the Poisson distribution given this dataset.
 
+**Frequency table is repeated observations:** If value $v_j$ occurs $f_j$ times, then $n=\sum_jf_j$ and $\sum_i x_i=\sum_jf_jv_j$. Poisson log-likelihood groups as $-n\lambda+(\sum_i x_i)\ln\lambda-\sum_i\ln(x_i!)$. Derivative zero gives the frequency-weighted sample mean, not the unweighted mean of the distinct row labels.
+
 **Solution — (i):**
 
 $$\ln f(x_i;\lambda)=-\lambda+x_i\ln\lambda-\ln(x_i!).$$
@@ -444,6 +460,8 @@ $$X=\{2.5,1.8,3.2,2.0,2.7\}.$$
 
 What is the maximum likelihood estimator of $\theta$ for the above sample? Enter the answer correct to three decimal places.
 
+**Keep log sums and support separate:** For the supplied Pareto density, $\ell=n\ln\theta-(\theta+1)\sum_i\ln x_i$. Its derivative gives $\theta=n/\sum_i\ln x_i$. Sum the individual natural logs, then divide. Finally verify the estimate belongs to the stated domain $\theta>1$; an unconstrained stationary point outside that range would not be a valid interior MLE.
+
 **Solution:**
 
 **Step 1: Likelihood and log.**
@@ -503,6 +521,8 @@ Suppose we wish to find the maximum likelihood estimate of $\theta$, then which 
 (c) If $\prod_{i=1}^n5x_i^4<1$, then $\hat\theta_{\mathrm{MLE}}=-1$.
 
 (d) If $\prod_{i=1}^n5x_i^4>1$, then $\hat\theta_{\mathrm{MLE}}=-1$.
+
+**Discrete parameter choices need comparison, not derivatives:** Evaluate one likelihood for $\theta=-1$ and another for $\theta=1$. Their ratio is $5^n\prod_i x_i^4$. Ratio above 1 favors -1, below 1 favors +1, and exactly 1 gives a tie. The log-ratio $n\ln5+4\sum_i\ln x_i$ gives the same comparison by its sign.
 
 **Solution:**
 
@@ -578,6 +598,8 @@ For the given Beta distribution, choose the correct option. (MSQ)
 (c) Red line denotes the mode for the given Beta distribution, i.e. mode $=1/5$.
 
 (d) Green line denotes the mode for the given Beta distribution, i.e. mode $=1/5$.
+
+**Distinguish expectation from peak:** Beta mean is $\alpha/(\alpha+\beta)$, whereas an interior mode for $\alpha,\beta>1$ is $(\alpha-1)/(\alpha+\beta-2)$. For $(2,5)$, these are $2/7\approx0.286$ and $1/5=0.2$. The mode identifies the highest point of the density; the mean balances the entire distribution, including its tail.
 
 **Solution:**
 
@@ -679,6 +701,8 @@ The dataset has 8 ones and 5 zeros. Based on the above data, answer the given su
 
 (ii) If we use the expected value of the posterior as a point-estimate for the parameter of the Bernoulli distribution, what is $\hat p$?
 
+**Multiply likelihood by prior:** Prior contributes $p^{4-1}(1-p)^{3-1}$, and eight ones/five zeros contribute $p^8(1-p)^5$. The product is $p^{11}(1-p)^7$, hence Beta shapes 12 and 8. Asked expected value uses $12/(12+8)$; mode would instead subtract 1 from each shape.
+
 **Solution:**
 
 **(i):** Prior parameters $(4,3)$; observed counts $(8,5)$.
@@ -716,6 +740,8 @@ Based on the above data, answer the given subquestions.
 
 (ii) Find the posterior mean. Enter the answer correct to two decimal places.
 
+**Define success according to the parameter:** Here success means defective, so 10 are successes and 90 failures. Uniform prior is Beta(1,1), whose exponents are zero. Posterior exponents become 10 and 90, corresponding to Beta(11,91). Its mean divides 11 by $11+91=102$, not by original sample count 100.
+
 **Solution:**
 
 1. p means **defective** probability, so success count s=10 and failure count f=90.
@@ -743,6 +769,8 @@ Note:
 - Pdf of Beta distribution is $f(\theta;\alpha,\beta)=\theta^{\alpha-1}(1-\theta)^{\beta-1}/B(\alpha,\beta)$, $0\le\theta\le1$, $\alpha,\beta\ge0$, where $B(\alpha,\beta)$ is the Beta function.
 - The mean of the Beta distribution is: $E[\theta]=\alpha/(\alpha+\beta)$.
 
+**Show prior and data contributions:** Beta(10,40) has prior total 50. Add 150 heads to the first shape and 850 tails to the second, giving total 1050. Posterior mean can be checked as $(50/1050)(0.2)+(1000/1050)(0.15)=160/1050$. It must lie between prior mean and observed fraction.
+
 **Solution:**
 
 **Step 1:** Heads s=150, tails f=$1000-150=850$.
@@ -769,6 +797,8 @@ Note:
 
 - Pdf of Beta distribution is $f(\theta;\alpha,\beta)=\theta^{\alpha-1}(1-\theta)^{\beta-1}/B(\alpha,\beta)$, $0\le\theta\le1$, $\alpha,\beta\ge0$, where $B(\alpha,\beta)$ is the Beta function.
 - The mean of the Beta distribution is: $E[\theta]=\alpha/(\alpha+\beta)$.
+
+**Update both outcomes:** One hundred observations with 60 heads imply 40 tails. Multiply prior and likelihood to get powers $p^{9+60}(1-p)^{39+40}=p^{69}(1-p)^{79}$, so shapes are 70 and 80. Mean is $70/150$. The smaller dataset leaves the prior with weight $50/150$, explaining the stronger pull toward 0.2.
 
 **Solution:** Q19 ka update method same hai, but counts change hain.
 
@@ -808,6 +838,8 @@ $$f(\lambda)=\frac{\beta^\alpha}{\Gamma(\alpha)}\lambda^{\alpha-1}e^{-\beta\lamb
 Find the posterior mean for $\alpha=6$ and $\beta=2$. The data points are $\{2,1,1,0.75,1.25,1\}$.
 
 `Week 4.pdf`, Q8, pp. 25–27.
+
+**Match the Gamma density pattern:** A shape–rate Gamma density is proportional to $\lambda^{a-1}e^{-b\lambda}$. Exponential likelihood adds $n$ to the power of $\lambda$ and $S$ to its rate in the exponent. Thus posterior shape is $\alpha+n$, rate $\beta+S$, and mean their ratio. Check the rate convention before using a Gamma mean formula.
 
 **Step 1 — Likelihood:** Put $S=\sum_i x_i$:
 
@@ -895,6 +927,8 @@ independently on 10 days. Consider a Uniform[0, 60] prior for the parameter $\th
 
 Recall that $\hat\theta_{\mathrm{MAP}}=\arg\max_\theta f(\theta\mid\{X_1,\ldots,X_n\})$, where f is the posterior distribution.
 
+**Likelihood support determines feasibility:** Under Uniform$(0,\theta)$, every observed delay must be at most $\theta$, requiring $\theta\ge\max_i x_i=55$. The prior limits $\theta$ to at most 60. Within $[55,60]$, the posterior is proportional to $\theta^{-10}$, whose derivative $-10\theta^{-11}<0$. Therefore the left feasible endpoint maximizes it.
+
 **Solution:**
 
 **Step 1:** Largest observation m=55. Data require $\theta\ge55$.
@@ -933,6 +967,8 @@ $$\hat\lambda_{\mathrm{MAP}}=\arg\max_\lambda f(\lambda\mid\{X_1,\ldots,X_n\}),$
 
 where f is the posterior distribution.
 
+**Use a support-aware derivative:** On $(0,2)$, the uniform prior adds only a constant to log-likelihood. So log-posterior derivative is $8/\lambda-26.2$. Solve for $8/26.2$, check it lies strictly between 0 and 2, then round. A prior with a different support could exclude that unconstrained optimum.
+
 **Solution:**
 
 **Step 1:** Sum lifetimes:
@@ -966,6 +1002,8 @@ Suppose we have a Uniform(1, 10) prior for the parameter $\theta$. Then, the val
 (a) True
 
 (b) False
+
+**Compare optimization domains:** MAP maximizes $L(\theta)p(\theta)$. A uniform prior is constant only inside its support and zero outside it. Therefore MAP equals likelihood maximization **restricted to that support**. It equals unrestricted MLE only if a likelihood maximizer is allowed there. The prior's flatness does not remove its boundary restrictions.
 
 **Solution:**
 
@@ -1095,6 +1133,8 @@ component k ka **effective sample count** hai; it can exceed 1 and need not be i
 
 The EM algorithm is run on a dataset of 100 points modeled using a GMM with three components. Let $\lambda_{ik}$ be the values obtained in the E-step in the final iteration. Here, i is the index of the data-point and k is the index of a component. Also, let $\pi_1=0.3,\pi_2=0.5,\pi_3=0.2$ be the estimates of the mixture probabilities. $x_p$ represent one of the data-points, for some constant p. If $\lambda_{p1}+\lambda_{p3}=0.2$, what is the probability that the second component generated $x_p$ given that we have seen the data-point?
 
+**Use row normalization:** Responsibilities $r_{pk}=P(z_p=k\mid x_p)$ describe mutually exclusive components for the same sample, so $\sum_kr_{pk}=1$. If components 1 and 3 together have probability 0.2, component 2 has $1-0.2=0.8$. Mixture prior $\pi_2$ is a different probability before observing this point.
+
 **Solution:**
 
 1. Requested probability is posterior component probability $\lambda_{p2}$, not prior $\pi_2$.
@@ -1124,6 +1164,8 @@ $$\mu_1=1,\quad\mu_2=3,$$
 $$\sigma_1^2=1,\quad\sigma_2^2=1.$$
 
 What is the probability that $x_1$ belongs to the first component? Enter the answer correct to two decimal places.
+
+**Bayes formula for one E-step row:** Compute $s_k=\pi_k\mathcal N(x;\mu_k,\sigma_k^2)$, then $r_k=s_k/\sum_js_j$. At $x=1$, means 1 and 3 give squared deviations 0 and 4. Equal priors and equal Gaussian prefactors cancel, leaving relative scores $1,e^{-2}$. Normalize these to obtain the two responsibilities.
 
 **Solution:**
 
@@ -1158,6 +1200,8 @@ $$P(x\mid z=1)=0.2,\quad P(x\mid z=2)=0.3,\quad P(x\mid z=3)=0.5.$$
 The mixture probabilities are $\pi_1=0.4$, $\pi_2=0.3$, $\pi_3=0.3$. Which component is most likely to have generated the data point? Hint: Use posterior probability.
 
 `Week 4.pdf`, Q4, pp. 13–15. Continuous GMM mein these are component **density values**, despite the source's $P$ notation.
+
+**Weight densities before comparing:** Products are $0.4(0.2)=0.08$, $0.3(0.3)=0.09$, $0.3(0.5)=0.15$. Their sum 0.32 is the mixture density at this observation. Divide each product by 0.32 for posteriors, or compare products directly for the winning component. A three-way winner need not exceed probability 1/2.
 
 **Step 1 — Prior-weighted scores:** Unlike Q11, priors unequal hain, so cancel nahi kar sakte.
 
@@ -1227,6 +1271,8 @@ $$\lambda_{1k}=0.3,\quad\lambda_{2k}=0.1,\quad\lambda_{3k}=2.5,\quad\lambda_{4k}
 
 What is the estimate of $\mu_k$ after the M-step? Enter your answer correct to two decimal places.
 
+**M-step mean formula:** $\mu_k^{new}=\sum_i r_{ik}x_i/\sum_i r_{ik}$. The denominator is the component's effective membership count, not the number of observations. Compute each weighted product, sum them, then divide by the same weights' sum. First validate $0\le r_{ik}\le1$; the supplied 2.5 violates that requirement, so retain the existing inconsistency caveat.
+
 **Solution:**
 
 **First check:** Individual responsibility $\lambda_{3k}=2.5>1$ is impossible for a valid E-step probability. The supplied numbers are internally inconsistent as GMM responsibilities. Keep them unchanged to show the weighted calculation intended by the paper; don't silently replace 2.5 with 0.25.
@@ -1262,6 +1308,8 @@ $$R_{n\times K}=\begin{bmatrix}0.3&a&0.5\\b&1&b\\c&0.5&c\\0.1&0.4&d\end{bmatrix}
 where each $R_{ij}$ entry corresponds to the probability of $X_i$ belonging to component $K_j$. Let $\hat\mu_1,\hat\mu_2,\hat\mu_3$ be the updated means in the M-step after the E-step. Calculate $\hat\mu_1+\hat\mu_2+\hat\mu_3$.
 
 `Week 4.pdf`, Q3, pp. 10–12.
+
+**Rows and columns answer different questions:** Fill missing entries using each row's total 1. Then for component $k$, sum **down its column** to get $N_k$ and multiply that column by observations to get $T_k=\sum_i r_{ik}x_i$. Its updated mean is $T_k/N_k$. Only after finding each mean should you add the requested means.
 
 **Step 1 — Each row sums to one:**
 
@@ -1315,6 +1363,8 @@ The $i$-th element of this vector represents $P(z_i=3\mid x_i)$. What will $\mu_
 
 `Week 4.pdf`, Q7, pp. 22–24.
 
+**Two updates from one effective count:** The component's column sums to $N_3=3.2$, and its weighted data sum is $T_3=1.6$. Its location estimate is $T_3/N_3=0.5$. Its mixture probability is its effective share of all ten observations, $N_3/10=0.32$. The two denominators differ because location and population share are different quantities.
+
 **Step 1 — Effective count:**
 
 $$N_3=0.2+0.3+0.1+0.6+0.1+0.5+0.4+0.7+0.1+0.2=3.2.$$
@@ -1361,6 +1411,8 @@ You are presented with a dataset that has latent variables that influences your 
 
 (d) E-step: Estimate the likelihood over the model parameters, M-step: Maximize the number of parameters in the model.
 
+**State the quantities held fixed:** E-step holds current parameters fixed and computes posterior membership probabilities. M-step holds those responsibilities fixed and maximizes their weighted complete-data log-likelihood over parameters. The number of components is fixed for this EM run; neither step chooses how many hidden groups or parameters should exist.
+
 **Solution:**
 
 1. E-step hidden variables ke posterior/expectations calculate karta hai, unki **number** maximize/estimate karna its standard role nahi.
@@ -1397,6 +1449,8 @@ $$f(\lambda_1x_1+\lambda_2x_2)\le\lambda_1f(x_1)+\lambda_2f(x_2).$$
 (ii) Select the graph(s) from above that represent convex functions.
 
 `Week 4.pdf`, second question labelled Q6, pp. 19–21. Source left side prints $\lambda x_1$; the stated two weights make $\lambda_1x_1$ the intended expression.
+
+**Write Jensen's chord test:** For endpoints $a,b$ and $0\le t\le1$, convexity requires $f((1-t)a+tb)\le(1-t)f(a)+tf(b)$. The right side is chord height. Passing one marked pair verifies only that comparison; global convexity requires every endpoint pair and every $t$. A single interior point above a chord disproves it.
 
 **Step 1 — Draw chords for the marked pairs:**
 
@@ -1490,6 +1544,8 @@ Which of the following statements is/are true? (MSQ)
 (d) Poor initialization leads to a slower convergence of Lloyd’s algorithm.
 
 (e) Lloyd’s algorithm is sensitive to the number of clusters (k).
+
+**Compare the monotonic quantities:** Exact EM makes observed log-likelihood nondecreasing; Lloyd makes WCSS nonincreasing. Both statements describe progress of an objective, not guaranteed global optimality or independence from initialization. A poor fixed point can be reached quickly, so a small iteration count is not proof of a good final fit.
 
 **Solution:**
 

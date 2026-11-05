@@ -2,6 +2,8 @@
 
 **Flow:** Prediction ki galti measure karna → classification losses → neuron ka calculation → activations aur architecture → parameter counting → forward pass → loss → backward pass aur learning.
 
+**Network ko ek calculation chain samjho:** Input → weighted sums plus biases → hidden activations → next weighted sums → output activation → target-dependent loss. Har layer mein $z$ (before activation) aur $a$ (after activation) separately likho. Parameter counting mein weights/biases count hote hain; inputs, intermediate activations aur one-sample loss additional learned parameters nahi hain.
+
 ## Topic index
 
 | Topic | Subtopics | Questions |
@@ -210,6 +212,8 @@ Based on the above data, answer the given subquestions.
 
 (d) The logistic loss and the (SVM) hinge loss intersect when $(w^Tx)y=\frac1e$.
 
+**Write the four formulas first:** With signed margin $u=yw^Tx$, squared loss is $(1-u)^2$, hinge is $\max(0,1-u)$, perceptron is $\max(0,-u)$, and logistic is $\ln(1+e^{-u})$. Their zero locations and smoothness distinguish the curves. For an intersection, choose a valid hinge branch before equating formulas, then check the resulting $u$ belongs to that branch.
+
 **Solution — (i) to (iv): Shape se identify karo**
 
 1. Curve **(1)** parabola hai with minimum at $u=1$. So squared loss.
@@ -280,6 +284,8 @@ Which losses penalize some data points that are correctly classified?
 
 (D) Perceptron Loss
 
+**Translate the quantifier:** “Some correctly classified points” asks whether at least one $u>0$ has positive loss. Select $u=1/2$ and substitute it into each formula. One positive loss proves the claim for that loss; to exclude perceptron, use $u>0\Rightarrow-u<0\Rightarrow\max(0,-u)=0$ for every such point.
+
 **Solution:**
 
 **Step 1 — Translate “correct”:** For a non-boundary binary example, signed margin $u=yf(x)>0$ means correct side. It does not force $u=1$ or high confidence.
@@ -326,6 +332,8 @@ Match the following; more than one match could be correct.
 (i) $\|w\|^2/2$
 
 (ii) $C\sum_i\max(0,(w^Tx_i)y_i)$
+
+**Identify what each term reads:** $R(w)=\|w\|^2/2$ uses only weights. Empirical loss reads each input, label and prediction. To check the printed hinge expression, substitute a clearly wrong margin $u=-2$: a correct surrogate should penalize it. This immediate substitution exposes the missing $1-$ before assigning roles to the terms.
 
 **Step 1 — Correct the source formula before learning it:** Printed term is missing **$1-$**. Standard soft-margin SVM is
 
@@ -443,6 +451,12 @@ Isliye sirf linear layers stack karne se nonlinear boundaries represent karne ki
   - Neuron 1: Weights: [0.2, 0.4], Bias: −0.3
 
 Assume that the input values are [0.6, 0.3, 0.8]. Calculate output of Neuron 1 in hidden layer.
+
+**Single-neuron formula:** $z=w^Tx+b$ and output $a=\sigma(z)$. Here
+
+$$z=\begin{bmatrix}0.5&-0.2&0.8\end{bmatrix}\begin{bmatrix}0.6\\0.3\\0.8\end{bmatrix}+0.1.$$
+
+Multiply matching coordinates and add bias once. The requested hidden output is the sigmoid of this sum; final-layer weights do not enter that neuron's calculation.
 
 **Solution:**
 
@@ -576,6 +590,8 @@ What is the activation function used in the first hidden layer?
 
 (b) Sigmoid
 
+**Counting and range rules:** A fully connected $m\to n$ layer has $mn$ edge weights and, if included, $n$ biases. Sum over adjacent layers only. For activation choice, inspect required range: a binary probability lies in $(0,1)$ and suits sigmoid; ReLU can output any nonnegative number, including values above 1. Architecture counting and activation selection are separate subproblems.
+
 **Solution — (i): Adjacent layers ke connections count karo**
 
 Architecture $5\to10\to10\to1$ hai.
@@ -624,6 +640,8 @@ $$\boxed{\text{(a) ReLU}}.$$
 
 Find the total number of parameters in the network. Ignore the biases.
 
+**Explain each product:** Ten first-hidden neurons each receive five inputs, giving 50 weights. Each next hidden layer has ten neurons receiving ten inputs, giving 100 per transition. The single output receives ten hidden activations, giving 10. Three hidden layers create two hidden-to-hidden transitions. Biases are excluded as specified.
+
 **Solution:**
 
 **Step 1: Architecture expand karo.**
@@ -647,6 +665,8 @@ $$\boxed{N=50+100+100+10=260}.$$
 **Question:**
 
 (SA) You build a fully-connected feed-forward neural network for a classification task. The input is a 5-dimensional vector; the network has two hidden layers of 10 neurons each, followed by an output layer of 3 neurons. Every layer is densely (fully) connected to the next. Ignoring all bias terms, compute the total number of weight parameters in the network. (Enter −1 if it cannot be determined.)
+
+**Matrix-shape check:** Weight matrices have shapes $10\times5$, $10\times10$, and $3\times10$. Their entry counts are 50,100,30. Add to get 180 weights. Activation values do not change these shapes, and no missing numerical weight values prevent counting parameters. Biases remain excluded under the question's convention.
 
 **Solution:**
 
@@ -713,6 +733,13 @@ $$w^{\mathrm{out}}=[2\quad -2]^T,$$
 
 where $w_i^{(j)}$ represents the weight associated with the $j$th neuron for the $i$th input feature. Suppose we are solving the regression problem, then determine the output of the neural network using ReLU as the activation function for the input $x=[1\quad3]^T$.
 
+**Matrix formation and activation order:**
+
+$$z=\begin{bmatrix}1/2&1/2\\1&-1\end{bmatrix}\begin{bmatrix}1\\3\end{bmatrix},\quad
+ a=\operatorname{ReLU}(z),\quad \hat y=\begin{bmatrix}2&-2\end{bmatrix}a.$$
+
+ReLU is applied to each completed hidden weighted sum. The output receives activated values $a$, not raw $z$. Linear regression output then leaves its final weighted sum unchanged.
+
 **Solution:**
 
 Question ka hidden layer two neurons wala hai; regression output identity use karega. Bias terms given nahi hain, so calculation mein zero bias lete hain.
@@ -765,6 +792,8 @@ All hidden and output neurons use sigmoid activation. The network uses cross-ent
 
 (ii) The second hidden layer's output, after activation, is $(0.2,0.5,0.8)^T$. Find cross-entropy loss when the corresponding output weights are $(2,1,-1)^T$ and output bias is 1. Give two decimal places.
 
+**Two formulas for two requests:** Parameter total is $\sum_l(n_{l-1}+1)n_l$ when every non-input neuron has a bias. The loss calculation starts from supplied hidden activations: compute $z=w_{out}^Ta+b$, then $p=\sigma(z)$, then BCE. For $y=1$, BCE simplifies to $-\ln p=\ln(1+e^{-z})$, a useful independent check.
+
 **Solution — (i), Step 1: Count each layer separately.**
 
 | Connection | Weights | Biases | Total |
@@ -816,6 +845,8 @@ where $w_i^{(j)}$ represents the weight associated with the $j$th neuron for the
 (c) $P(\text{class 1})=0.731,\quad P(\text{class 0})=0.269$
 
 (d) $P(\text{class 1})=0.993,\quad P(\text{class 0})=0.007$
+
+**Forward-pass shapes:** Input has two entries, hidden matrix is $2\times2$, and hidden output has two entries. ReLU acts entry by entry after matrix multiplication. The output vector then gives one scalar score $s=1a_1+2a_2$. Apply sigmoid once to that scalar and use its complement for class 0. Hidden units are not class probabilities.
 
 **Solution:**
 
@@ -870,6 +901,8 @@ Based on the above data, answer the given subquestions.
 (i) (SA) For input $x=0.5$, compute the regression output $\hat y$. Enter the answer correct to one decimal place.
 
 (ii) (SA) Suppose the target value for this input is $y=1.2$. Compute the squared loss $L=(\hat y-y)^2$. Enter the answer correct to two decimal places.
+
+**Separate prediction from loss:** Scalar input feeds two hidden products, each passed through $\max(0,z)$. Multiply these activated values by output weights and add to obtain the regression prediction. Only then introduce the target using $L=(\hat y-y)^2$. A supplied sigmoid formula does not change a stated linear regression output into a probability.
 
 **Solution — (i): Regression output**
 

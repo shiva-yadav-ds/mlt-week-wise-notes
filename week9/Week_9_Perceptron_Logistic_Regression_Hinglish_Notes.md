@@ -2,6 +2,8 @@
 
 **Flow:** Linear score aur boundary → perceptron updates → convergence aur margin → sigmoid probability → threshold decisions → loss aur learning → regularization/kernel → classifier comparison.
 
+**Teen alag stages:** Score $z=w^Tx+b$ is a real number; sigmoid converts it to probability; threshold converts probability to label. Perceptron training uses signed labels $\{-1,+1\}$ and mistake updates, while logistic likelihood usually uses $\{0,1\}$. Before every calculation fix label encoding, zero-score rule and whether the task asks for a score, probability, label, or new weight.
+
 ## Topic index
 
 | Topic | Subtopics | Questions |
@@ -71,6 +73,8 @@ The perceptron's decision boundary is a line in $\mathbb R^2$ and divides the sp
 
 (iv) 5
 
+**Apply the dimension rule:** An affine classifier in five dimensions has score $w_1x_1+\cdots+w_5x_5+b$. Its zero-score set is one hyperplane of dimension 4 when $w\ne0$. Five features change the number of coefficients, not the number of binary decision boundaries. The sign of this one score selects either side.
+
 **Solution:**
 
 **Step 1:** For nonzero w, $w^Tx+b=0$ is a four-dimensional hyperplane in five-dimensional input space.
@@ -123,6 +127,8 @@ Zero loss ka matlab **har point correct**, sirf majority correct nahi. Sum loss 
 >
 > (d) We can never find a $w$ for which the zero-one loss becomes zero on this dataset.
 
+**Reduce vector conditions to one scalar:** Linearity gives $w^T(cu)=c(w^Tu)$. Set $a=w^Tu$ and evaluate the four multipliers $1,-2,3,-4$. Negative multipliers reverse the score sign. To match labels 1 on positive multiples and 0 on negative multiples, the common scalar must be strictly positive.
+
 **Step 1 — Common scalar banao:** Let $a=w^Tu$. Four vector dot products ab $a,-2a,3a,-4a$ hain.
 
 **Step 2 — Required signs:**
@@ -162,6 +168,8 @@ Zero loss ka matlab **har point correct**, sirf majority correct nahi. Sum loss 
 >
 > (d) No such weight vector $w$ exists.
 
+**Derive the contradiction:** Inputs $u$ and $2u$ need opposite labels, but their scores are $a$ and $2a$. Multiplication by positive 2 cannot reverse a nonzero sign. If $a=0$, all four scores tie and a fixed rule returns the same label. Thus no bias-free weight can satisfy even the first opposite-label pair strictly.
+
 **Step 1:** Again $a=w^Tu$. Scores $a,2a,3a,4a$.
 
 **Step 2:** $a>0$ → all positive; labels 0 wale points wrong.
@@ -197,6 +205,8 @@ Zero loss ka matlab **har point correct**, sirf majority correct nahi. Sum loss 
 > (c) $w=[1,5]^T$
 >
 > (d) $w=[-1,1]^T$
+
+**Test signed margins:** For each candidate $w=(a,b)$, the four scores are $a+b,2a+b,a-b,2a-b$. Required signs are $+,+,-,-$. Equivalently multiply by labels and require every signed score positive. This tests all observations; one successful point does not establish a separator.
 
 **Step 1:** First two scores positive aur last two negative chahiye; compute $w^Tx$.
 
@@ -252,6 +262,8 @@ $$\boxed{\frac{w^Tx+b}{\|w\|}}.$$
 > (d) $w^Tx_5<0$
 >
 > (e) $w^Tx_3<0$
+
+**Projection formula:** Scalar projection on the unit direction $w/\|w\|$ is $s_i=x_i^Tw/\|w\|$. Because $\|w\|>0$ is common, sorting $s_i$ also sorts $w^Tx_i$. Perpendicular projections give score zero; projections opposite the arrow give negative scores. Distance from the origin alone does not determine this ordering.
 
 **Step 1 — Intended method:** Har point ko $w$ ki direction par project karo. Positive direction mein aage jaane se score badhta hai.
 
@@ -347,6 +359,8 @@ Consider the following data, with features $x=[x_1,x_2]^T$ and label y:
 
 Initialize the perceptron at $w=[1,1]^T$. Classify as +1 if $w^Tx>0$ and −1 if $w^Tx\le0$. How many times will w be updated during the entire training process? Cycle through points in the given order.
 
+**Check the supplied prediction rule first:** Scores under $(1,1)$ are $0+0,0+1,1+0,1+1$, namely $0,1,1,2$. The rule assigns zero to class $-1$, exactly the origin's label. Hence a complete pass has no prediction error. Do not substitute the alternative zero-margin-update rule, which would treat that origin differently.
+
 **Solution:**
 
 **Step 1 — Evaluate the initial model:**
@@ -385,6 +399,8 @@ $$\boxed{0\text{ updates};\quad w_{final}=(1,1)^T}.$$
 > (c) $w^{t+1}=[0,1,2]^T$, $w^{t+2}=[1,1,3]^T$
 >
 > (d) $w^{t+1}=[0,1,2]^T$, $w^{t+2}=[1,1,-1]^T$
+
+**Sequential update formula:** For a mistaken example, $w_{next}=w+yx$ with learning rate 1. First compute $y(w^Tx)$ to detect a mistake, then add the signed input coordinate-wise. The second example must use $w^{t+1}$ in its dot product. Its negative label changes the increment to $-x_2=(1,-1,-1)$.
 
 **Step 1 — First score:**
 
@@ -433,6 +449,8 @@ $$w^{t+2}=(1,0,2)+(-1)(-1,1,1)=(1,0,2)+(1,-1,-1)=\boxed{(2,-1,1)}.$$
 > (e) The model will predict the label as $+1$, for the new data point $[2\ -1]^T$.
 >
 > (f) The model will predict the label as $-1$, for the new data point $[2\ -1]^T$.
+
+**Trace an entire pass:** At each visit write current $w$, score $w^Tx$, signed margin $yw^Tx$, and whether it is $\le0$. Only then update $w\leftarrow w+yx$. After the first pass, recompute all margins with the final weight to verify convergence. The test input has score zero, so its answer additionally needs a prediction tie convention.
 
 **Step 1:** Use $y(w^Tx)\le0$ update rule; initialize $w=(0,0)$.
 
@@ -484,6 +502,8 @@ With tie rule $\hat y=+1$ for score $\ge0$, label $+1$ → (e).
 >
 > (b) No
 
+**Count updates rather than visits:** Visiting an already-correct point does not change weights. Starting from zero, mark only rows satisfying the stated update condition as updates 1,2,3. After the second such update, test the remaining and earlier samples again. One nonpositive signed margin is enough to disprove convergence under the zero-margin rule.
+
 **Step 1 — First point:** At zero weights, signed score 0, so first update:
 
 $$w^{(1)}=(0,0)+(+1)(-2,1)=(-2,1).$$
@@ -525,6 +545,8 @@ Consider $x_1=(1,1)^T$, $x_2=(1,-1)^T$, $x_3=(-1,-1)^T$, $x_4=(-1,1)^T$ with lab
 (i) What is the number of mistakes?
 
 (ii) What is the squared length of the final weight vector?
+
+**Order and final norm:** Use the requested order $x_4,x_3,x_2,x_1$ and recompute scores after every mistake. For negative labels, subtract the current input. A final mistake-free pass verifies the separator. Requested squared length is $w_1^2+w_2^2$, so for $(0,-2)$ it is $0+4=4$, not its length 2.
 
 **Solution:**
 
@@ -609,6 +631,8 @@ For which dataset is the perceptron algorithm likely to take fewer iterations to
 
 ![Supplied datasets with smaller and larger separation around the vertical boundary](images/new_margin_comparison.png)
 
+**Use geometry to compare a bound:** Perceptron has $M\le R^2/\gamma^2$, with radius $R=\max_i\|x_i\|$ and margin measured using a unit separator. A larger margin at comparable radius gives a smaller upper bound. This does not specify the actual number of updates, which also depends on order and initialization.
+
 **Solution:**
 
 **Step 1:** Figure 1 has points very close to the separating vertical line. Figure 2 has a wider empty band around it, hence larger margin for that separator.
@@ -640,6 +664,8 @@ $$\boxed{\text{Figure 2, as the intended qualitative answer}}.$$
 >
 > (d) The dataset is not linearly separable.
 
+**Turn inequalities into signed separation:** A valid separator must give positive score for positive examples and negative score for negative examples. Combine both as $y_iw^Tx_i>0$. If a vector's supplied inequalities have a fixed positive margin, normalize that vector by its norm to obtain geometric margin before invoking the mistake bound.
+
 **Step 1:** $x_1y>0$ means label aur first coordinate ka sign same hai:
 
 - $y=+1$ → $x_1>0$.
@@ -669,6 +695,12 @@ Thus (a) true. $x_1x_2>0$ additionally same-sign coordinates batata hai; separat
 
 > Consider a linearly separable binary classification dataset with 1000 data points and 100 features. Assume that there exists a $w$ such that $\|w\|=1$, $y_i(w^Tx_i)\ge0.5\ \forall i$. Also assume that $\|x\|_2\le2\ \forall i$. What is the maximum number of mistakes that the Perceptron algorithm can make on this dataset?
 
+**Substitute into the theorem:** Given $R\le2$ and unit-separator margin $\gamma\ge0.5$,
+
+$$M\le(R/\gamma)^2\le(2/0.5)^2=4^2=16.$$
+
+Using an upper bound on radius and lower bound on margin gives a conservative upper bound on mistakes. It is not a requirement to make 16 updates.
+
 **Step 1:** Unit separator already specified. Margin lower bound $\gamma=0.5$; radius upper bound $R=2$.
 
 **Step 2:**
@@ -697,6 +729,8 @@ $$M\le\frac{R^2}{\gamma^2}=\frac{2^2}{0.5^2}=\frac4{0.25}=\boxed{16}.$$
 >
 > (b) False
 
+**Inspect what the bound actually contains:** $R^2/\gamma^2$ has no direct sample-count or feature-count factor. Adding examples can alter the closest margin; adding features can alter both lengths and separability. Without these changes being specified, size alone cannot order convergence. Constructing examples with unchanged or improved geometry disproves any automatic size-based conclusion.
+
 **Step 1:** Bound depends on $R/\gamma$, not directly dimension/sample count. Those geometric values are not given.
 
 **Step 2 — Counterexample:** Let $D^{(2)}=\{(1,+1),(-2,-1)\}$ in 1D. Unit separator $w^*=1$ gives $R=2,\gamma=1$, bound 4.
@@ -722,6 +756,8 @@ More observations and more features hone ke bawajood bound **smaller** hai. Coun
 > (c) The Perceptron algorithm is guaranteed to converge to some separating hyperplane in a finite number of updates.
 >
 > (d) The Perceptron algorithm always converges to the maximum margin separator among all possible separating hyperplanes.
+
+**Separate existence, convergence and uniqueness:** A separating vector exists when all signed margins can be positive. The perceptron theorem promises a finite route to some separator under its assumptions. It does not minimize norm or maximize margin, and different update histories can end at different valid weights. Test each option against the actual promise.
 
 **Step 1:** Perceptron ka target specified vector $w_1$ nahi → (a) false.
 
@@ -763,6 +799,8 @@ Why useful? Corresponding training scores become $w_t'^T(cx_i)=c^2w_t^Tx_i$; sig
 >
 > (c) The mistake bound for $D_2$ will be greater than that of $D_1$.
 
+**Scale all relevant quantities:** If $x'_i=2x_i$, a fixed unit separator gives $\gamma'=2\gamma$ and $R'=2R$. Thus $(R'/\gamma')^2=(R/\gamma)^2$. In matched zero-start runs, each increment doubles, so $w'_t=2w_t$; scores scale by 4 and their signs stay unchanged.
+
 **Step 1:** $y_iw^{*T}(2x_i)=2y_iw^{*T}x_i>0$. Separability maintained → (a) true.
 
 **Step 2:** Under matched runs described in 3.8, weights double, boundary same → (b) true in intended setting.
@@ -786,6 +824,8 @@ Why useful? Corresponding training scores become $w_t'^T(cx_i)=c^2w_t^Tx_i$; sig
 > (c) The perceptron is guaranteed to converge on $S'$.
 >
 > (d) The perceptron produces exactly the same decision boundary on $S$ and on $S'$.
+
+**Verify the matched-run claim by induction:** At zero start, $w'_0=cw_0$. If $w'_t=cw_t$ and $x'=cx$, signed scores scale by $c^2>0$, so the same point triggers an update. Then $w'_{t+1}=cw_t+ycx=c(w_t+yx)$. Same order and tie rule are essential to continue this induction.
 
 **Step 1:** Radius and margin both multiply by $c$; ratio unchanged → (a) false.
 
@@ -841,6 +881,12 @@ Useful values:
 
 Consider a logistic regression model trained for binary classification with features in $\mathbb R^2$ and labels in $\{1,0\}$. The probability that test point $(1,3)^T$ belongs to class 1 is 0.75. What is the probability that $(-1,-3)^T$ belongs to class 0?
 
+**Prove the complement identity:**
+
+$$\sigma(-z)=\frac1{1+e^z}=1-\frac1{1+e^{-z}}=1-\sigma(z).$$
+
+Without bias, opposite input has score $-z$, so class-1 probability becomes $1-0.75=0.25$. Requested class-0 probability is its complement, $0.75$. With bias, $w^T(-x)+b$ need not equal $-(w^Tx+b)$.
+
 **Solution:**
 
 **Step 1 — No-bias interpretation:** Let $z=w^Tx$ and $\sigma(z)=0.75$. At opposite input, $w^T(-x)=-z$.
@@ -877,6 +923,8 @@ $$\boxed{P(0\mid-x)=1-0.25=0.75}.$$
 >
 > (d) $g$ is convex on all of $\mathbb R$.
 
+**Differentiate to judge shape:** $\sigma'=\sigma(1-\sigma)>0$, so sigmoid is increasing. A second derivative gives $\sigma''=\sigma(1-\sigma)(1-2\sigma)$. It is positive for negative scores and negative for positive scores. Therefore the curve changes curvature at zero and is not globally convex, even though logistic training loss is convex in linear-model weights.
+
 **Step 1:** Complement identity holds → (a) true.
 
 **Step 2:** $g'(z)=g(z)(1-g(z))>0$ for every finite $z$. Therefore strictly increasing → (c) true and (b) false. Flat-looking tails exactly flat nahi hain.
@@ -910,6 +958,8 @@ Unless question another base specifies, logistic formulas mein $\log$ means natu
 > (c) $[1\ 1]^T$
 >
 > (d) $[3\ -1]^T$
+
+**Invert the probability:** From $p=1/(1+e^{-z})$, get $(1-p)/p=e^{-z}$, hence $z=\ln[p/(1-p)]$. The given exponential denominator requires $z=-2$. For input $(1,1)$, $z=w_1+w_2$; sum each option's two weights and retain those totaling $-2$.
 
 **Step 1:** Compare $1/(1+e^{-z})$ with $1/(1+e^2)$. We need $-z=2$, so $z=-2$.
 
@@ -951,6 +1001,8 @@ Unless question another base specifies, logistic formulas mein $\log$ means natu
 > (d) $0^\circ<\theta<180^\circ$
 >
 > (e) $0<\theta<360^\circ$
+
+**Convert probability into an angle constraint:** Since sigmoid is increasing and $\sigma(0)=0.5$, strict class-1 threshold means $w^Tx>0$. Using $w^Tx=\|w\|\|x\|\cos(\theta-\phi)$, this requires an acute angle: $-90^\circ<\theta-\phi<90^\circ$. Find the allowed interval for each point direction and intersect them.
 
 **Step 1 — Threshold ko score mein convert karo:** Strictly $p>0.5$ means $w^Tx>0$.
 
@@ -1019,6 +1071,8 @@ Definitions: **False negative (FN)** = actual positive ko negative bolna. **Fals
 >
 > To ensure user safety, if the threshold is set to a low value to prioritize the detection of phishing emails, type 1. If the threshold is set to a high value to minimize false positives (misclassifying regular emails as spam), type 0.
 
+**Trace one changed decision:** If $p=0.4$, threshold 0.5 predicts normal but threshold 0.2 flags phishing. Lowering the threshold can convert missed positives into detected positives while also flagging more negatives. Since the question prioritizes avoiding false negatives, choose the threshold direction that expands the positive-prediction set.
+
 **Step 1:** Actual phishing positive hai. Usko normal bolna **false negative** hai, aur question usse avoid karna chahta hai.
 
 **Step 2:** Lower threshold par more emails spam flag honge; low-confidence phishing candidates bhi catch ho sakte hain.
@@ -1036,6 +1090,8 @@ Definitions: **False negative (FN)** = actual positive ko negative bolna. **Fals
 **Question:**
 
 > Consider a logistic regression model that has been trained for a binary classification problem on a dataset in $\mathbb R^2$. Given a test data-point as input to the model, it returns 1 as the predicted label if the probability output by the model is greater than 0.55 and 0 otherwise. What will be the predicted label for the test data-point $[1\ 2]^T$? Assume the weight vector is $[7\ 4]^T$.
+
+**Calculation order:** Compute the dot product $z=\sum_jw_jx_j$, apply $p=1/(1+e^{-z})$, then compare $p$ with 0.55. Equivalently compare $z$ with $\ln(0.55/0.45)\approx0.20067$. A positive score alone is enough only for a 0.5 threshold, not every threshold.
 
 **Step 1 — Score:**
 
@@ -1069,6 +1125,8 @@ $$p=\sigma(15)=\frac1{1+e^{-15}}\approx0.999999694.$$
 
 **Notation:** Question ka piecewise expression label rule hai; usko $\hat y$ read karo, probability value nahi.
 
+**Derive a shared cutoff:** $p\ge0.7$ implies $p/(1-p)\ge7/3$. Taking logs gives $z\ge\ln(7/3)\approx0.847298$. Calculate one score per input and count those meeting this cutoff. This avoids repeated exponentials while using exactly the same sigmoid decision rule.
+
 **Step 1:** Score cutoff:
 
 $$\theta=\log\frac{0.7}{0.3}=\log\frac73\approx0.847298.$$
@@ -1095,6 +1153,13 @@ $$\theta=\log\frac{0.7}{0.3}=\log\frac73\approx0.847298.$$
 
 > In logistic regression, a point is classified positive only if $P(y=1\mid x)=\sigma(w^Tx)\ge0.75$. What score threshold $\theta$ (with $w^Tx=\theta$ at the boundary of this rule) does this correspond to? (Round to 2 decimal places.)
 
+**Solve the threshold equation:**
+
+$$0.75=\frac1{1+e^{-\theta}}
+\Rightarrow e^{-\theta}=\frac1{0.75}-1=\frac13.$$
+
+Taking natural logs: $-\theta=-\ln3$, hence $\theta=\ln3\approx1.098612$. Round to two decimals after solving, giving 1.10.
+
 **Step 1:** Use $\theta=\log[\tau/(1-\tau)]$.
 
 **Step 2:**
@@ -1116,6 +1181,8 @@ $$\theta=\log\frac{0.75}{0.25}=\log3\approx1.098612.$$
 > $$\hat p=P(y=1\mid x_1,x_2)=\frac1{1+e^{-(0.4x_1+0.1x_2)}}.$$
 >
 > For a customer who spends 4 minutes per visit, find how many weekly visits are required to make the predicted probability of purchase equal to 0.7. Enter the answer correct to 2 decimal places.
+
+**Turn target probability into a linear equation:** First compute $z_* =\ln(0.7/0.3)$. Then substitute known $x_2=4$ in $z_*=w_1x_1+w_2x_2+b$ and isolate $x_1=(z_*-4w_2-b)/w_1$ when $w_1\ne0$. The log-odds step converts the nonlinear sigmoid equation into an ordinary linear solve.
 
 **Step 1 — Target score:** $p=0.7$ means $z=\log(0.7/0.3)\approx0.847298$.
 
@@ -1205,6 +1272,8 @@ Changing log base positive constant scaling hai; unregularized minimizer same, n
 >
 > Write your answer correct to three decimal places.
 
+**Loss formula and log base:** For binary labels, $L=-y\log_{10}p-(1-y)\log_{10}(1-p)$. Here $y=1$, so $L=-\log_{10}p$. First calculate sigmoid with the exponential base $e$, then apply the requested base-10 logarithm. The identity $\log_{10}p=\ln p/\ln10$ checks the conversion.
+
 **Step 1 — Dot product:**
 
 $$z=0.4(1.5)+0.6(-0.8)=0.6-0.48=0.12.$$
@@ -1276,6 +1345,8 @@ Magnitude also depends on $\|x\|$: $\|x(y-p)\|=|y-p|\|x\|$. Small residual means
 >
 > (d) If $y_i=0$, and $\dfrac1{1+e^{-(w^t)^Tx_i}}$ is close to 0, then such points will not contribute much to the update of $w$.
 
+**Size of one gradient contribution:** For log-likelihood ascent the sample term is $(y_i-p_i)x_i$, whose norm is $|y_i-p_i|\|x_i\|$. Confident correct predictions give $p_i\approx y_i$, so the residual factor is near zero. Confident wrong predictions give magnitude near 1. Feature length still affects the absolute contribution.
+
 **Step 1:** Write $p_i=\sigma((w^t)^Tx_i)$; contribution $x_i(y_i-p_i)$.
 
 **Step 2:** (a) residual $1-1\approx0$ → small contribution for fixed feature vector.
@@ -1293,6 +1364,8 @@ Magnitude also depends on $\|x\|$: $\|x(y-p)\|=|y-p|\|x\|$. Small residual means
 **Question:**
 
 Use gradient ascent to find $(x,y)$ maximizing $f(x,y)=3+x+y-x^2-y^2$. Starting at $(2,2)$ with learning rate 0.5, after how many iterations will the algorithm stop?
+
+**Ascent and maximum check:** Complete squares: $f(x,y)=x-x^2+y-y^2=1/2-(x-1/2)^2-(y-1/2)^2$. Thus maximum is at $(1/2,1/2)$. Ascent adds $\eta\nabla f$, giving $x_{new}=x+\frac12(1-2x)=1/2$ and likewise for $y$. A further identical iterate is a stopping check, not an additional move toward the maximum.
 
 **Solution:**
 
@@ -1405,6 +1478,8 @@ $$\boxed{z(x)=\sum_i\alpha_iK(x_i,x)+b}.$$
 >
 > iii. If a soft-margin SVM is trained on this dataset, the optimal weight vector it returns will be the same as the one returned by a hard-margin SVM, irrespective of the value of the hyperparameter $C$.
 
+**Keep update counts and dual multipliers separate:** Zero-start unit-step perceptron gives $w=\sum_i m_iy_ix_i$ with nonnegative integer visit counts $m_i$. SVM instead uses real dual multipliers $\alpha_i\ge0$. Complementary slackness connects positive SVM coefficients to active constraints; multiplying by a negative class label does not make the multiplier negative.
+
 **Part (i), Step 1:** Standard zero start and unit learning rate use karo. Every update $yx$ adds coefficient $+1$ or $-1$ to some training vector.
 
 **Step 2:** Final $w=\sum_i m_i y_i x_i$, with integer coefficients → **True**. Conditions from 7.3 apply.
@@ -1474,6 +1549,8 @@ Soft objective for $0\le w\le1$ is $\frac12w^2+2C(1-w)$. At $C=0.1$, its minimum
 >
 > (d) Only perceptron and logistic regression output $w^*$
 
+**Compare the rules at the same start:** Perceptron changes weights only for a mistake under its tie rule. Logistic ascent uses all $x_i(y_i-p_i)$ terms, with $p_i=1/2$ at zero score. Hard-margin SVM solves constraints $y_iw^Tx_i\ge1$ while minimizing $\|w\|^2/2$. Matching a boundary does not mean these three algorithms use the same update.
+
 **Step 1 — Perceptron:** At $w=(0,0)$ both scores zero, and given rule predicts +1. Positive point correct; negative point wrong. First **weight update** on $x=(-1,0),y=-1$:
 
 $$w^{(1)}=(0,0)+(-1)(-1,0)=\boxed{(1,0)}.$$
@@ -1518,6 +1595,8 @@ $$w^{(1)}=(0,0)+(1,0)=\boxed{(1,0)}.$$
 >
 > (d) Decision Tree only
 
+**Derive the logistic boundary:** At fixed threshold $\tau$, logistic predicts the positive class when $w^Tx+b\ge\ln[\tau/(1-\tau)]$. Equality describes a linear/affine hyperplane, just like a perceptron's score boundary. Producing probabilities does not prevent logistic regression from producing the requested labels. Standard trees instead combine coordinate threshold regions.
+
 **Step 1:** Perceptron directly linear separator learns; separability ensures suitable convergence setting.
 
 **Step 2:** Logistic regression also gives linear score; fixed threshold gives linear boundary. Probabilities available hona usko unsuitable nahi banata just because required nahi hain.
@@ -1554,6 +1633,8 @@ Which options are correct with respect to perceptron and logistic regression?
 
 (I) As $w^Tx\to\infty$, logistic-regression probability tends to 0.
 
+**Audit claims using their conditions:** For perceptron, check separability, initialization and the mistake rule before applying convergence. For logistic regression, distinguish probabilities from thresholded labels and convex loss from existence of a finite minimizer. On strictly separable data, unregularized logistic weights can grow without attaining a finite optimum. These distinctions resolve universal claims.
+
 **Solution — Evaluate each claim:**
 
 | Option | Evaluation and reason |
@@ -1587,6 +1668,8 @@ Choose the correct options:
 (C) Logistic regression assumes a linear decision boundary.
 
 (D) No adjustment can apply perceptron to a dataset separable with gamma margin by a hyperplane that does not pass through the origin.
+
+**Use counterexamples and augmentation:** A separating initialization can produce zero updates, disproving compulsory zero initialization. Multiplying an already-correct weight by a positive constant gives another separator, disproving unique final weights. For a shifted boundary, augment $x$ to $(x,1)$ and weights to $(w,b)$; the dot product then includes the intercept exactly.
 
 **Solution:**
 

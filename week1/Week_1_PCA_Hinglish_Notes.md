@@ -2,6 +2,8 @@
 
 **Flow:** Data ko fewer numbers mein represent karna → projection → best direction → centering/covariance → eigenvectors → residuals → variance aur rank → storage → dual PCA → complete master problem.
 
+**PCA ka connected workflow:** Mean subtract karo → covariance banao → largest eigenvalue ki unit direction choose karo → dot products se compressed coordinates nikalo → retained directions se reconstruct karo. Direction $w$, scalar score $z=w^T(x-\mu)$, aur reconstructed vector $\mu+zw$ alag objects hain. Covariance eigenvalues batati hain kitni variance retained ya discarded hui; compression error is discarded variance.
+
 ## 1. Representation learning: Compression ka idea
 
 ### 1.1 Supervised, unsupervised aur PCA
@@ -27,6 +29,8 @@ Point line $\operatorname{span}(w)$ par ho toh $x_i=c_iw$ exactly. Line se bahar
 Handwritten notes, pp. 2–3; AI notes ka same motivating example.
 
 **Question:** Consider $D=\{(-7,-14),(2.5,5),(1,2),(0,0)\}$. Using $w=(2.5,5)$ as a representative, find the coefficients, reconstruct the points, and compare the number of stored scalars with direct storage.
+
+**Equation being solved:** $x_i=c_iw$ means both coordinates must agree. For $(-7,-14)$, $2.5c=-7$ gives $c=-2.8$, and $5(-2.8)=-14$ checks the second coordinate. Repeat this division for each point, then reconstruct before claiming zero error. Storage counts four coefficients plus the shared two-coordinate representative.
 
 **Step 1 — Pattern:** Har point $y=2x$ satisfy karta hai, aur $w$ bhi isi line par hai.
 
@@ -92,6 +96,8 @@ Handwritten notes, p. 7.
 
 **Question:** Let $x=(3,4)$ and $w=(1,0)$. Find the scalar projection, projection vector, residual vector, and squared reconstruction error. Verify orthogonality.
 
+**Derive the projection formula:** Expand $f(c)=\|x-cw\|^2=\|x\|^2-2cx^Tw+c^2w^Tw$. Setting $f'(c)=-2x^Tw+2cw^Tw=0$ gives $c=x^Tw/(w^Tw)$. For unit $w$, denominator is 1. With nonunit $(2,0)$, numerator is 6 and denominator 4, so coefficient 1.5 still reconstructs $(3,0)$.
+
 **Step 1:** $\|w\|=1$, so $c=3(1)+4(0)=\boxed3$.
 
 **Step 2:** $\hat x=cw=3(1,0)=\boxed{(3,0)}$.
@@ -138,6 +144,8 @@ AI notes · Q5.
 
 ![Q5 candidate directions and their projection spread](images/07_q5_lines.png)
 
+**Criterion behind the visual choice:** For a candidate unit direction $w$, compute scores $z_i=w^Tx_i$ and variance $\frac1n\sum_i(z_i-\bar z)^2$. PC1 maximizes that quantity. Thus compare projected spread along each candidate, not perpendicular spread or the length of the drawn line. Centered inputs give $\bar z=0$.
+
 **Step 1:** Har candidate line par perpendicular projections dekho.
 
 **Step 2:** Orange direction data ke long trend ko follow karti hai. Red direction almost perpendicular hai, isliye projections crowded hain.
@@ -154,6 +162,8 @@ AI notes · Q7; handwritten p. 9.
 
 **Question:** The lengths of the projections of six points from a centered dataset onto the first principal component are $\{8,7,3,5,2,4\}$. What is the variance along that component?
 
+**Formula before arithmetic:** Centered signed scores satisfy $\bar z=0$, so $\operatorname{Var}(z)=\sum_i z_i^2/6$. Given lengths are $|z_i|$, but $|z_i|^2=z_i^2$, allowing the square-average calculation. Square each listed value before summing; squaring the total length would introduce unwanted cross terms.
+
 **Step 1:** Lengths $|x_i^Tw_1|$ hain. Squaring ke baad signs irrelevant hain.
 
 **Step 2:** Squares sum karo: $64+49+9+25+4+16=167$.
@@ -169,6 +179,13 @@ $$\boxed{\operatorname{Var}(w_1)=167/6\approx27.83}.$$
 AI notes · Q9; handwritten p. 8 same dataset par point projection karta hai.
 
 **Question:** Let $D=\{(-2,-6),(-1,-3),(1,3),(2,6)\}$. Find (i) the first principal component, (ii) the variance along it, and (iii) the variance along the second principal component.
+
+**Form the covariance to verify the shortcut:**
+
+$$X=\begin{bmatrix}-2&-1&1&2\\-6&-3&3&6\end{bmatrix},\quad
+C=\frac14XX^T=\begin{bmatrix}2.5&7.5\\7.5&22.5\end{bmatrix}.$$
+
+Then $C(1,3)^T=(25,75)^T=25(1,3)^T$, whereas $C(-3,1)^T=0$. Normalize these directions to turn eigenvalues into their projection variances.
 
 **Step 1:** Coordinate sums zero, so mean $(0,0)$.
 
@@ -225,6 +242,13 @@ Handwritten p. 11.
 
 **Question:** Find the covariance matrix of the dataset $\{(2,1),(1,2),(-2,-1),(-1,-2)\}$ using the $1/n$ convention.
 
+**Matrix formation:**
+
+$$X=\begin{bmatrix}2&1&-2&-1\\1&2&-1&-2\end{bmatrix},\qquad
+C=\frac14\begin{bmatrix}\sum x_1^2&\sum x_1x_2\\\sum x_1x_2&\sum x_2^2\end{bmatrix}.$$
+
+Both coordinate sums are zero, so no further centering is needed. The product table below provides the three independent sums; symmetry fills the fourth entry.
+
 **Step 1:** Mean $(0,0)$, so points already centered.
 
 **Step 2:** Required products:
@@ -264,6 +288,8 @@ Handwritten pp. 11–12.
 
 **Question:** Eight data points are the corners $(\pm1,\pm1,\pm1)$ of a cube of side length 2 centered at the origin. Find the covariance matrix, the sum of all its entries, and the variance along any unit vector $v$.
 
+**Compute one entry of each type:** $C_{11}=(1^2+\cdots+1^2)/8=1$. For $C_{12}$, four products are +1 and four are -1, so $(4-4)/8=0$. The cube symmetry gives the same diagonal/off-diagonal pattern for other coordinates. Then for any unit $v$, variance is $v^TIv=\sum_jv_j^2=1$.
+
 **Step 1:** Every feature mein four $+1$, four $-1$, so mean zero.
 
 **Step 2:** Diagonal entries: each squared coordinate 1, average 1.
@@ -281,6 +307,8 @@ No unique best PC1: any unit vector can be first, then orthonormal completion ch
 AI notes · Q1; handwritten pp. 13–14.
 
 **Question:** A centered dataset has covariance $C=\begin{bmatrix}1&2\\2&4\end{bmatrix}$. Two candidate unit vectors are $u=(-0.894,0.447)^T$ and $v=(0.447,0.894)^T$. (i) Which is the first PC? (ii) How much variance does it capture? (iii) What is the covariance after transforming to the principal-component basis?
+
+**Why eigenvalue means variance:** For a unit eigenvector $v$, $Cv=\lambda v$ implies $v^TCv=\lambda v^Tv=\lambda$. Therefore calculate $Cu$ and $Cv$, identify their eigenvalues, and choose the larger one for PC1. In an orthonormal eigenbasis, off-diagonal covariance entries vanish because $w_i^TCw_j=\lambda_jw_i^Tw_j=0$.
 
 **Step 1:** Decimals rounded hain. Exact directions $u=(-2,1)/\sqrt5$, $v=(1,2)/\sqrt5$ use karo.
 
@@ -303,6 +331,12 @@ Sirf PC1 retain ho toh reduced covariance $[5]$ is $1\times1$. Full-basis rotati
 AI notes · Q10; handwritten pp. 20–21 and 31 par same dataset. Ek hi solution yahan.
 
 **Question:** For $x_1=(2,2),x_2=(1,2),x_3=(2,1)$, find the mean, covariance matrix, eigenvalues, principal directions, and percentage of variance explained by the first PC.
+
+**Show the eigenvalue equation:** After centering and forming $C$, solve
+
+$$\det(C-\lambda I)=(2/9-\lambda)^2-1/81=0.$$
+
+Thus $2/9-\lambda=\pm1/9$, giving $\lambda=1/3,1/9$. For $1/3$, $(C-\lambda I)w=0$ gives $w_1+w_2=0$; for $1/9$, it gives $w_1-w_2=0$. Normalize the resulting vectors and sort by decreasing eigenvalue.
 
 **Step 1 — Mean:**
 
@@ -359,6 +393,8 @@ AI notes · Q8; handwritten p. 15.
 
 **Question:** Six centered points in $\mathbb R^2$ have second-PC projection magnitudes $\{1,2,1,3,2,k\}$. Their average squared reconstruction error after retaining only the first PC is $28/6$. Find $k>0$.
 
+**Connect residual to discarded coordinate:** In a 2D orthonormal basis, $x=z_1w_1+z_2w_2$. Keeping PC1 gives residual $r=z_2w_2$, so $\|r\|^2=z_2^2$. Average over six points, equate to $28/6$, and solve for the unknown squared magnitude. Use $k>0$ only after taking the square root.
+
 **Step 1:** 2D mein discarded direction sirf $w_2$ hai. Thus each error squared equals second-coordinate squared.
 
 **Step 2:**
@@ -376,6 +412,12 @@ Magnitude wording important: six strictly positive **signed** PC coordinates cen
 Handwritten p. 15.
 
 **Question:** A centered three-dimensional dataset has principal directions $w_1=(1,1,0)/\sqrt2$, $w_2=(-1,1,0)/\sqrt2$, $w_3=(0,0,1)$. Find the PCA coordinates of $x=(1,2,3)$. Reconstruct $x$ using the first two components and calculate its squared error.
+
+**Form the basis matrix:**
+
+$$W=\begin{bmatrix}1/\sqrt2&-1/\sqrt2&0\\1/\sqrt2&1/\sqrt2&0\\0&0&1\end{bmatrix},\quad z=W^Tx.$$
+
+Each row of $W^T$ computes one dot product. Top-two reconstruction is $z_1w_1+z_2w_2$; since the basis is orthonormal, omitting $z_3w_3$ loses exactly squared length $z_3^2$.
 
 **Step 1:** Dot products:
 
@@ -415,6 +457,8 @@ Handwritten pp. 22–23.
 
 **Question:** A centered dataset has covariance eigenvalues $10,5,2,1$. Find the average squared reconstruction error when the first two PCs are retained. Also find the errors for one, three and four PCs.
 
+**Error identity:** For orthonormal PCs, each sample's squared residual is the sum of its discarded score squares. Averaging gives $E_k=\sum_{j>k}\lambda_j$ because each eigenvalue is average squared score. For $k=2$, discard 2 and 1, not the retained 10 and 5. Verify retained variance plus error equals total $18$.
+
 **Step 1:** Decreasing order already given. Top two retained $10,5$, discarded $2,1$.
 
 **Step 2:** $\boxed{E_2=2+1=3}$.
@@ -436,6 +480,8 @@ AI notes · Q11; handwritten pp. 18 and 25, same spectrum.
 
 **Question:** The covariance eigenvalues are $7,5,1$. What percentage of the variance is explained by the first PC? How many PCs are needed to preserve at least 95% variance?
 
+**Convert the percentage to a variance target:** Total variance is $7+5+1=13$, so 95% requires at least $0.95(13)=12.35$. Cumulative sums are 7,12,13. Two PCs give only 12, below 12.35; three are sufficient. PC1 percentage separately uses $100(7/13)$, not $100(1/3)$.
+
 **Step 1:** Total $7+5+1=13$.
 
 **Step 2:** First ratio $7/13=\boxed{53.85\%}$ approximately.
@@ -453,6 +499,8 @@ $$\boxed{k=3}.$$
 AI notes · Q3; handwritten p. 19.
 
 **Question:** A covariance matrix has eigenvalues $\lambda^5,\lambda^4,\lambda^3,\lambda^2,\lambda,1$, where $\lambda>1$. The first three components explain approximately 88.88% of the total variance. Find $\lambda$.
+
+**Factor the ratio carefully:** The top-three sum is $\lambda^3(\lambda^2+\lambda+1)$. All six terms group as $(\lambda^3+1)(\lambda^2+\lambda+1)$. Since the shared factor is positive, cancel it, cross-multiply the fraction $8/9$, then solve $\lambda^3=8$. The condition $\lambda>1$ also fixes the eigenvalue order.
 
 **Step 1:** $\lambda>1$ se listed order decreasing hai; top three first three powers hain.
 
@@ -497,6 +545,8 @@ $$x_i=a_i(3,1,0,2)^T+b_i(1,0,3,0)^T,\qquad
 
 What is the reconstruction error when the top two PCs are used?
 
+**Mean and rank equations:** Write the fixed vectors as $u,v$. Then $\mu=u(\sum a_i/100)+v(\sum b_i/100)=0$. Also $X=[u\ v]B$ for a $2\times100$ coefficient matrix $B$, so $\operatorname{rank}(X)\le2$. The two remaining covariance eigenvalues vanish, making the discarded variance after two PCs zero.
+
 **Step 1:** Coefficient sums zero imply mean zero.
 
 **Step 2:** Every point span of two fixed vectors mein hai, so rank at most 2. Vectors independent hain, but sample coefficient patterns rank aur reduce kar sakte hain.
@@ -518,6 +568,8 @@ AI notes · Q12.
 3. At least 26 covariance eigenvalues are zero.
 4. Retaining four PCs gives zero reconstruction error.
 
+**Use dimensions and rank separately:** $X_c$ is $30\times2000$, so $X_cX_c^T/2000$ is $30\times30$. A four-dimensional containing subspace gives rank at most 4; a $30\times30$ PSD matrix then has at least $30-4=26$ zero eigenvalues. Keeping four PCs covers every positive-variance direction even if actual rank is smaller.
+
 **Step 1:** $X_c$ shape $30\times2000$; $C=X_cX_c^T/2000$ shape $30\times30$. Statement 1 false, 2 true.
 
 **Step 2:** Rank at most 4, so at least $30-4=26$ zero eigenvalues. Statement 3 true.
@@ -533,6 +585,8 @@ Handwritten p. 26 ka $\mathbb R^{50}$ / six-dimensional example same pattern: at
 Handwritten p. 27.
 
 **Question:** A data matrix has six feature columns. The first three columns $c_1,c_2,c_3$ are linearly independent, and $c_4=2c_1-c_2$, $c_5=c_2+c_3$, $c_6=4c_1-3c_3$. After how many principal components does the reconstruction error become zero?
+
+**Count independent columns:** Every last-three feature is a linear combination of the first three, so those columns cannot increase rank. Independence of the first three gives rank 3 for the stated matrix. If that independence holds after centering, exactly three covariance eigenvalues are positive. Keeping all three removes every discarded positive variance.
 
 **Step 1:** Last three columns first three ke combinations hain; they add no independent directions.
 
@@ -558,6 +612,8 @@ C. $(1,0,2,1)/\sqrt6$
 
 D. $(2,0,1,2)/3$
 
+**Read the normal from the equation:** $2x_1+x_2-x_3+2x_4=a^Tx=0$ with $a=(2,1,-1,2)$. A perpendicular direction must be a scalar multiple of $a$. Unit length requires division by $\sqrt{a^Ta}=\sqrt{10}$. Both signs work because reversing a normal does not change its perpendicular hyperplane.
+
 **Step 1:** Equation ke coefficients se normal $a=(2,1,-1,2)$.
 
 **Step 2:** $\|a\|=\sqrt{4+1+1+4}=\sqrt{10}$. Hence unit normals $\pm a/\sqrt{10}$.
@@ -579,6 +635,8 @@ A. Exactly three eigenvalues are zero, and PC1 is $(1,0,\ldots,0)$.
 B. Exactly four eigenvalues are zero, and PC1 is $(1,1,1,0,\ldots,0)/\sqrt3$.
 
 C. Exactly four eigenvalues are zero, and PC1 is $(1,0,\ldots,0)$.
+
+**Expand the repeated-feature block:** Its covariance is $100\begin{bmatrix}1&1&1\\1&1&1\\1&1&1\end{bmatrix}$. Multiplying $(1,1,1)^T$ gives $300(1,1,1)^T$. Any vector whose three entries sum to zero is mapped to zero, giving two zero eigenvalues in that block. Add the independent-feature and constant-feature eigenvalues to complete the spectrum.
 
 **Step 1:** First-three covariance block $100\mathbf1\mathbf1^T$: eigenvalues $300,0,0$.
 
@@ -615,6 +673,8 @@ Ignoring mean overhead, saving when $k(d+n)<dn$, i.e. $\boxed{k<dn/(d+n)}$. Thus
 AI notes · Q6; handwritten p. 29.
 
 **Question:** There are 100 points in $\mathbb R^{10}$. Ordered covariance eigenvalues satisfy $\sum_{j=1}^{10}\lambda_j=200$, $\sum_{j=1}^{4}\lambda_j=140$, and $\sum_{j=1}^{6}\lambda_j=180$. How many numbers must be stored to retain at least 90% variance using the minimum number of PCs? Ignore mean-vector storage.
+
+**Separate dimension choice from storage:** First meet variance target $0.9(200)=180$. Then count $dk$ basis entries and $kn$ sample scores. With $d=10,n=100,k=6$, these are 60 and 600. Savings fraction is $(1000-660)/1000=0.34$. A stored mean would add another $d=10$, but this question explicitly excludes it.
 
 **Step 1:** Required sum $0.9\times200=180$.
 
@@ -663,6 +723,8 @@ Handwritten p. 33.
 
 **Question:** The nonzero eigenvalues of the centered Gram matrix $X_c^TX_c$ are $10,5,3,2,1$. Express the covariance eigenvalues in terms of the number of data points $n$, and find the variance fraction explained by PC1.
 
+**Track normalization:** Gram $G=X_c^TX_c$ shares positive eigenvalues with $X_cX_c^T$. Covariance divides the latter by $n$, so divide each eigenvalue by $n$ once. In an explained-variance ratio, this common factor cancels: $(10/n)/[(10+5+3+2+1)/n]=10/21$. Absolute variance and variance fraction have different units.
+
 **Step 1:** Gram aur $X_cX_c^T$ ke nonzero eigenvalues same.
 
 **Step 2:** Covariance mein divide by $n$:
@@ -680,6 +742,8 @@ Absolute variance $10/n$, fraction $10/21$: dono quantities mix mat karo.
 Handwritten p. 33.
 
 **Question:** For a positive eigenvalue $\gamma=10$ of $X_c^TX_c$, a corresponding unit eigenvector has second coordinate $v_2=3/\sqrt{54}$. If the principal direction is written as $w=\sum_i\alpha_i\tilde x_i$, find $\alpha_2$.
+
+**Normalize the recovered direction:** For unit Gram eigenvector $v$, $\|X_cv\|^2=v^TGv=\gamma$. Hence the unit feature direction is $X_cv/\sqrt\gamma$. Expanding matrix multiplication gives $\sum_i(v_i/\sqrt\gamma)\tilde x_i$, so $\alpha_i=v_i/\sqrt\gamma$. Substitute the supplied second coordinate and positive eigenvalue only after this normalization.
 
 **Step 1:** $w=X_cv/\sqrt\gamma=\sum_i(v_i/\sqrt\gamma)\tilde x_i$.
 
@@ -701,6 +765,8 @@ AI notes · Q2.
 2. The eigenvalues of the covariance matrix represent the variance captured along the corresponding eigenvectors.
 3. The principal components are mutually orthogonal.
 4. The first principal component corresponds to the smallest positive eigenvalue of the covariance matrix.
+
+**Use the eigenpair identities:** PCA directions satisfy $Cw_j=\lambda_jw_j$ with unit norms. This gives variance $w_j^TCw_j=\lambda_j$. A symmetric covariance allows an orthonormal eigenbasis; order it by decreasing eigenvalue because PCA retains maximum spread first. These three facts determine each true/false judgment without guessing from the terminology.
 
 **1 — True:** PC **directions/loadings** covariance eigenvectors hain. Compressed scores $W^TX_c$ ko bhi some books “components” bolte hain; yahan direction meaning hai.
 
@@ -742,6 +808,8 @@ Using the $1/n$ covariance convention, find:
 6. The reconstructions and residuals using only PC1, and the average and total squared reconstruction errors.
 7. The storage required with two PCs, compared with direct storage.
 8. The centered Gram matrix and its eigenvalues.
+
+**Worked setup — What each matrix does:** There are four 3D samples, so $X_c$ is $3\times4$, covariance $C=X_cX_c^T/4$ is $3\times3$, and Gram $G=X_c^TX_c$ is $4\times4$. The two-coordinate representation is $Z=W_2^TX_c$ of shape $2\times4$. We will check $Cw_j=\lambda_jw_j$, unit norms, orthogonality, and reconstruction error. Since $G$ is unnormalized, its positive eigenvalues must equal $4\lambda_j$.
 
 ### 11.1 Mean and covariance
 
