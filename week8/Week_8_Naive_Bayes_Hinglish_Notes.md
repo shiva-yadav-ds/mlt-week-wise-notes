@@ -2,6 +2,8 @@
 
 **Flow:** Model ka idea → Bayes rule → conditional independence → parameter counting → data se parameters → prediction → smoothing → decision boundary → Gaussian aur mixed features.
 
+**Bayes ka four-step flow:** Class counts se prior $\pi_c$; class ke andar feature counts se likelihood $L_c$; dono multiply karke joint score $S_c=\pi_cL_c$; scores normalize karke posterior $S_c/\sum_jS_j$. Label ke liye largest score enough hai. “Given class” means likelihood, “class given features” means posterior. Har question mein pehle yahi identify karo, phir denominator choose karo.
+
 ## Topic index
 
 | Topic | Subtopics | Questions |
@@ -79,6 +81,8 @@ Real-life connection: “Spam email kaise banta hai?” ki jagah “Is email ko 
 >
 > (e) Gaussian Naive Bayes is a discriminative model.
 
+**Apply the factorization:** A generative classifier models $p(x,y)=p(y)p(x\mid y)$ and obtains $p(y\mid x)$ using Bayes. A discriminative probability model targets $p(y\mid x)$ directly. Thus “can calculate a posterior” does not identify the model type; inspect which distribution it models first. Gaussian NB belongs to the generative group.
+
 **Step 1:** Generative model features ki class-wise generation/distribution model karta hai → **(a) true**, **(b) false**.
 
 **Step 2:** Discriminative probability model directly $p(y\mid x)$ model kar sakta hai → **(c) true**.
@@ -147,6 +151,8 @@ What will be the predicted label for x?
 
 (c) Insufficient information to make prediction
 
+**Derive the missing-prior threshold:** Put $P(1)=q$, $P(0)=1-q$. Class 1 wins if $0.6q>0.4(1-q)$. Expand: $0.6q>0.4-0.4q$, hence $q>0.4$. At equality scores tie. Without $q$, likelihoods alone cannot tell us which side of this threshold applies.
+
 **Solution:**
 
 **Step 1:** Likelihood and posterior different hain. Prediction scores $S_0=0.4\pi_0$ and $S_1=0.6\pi_1$ hain; priors given nahi hain.
@@ -174,6 +180,8 @@ Gaussian x continuous hai, so displayed likelihoods technically **density values
 **Question:**
 
 > A generative classifier models the joint distribution of the feature vector $X$ and the class label $Y$. For a particular email represented by the feature vector $x$, suppose $P(X=x,Y=\mathrm{Spam})=0.015$ and $P(X=x,Y=\mathrm{Not\ Spam})=0.035$. Compute the posterior probability $P(Y=\mathrm{Spam}\mid X=x)$.
+
+**Choose the correct normalization:** Already given joint probabilities $J_c=P(x,y=c)$ contain the prior. Evidence is $P(x)=\sum_cJ_c$ because class events partition the possibilities. Therefore $P(y=c\mid x)=J_c/\sum_jJ_j$. After dividing, check that both posteriors sum to 1; multiplying priors again would count them twice.
 
 **Step 1 — Given quantities identify karo.** Dono **joint** probabilities hain, priors dobara multiply nahi karne.
 
@@ -257,6 +265,8 @@ $$\boxed{P(x\mid c)=\prod_{j=1}^{d}\theta_{jc}^{x_j}(1-\theta_{jc})^{1-x_j}}.$$
 >
 > (d) $p(y\mid(x_1,x_2,x_3))=\dfrac{p((x_1,x_2,x_3),y)}{p(x_1,x_2,x_3)}$
 
+**What is assumed:** Within a fixed class $c$, the model replaces $P(x_1,\ldots,x_d\mid c)$ by $\prod_jP(x_j\mid c)$. Conditioning on class must stay in every factor. Bayes' rule itself is a probability identity; this product replacement is the additional Naive Bayes modeling assumption.
+
 **Step 1:** (a) mein same class $y$ given hai aur joint likelihood feature-wise product hai → exactly required assumption.
 
 **Step 2:** (b) class conditioning drop karta hai → NB assumption nahi.
@@ -280,6 +290,13 @@ $$\boxed{P(x\mid c)=\prod_{j=1}^{d}\theta_{jc}^{x_j}(1-\theta_{jc})^{1-x_j}}.$$
 > (c) $\prod_{i=1}^{d}P(Y=\mathrm{Spam}\mid x_i)$
 >
 > (d) $\dfrac{\left(\prod_{i=1}^{d}P(x_i\mid Y=\mathrm{Spam})\right)P(Y=\mathrm{Spam})}{P(X=x)}$
+
+**Combine the two rules explicitly:**
+
+$$P(S\mid x)=\frac{P(x\mid S)P(S)}{P(x)}
+=\frac{P(S)\prod_jP(x_j\mid S)}{P(x)}.$$
+
+First equality is Bayes; second uses conditional independence. For two classes, denominator is $P(S)\prod_jP(x_j\mid S)+P(N)\prod_jP(x_j\mid N)$. Match the option keeping all these roles intact.
 
 **Step 1:** Posterior = likelihood × prior / evidence.
 
@@ -340,6 +357,8 @@ Sab features ke $r$ values hon toh $(C-1)+Cd(r-1)$.
 
 > Suppose you have a five-class classification problem where class label $y\in\{0,1,2,3,4\}$ and each training example $x_i$ has binary features $f_1,f_2,f_3\in\{0,1\}$. How many parameters do we need to know to classify an example using Naive Bayes classifier?
 
+**Why one parameter per binary feature:** If $p_{jc}=P(x_j=1\mid c)$ is known, $P(x_j=0\mid c)=1-p_{jc}$ needs no new parameter. Five classes times three features gives 15. Class priors sum to 1, so choose four freely and obtain the fifth by subtraction. Add these independent counts.
+
 **Step 1:** $C=5$, $d=3$.
 
 **Step 2:** Feature probabilities $=5\times3=15$.
@@ -363,6 +382,8 @@ $$\text{Total}=15+4=\boxed{19}.$$
 > i. Find the total number of independent (free) parameters in the model if the class conditional independence assumption is not enforced.
 >
 > ii. Find the total number of independent (free) parameters in the model if the class conditional independence assumption is enforced.
+
+**Count outcome tables before parameters:** Four binary features give $2^4=16$ joint configurations per class; their probabilities sum to 1, leaving 15 free values. Under independence, only four Bernoulli probabilities are needed per class. Multiply either likelihood count by three classes, then add two free priors. These two models make different independence assumptions.
 
 **Part (i), Step 1:** Four binary features → $2^4=16$ feature vectors per class.
 
@@ -394,6 +415,8 @@ $$\text{Total}=15+4=\boxed{19}.$$
 >
 > (d) $3k-3$
 
+**Write the symbolic count:** Each of $k$ classes has five binary-feature probabilities, so likelihood count is $5k$. For priors, $\pi_k=1-\sum_{c<k}\pi_c$, leaving $k-1$ free numbers. Therefore $5k+(k-1)=6k-1$. Counting both probabilities of each binary feature would double-count complements.
+
 **Step 1:** Likelihood parameters $=5k$.
 
 **Step 2:** Free priors $=k-1$.
@@ -417,6 +440,8 @@ $$\text{Total}=15+4=\boxed{19}.$$
 > (c) $3\cdot2^K$
 >
 > (d) $K^3$
+
+**Categorical rule:** A five-outcome distribution has four free probabilities because the last equals 1 minus the other four. There are $3K$ class-feature pairs, each needing four values: $3K(4)=12K$. The three class priors add $3-1=2$. Here $K$ counts attributes, so do not substitute it for number of classes.
 
 **Step 1:** Yahan $K$ **features ka count** hai, classes ka nahi. Classes $C=3$.
 
@@ -454,6 +479,8 @@ Binary prior $\hat p=P(Y=1)=N_1/N$.
 
 A binary classification dataset contains n examples belonging to $\{0,1\}^3$ such that the first feature values for all n examples are 0. Assume no Laplacian smoothing is done. What will be the value of $\hat p_1^0$? The labels are 0 and 1.
 
+**Apply conditional counting:** Estimate $p_1^0=N(f_1=1,y=0)/N(y=0)$. Every observed first feature is zero, so the numerator is 0. For nonempty class 0, the fraction is 0 and its complement $P(f_1=0\mid0)$ is 1. This is the unsmoothed estimate; an absent class would leave the denominator undefined.
+
 **Solution:**
 
 **Step 1 — Read the parameter:** $\hat p_1^0$ estimates $P(f_1=1\mid y=0)$, not $P(f_1=0\mid y=0)$.
@@ -489,6 +516,8 @@ Paper ka $\hat p_j^c$ = feature $j$ equals 1, given class $c$. Is note ka $\thet
 > i. Calculate the value of $\hat p_2^1$.
 >
 > ii. Calculate the value of $\hat p_1^1$.
+
+**Read one sample per column:** Column $i$ of $X$ pairs with entry $y_i$. For any requested $P(f_j=1\mid y=1)$, first retain only columns with $y_i=1$, then count ones in row $j$. Denominator is the number of retained columns, not all samples and not the number of features.
 
 **Step 1 — Columns unfold karo:**
 
@@ -531,6 +560,8 @@ $$\hat p_1^1=\frac13=\boxed{0.3333\ldots}.$$
 | $x_8$ | 0 | 0 | 1 | 0 |
 
 > Compute the Naive Bayes parameter estimate $\hat p(f_2=1\mid y=1)$ (without Laplace smoothing). Enter your answer correct to two decimal places.
+
+**Apply the same conditional fraction to this dataset:** Class 1 consists of rows 3,4,6,7. The second-feature entries are $1,0,1,1$, so the indicator sum is $1+0+1+1=3$ over four class-1 examples. Divide $3/4$; the class prior would instead divide four by the total sample count.
 
 **Step 1:** Class 1 rows $x_3,x_4,x_6,x_7$ → 4 samples.
 
@@ -578,6 +609,8 @@ Tie ho toh question ka convention use karo. Slides mein strict `>` aur `≥` don
 >
 > ii. What will be the predicted label for the data point $[1,0]$?
 
+**Formula for the observed pattern:** For $x=(1,0)$, class score is $S_c=\pi_c p_{1c}(1-p_{2c})$. Feature 2 is absent, so use its complement. Insert class-1 values to get $0.4(0.15)(0.95)$; insert class-0 values to get $0.6(0.25)(0.65)$. Compare scores for a label; normalize only if a posterior is requested.
+
 **Part (i):** Binary outcomes exhaustive hain:
 
 $$P(f_2=0\mid1)=1-0.05=\boxed{0.95}.$$
@@ -614,6 +647,12 @@ $$S_0=0.6\times0.25\times(1-0.35)=0.0975.$$
 | $x_6$ | 1 | 1 | 1 | 1 |
 
 > Assume that the features are conditionally independent given the label $y$. Suppose the test sample is $x_{\mathrm{test}}=[0,1,0]^T$. What is the estimated probability that the test point belongs to class 0 (that is, $p(y=0\mid x_{\mathrm{test}})$)?
+
+**Evaluate every observed feature:** For test $(0,1,0)$,
+
+$$S_c=\pi_c(1-p_{1c})p_{2c}(1-p_{3c}).$$
+
+Obtain each $p_{jc}$ from class-specific counts. A zero factor makes the whole class score zero. If the other score is positive, its normalized posterior is 1; this follows from the unsmoothed model, not certainty about all future data.
 
 **Step 1:** Three samples in each class → both priors $1/2$. Smoothing specified nahi, ordinary MLE use kar rahe hain, supplied key ke consistent.
 
@@ -658,6 +697,8 @@ $$X=\begin{bmatrix}1&1&0\\0&1&0\end{bmatrix},\qquad y=[0,1,0]^T.$$
 
 Let $\hat p$ and $\hat p_j^{y_i}$ estimate $P(y=1)$ and $P(f_j=1\mid y=y_i)$, respectively. Here $f_i$, $i=1,2$, is the ith feature. These parameters are estimated using MLE. If a test point has label 0, what is the probability that the point is $[0,0]^T$?
 
+**Conditioning determines whether to use a prior:** Requested likelihood is $P(x\mid y=0)$, so work only within class 0. Its two samples are $(1,0)$ and $(0,0)$, giving $P(f_1=0\mid0)=1/2$ and $P(f_2=0\mid0)=2/2$. Independence multiplies these: $(1/2)(1)=1/2$. No posterior denominator or class prior is needed.
+
 **Solution:**
 
 **Step 1 — Identify requested conditional:** Label already given hai. Required quantity $P(x=(0,0)\mid y=0)$ hai, not $P(y=0\mid x)$.
@@ -694,6 +735,8 @@ You are working on a text classification problem using a naive Bayes classifier 
 | Money | Not Spam | 0.02 |
 
 A new email contains both “Won” and “Money”. Use Naive Bayes to calculate the probability that the new email is classified as Spam. Assume these are the only two possible words, i.e. only two features.
+
+**Separate likelihood, joint score and posterior:** Observing both words gives $L_S=P(word_1\mid S)P(word_2\mid S)$ and similarly $L_N$. Multiply by priors to get $S_S=0.6L_S$, $S_N=0.4L_N$. Required posterior is $S_S/(S_S+S_N)$. The denominator includes both ways the observed word pattern can occur.
 
 **Solution:**
 
@@ -734,6 +777,8 @@ $$\boxed{P(S\mid x)=\frac{0.081}{0.081+0.0004}=\frac{405}{407}\approx0.995086\ap
 
 > For $x_{\mathrm{test}}=[1\ 1\ 0]^T$, what output would Naive Bayes model predict assuming that no Laplacian smoothing has been done as part of the algorithm?
 
+**Write the query's factors before inserting counts:** For $(1,1,0)$ use $S_c=\pi_c p_{1c}p_{2c}(1-p_{3c})$. The third coordinate requires a zero, so count zeros or complement the ones probability. In class 0 its matching count is zero; in class 1 matching counts are $1,1,2$ out of 3. This determines which product survives.
+
 **Step 1:** Priors both $1/2$.
 
 **Step 2 — Class 0:** $f_1=1$ count 1, $f_2=1$ count 1, $f_3=0$ count 0 among 3:
@@ -770,6 +815,8 @@ $$S_1=\frac12\times\frac13\times\frac13\times\frac23=\frac1{27}>0.$$
 > ii. Find the value of $a+c+e$.
 >
 > iii. Find the predicted label for the test point $[0\ 1\ 0]^T$.
+
+**Training-to-prediction sequence:** Count class sizes → estimate each $p_{jc}=N(f_j=1,y=c)/N_c$ → answer requested parameter sums → form the query likelihood. For $(0,1,0)$ the three factors are complement, direct, complement. Thus $S_0=\frac12(1-a)c(1-e)$ and $S_1=\frac12(1-b)d(1-f)$.
 
 **Step 1:** First four columns class 1; last four columns class 0. Both priors $1/2$.
 
@@ -818,6 +865,8 @@ $$S_1=\frac12(1-b)d(1-f)=\frac12\cdot\frac14\cdot\frac12\cdot\frac14=\frac1{64}=
 > ii. Find the value of $b+d+f$.
 >
 > iii. Find the predicted label for the test point $[1\ 0\ 1]^T$.
+
+**Reconstruct the parameters locally:** Class 0 columns have feature-one counts $(1,3,2)$ out of 4, giving $(a,c,e)=(1/4,3/4,1/2)$. Class 1 counts $(3,2,3)$ give $(b,d,f)=(3/4,1/2,3/4)$. Query $(1,0,1)$ uses $S_c=\pi_cp_{1c}(1-p_{2c})p_{3c}$. Use these counts in both the requested sums and prediction.
 
 **Reuse:** Section 6.5 se $(a,b,c,d,e,f)=(1/4,3/4,3/4,1/2,1/2,3/4)$. Dataset ko dobara count nahi karenge.
 
@@ -875,6 +924,8 @@ Har feature ki **observed category** lo. Ek categorical attribute ke saare categ
 >
 > Enter the answer up to three decimal places.
 
+**Categorical prediction rule:** For each class, count the exact category observed in each query attribute and divide by that class's sample count. Multiply those conditional fractions and the class prior. A probability answer then requires division by the sum of both class scores. Unlike binary features, a nonmatching category is not generally one unique complementary event.
+
 **Step 1 — Priors:** Yes rows = 3,4,5,6,9,10 → $6/10$; No rows = 1,2,7,8 → $4/10$.
 
 **Step 2 — Only required categories count karo:**
@@ -924,6 +975,8 @@ The following table represents 10 objects with attributes color, type and origin
 | 10 | Red | Casual | Imported | Yes |
 
 Classify a new object with Color = Red, Type = Formal, Origin = Domestic using Naive Bayes.
+
+**Why a training label can be missed:** Naive Bayes fits marginal class-feature counts, not a lookup table. Compute $S_Y=(5/10)\prod_jN(x_j=x_{*j},Y)/5$ and similarly for No. A query matching a training row is still classified by these aggregate products. Its original label does not override the higher model score.
 
 **Solution:**
 
@@ -1011,6 +1064,8 @@ Graph mein smoothing se pehle ones count $0$, class size $3$ hai. Same starting 
 >
 > (d) To balance the likelihood values of all features before computing posterior probabilities.
 
+**Zero-factor mechanism:** If one conditional estimate is $0/N_c$, the entire product likelihood becomes zero. Standard add-one smoothing replaces an outcome count $m$ by $m+1$ and total $N_c$ by $N_c+V$ for $V$ possible outcomes. Thus an unseen outcome receives $1/(N_c+V)>0$. This avoids a zero-frequency veto; it does not make all likelihoods equal.
+
 **Step 1:** Problem unseen categorical outcomes ke zero counts ka hai.
 
 **Step 2:** Pseudo-count zero ko positive estimate mein convert karta hai → **(b)**.
@@ -1041,6 +1096,8 @@ Graph mein smoothing se pehle ones count $0$, class size $3$ hai. Same starting 
 > i. How many parameters need to be estimated to make a prediction for a data point using a naive Bayes algorithm?
 >
 > ii. If a test point has label 1, what is the probability of $x_{\mathrm{test}}=[1\ 1\ 1]^T$? Assume that Laplacian smoothing is done, i.e., add two pseudo training examples $x_{\mathrm{pseudo}}^0=[1\ 1\ 1]^T$ for class 0 and $x_{\mathrm{pseudo}}^1=[1\ 1\ 1]^T$ for class 1. Enter the answer correct to four decimal places.
+
+**Use the stated augmentation literally:** Adding one all-ones sample to a class increases every feature-one count by 1 and that class size by 1. With original counts $(0,1,1)$ and size 3, new probabilities are $(1/4,2/4,2/4)$. Multiply them for $(1,1,1)$ conditional on that class. Standard add-one to both binary outcomes would have denominator 5, a different operation.
 
 **Part (i):** Section 4 rule: $C=2,d=3$ → $(2-1)+2(3)=\boxed{7}$. One prior + six feature probabilities.
 
@@ -1089,6 +1146,8 @@ $$P((1,1,1)\mid1)=\frac14\times\frac24\times\frac24=\boxed{0.0625}.$$
 > (c) 9
 >
 > (d) 10
+
+**Keep the three requested quantities separate:** Part (i) is joint, so use prior times conditional product. Part (ii) is conditional on class 1 after augmentation, so denominator is new class-1 size 4. Part (iii) counts free parameters: two class-specific Bernoulli probabilities per feature plus one class prior, $2n+1$. No posterior normalization is requested in these parts.
 
 **Part (i), Step 1 — Prior:** Class 1 rows 1,3,4 → $P(Y=1)=3/5$.
 
@@ -1304,6 +1363,8 @@ General Gaussian NB with $C$ classes, $d$ continuous features: class-specific me
 
 **Modelling interpretation:** Study hours continuous Gaussian, attendance binary. Gaussian family question mein explicitly named nahi hai; supplied answer 6 Gaussian treatment ko indicate karta hai. Arbitrary continuous distributions ke liye sirf equal variance kehne se finite parameter count determine nahi hota.
 
+**Count independently adjustable values:** Two class priors sum to 1 → one parameter. Gaussian hours have one mean per class → two means; the stated equal variance adds one shared variance. Binary attendance has one probability per class → two more. Total $1+2+1+2=6$; do not count the shared variance twice.
+
 **Step 1 — Prior:** $P(\mathrm{Pass})$ one; fail prior automatically $1-P(\mathrm{Pass})$.
 
 **Step 2 — Hours:** $\mu_{\mathrm{Pass}},\mu_{\mathrm{Fail}}$ → two means; equal variance → one shared variance. Total 3.
@@ -1336,6 +1397,8 @@ General Gaussian NB with $C$ classes, $d$ continuous features: class-specific me
 > i. If a test point has label 0, what will be the probability that the point is $x_{\mathrm{test}}=[0\ 0]^T$? Enter the answer correct to two decimal places.
 >
 > ii. For $x_{\mathrm{test}}=[0\ 1.5]^T$, what output would Naive Bayes model predict?
+
+**Use a mixed likelihood:** For binary $b$ and continuous $z$, $L_c=P(f_1=b\mid c)\frac1{\sqrt{2\pi\sigma_c^2}}\exp[-(z-\mu_c)^2/(2\sigma_c^2)]$. Evaluate the binary complement first, then Gaussian deviation, square, exponent and prefactor. Multiply by $\pi_c$ only for class prediction; the class-conditioned first part excludes priors.
 
 **Part (i), Step 1 — Condition already given:** Class 0 hai, so class-conditional likelihood chahiye; prior nahi.
 

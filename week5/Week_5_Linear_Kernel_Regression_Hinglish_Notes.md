@@ -2,6 +2,8 @@
 
 **Flow:** Supervised prediction → squared error → linear model aur normal equations → projection geometry → gradient descent → held-out validation → Gaussian likelihood → nonlinear features aur kernel regression.
 
+**Is week ko kaise solve karein:** Pehle identify karo ki weights **fit** karne hain, ek **update** karna hai, ya given weights se **prediction** chahiye. Fit mein normal equations; update mein gradient; prediction mein dot product/kernel sum use hoga. Har numerical solution mein matrix orientation, loss normalization aur intercept ka role read karo. Conceptual questions mein formula se implication derive karke options judge karo.
+
 ## Topic index
 
 | Topic | Subtopics | Questions |
@@ -86,6 +88,8 @@ Consider a training dataset $(x_i,y_i)_{i=1}^n$ where all input points $x_i\in\m
 
 (d) $h(x_i)=y_i\quad\forall i\in\{1,\ldots,n\}$
 
+**Formula aur reasoning:** Training error $L=\sum_i(y_i-h(x_i))^2$. Har term nonnegative hai, so $L=0$ tabhi jab **every** prediction equals its target. Options ko isi condition par test karenge; ek model ka kabhi fit kar paana aur har supplied dataset ko fit kar paana alag claims hain.
+
 **Solution:**
 
 1. Mean predictor exactly fits only when all targets equal that mean.
@@ -141,25 +145,107 @@ Each $x_i$ is a data point and $y_i$ its corresponding label. Predict the output
 
 Hint: For $A=\begin{bmatrix}a&b\\c&d\end{bmatrix}$, use $A^{-1}=\frac1{\det A}\begin{bmatrix}d&-b\\-c&a\end{bmatrix}$.
 
-**Solution:**
+**Solution:** Humein weights fit karne hain; pehle matrices banayenge, phir normal equation solve karke predictions aur error check karenge.
 
-**Step 1 — Exact fit check:** Pehle do points exactly fit karne ke liye $w_1=w_2=1$ chahiye. Lekin third prediction 2 ho jaayegi, target 0 hai. Isliye sab equations ko exact equal maan kar solve nahi kar sakte; least squares compromise choose karega.
+**Step 1 — Given data aur unknown identify karo.**
 
-**Step 2 — Matrices:**
+$$x_1=\begin{bmatrix}1\\0\end{bmatrix},\ y_1=1,\qquad
+x_2=\begin{bmatrix}0\\1\end{bmatrix},\ y_2=1,\qquad
+x_3=\begin{bmatrix}1\\1\end{bmatrix},\ y_3=0.$$
 
-$$X=\begin{bmatrix}1&0&1\\0&1&1\end{bmatrix},\quad XX^T=\begin{bmatrix}2&1\\1&2\end{bmatrix},\quad Xy=\begin{bmatrix}1\\1\end{bmatrix}.$$
+$$y=\begin{bmatrix}1\\1\\0\end{bmatrix},\qquad w=\begin{bmatrix}w_1\\w_2\end{bmatrix}.$$
 
-**Step 3 — Inverse and weights:** Determinant $4-1=3$.
+There are $n=3$ observations, $d=2$ features, and no intercept. Required objective is $L(w)=\|y-X^Tw\|^2$.
 
-$$w^*=\frac13\begin{bmatrix}2&-1\\-1&2\end{bmatrix}\begin{bmatrix}1\\1\end{bmatrix}=\boxed{\begin{bmatrix}1/3\\1/3\end{bmatrix}}.$$
+**Step 2 — Data matrix banao.** Har observation ko ek column mein rakho:
 
-**Step 4 — Verify residuals:**
+$$X=\begin{bmatrix}1&0&1\\0&1&1\end{bmatrix},\qquad
+X^T=\begin{bmatrix}1&0\\0&1\\1&1\end{bmatrix}.$$
 
-$$\hat y=(1/3,1/3,2/3)^T,\quad r=y-\hat y=(2/3,2/3,-2/3)^T.$$
+Shape check: $(3\times2)(2\times1)=3\times1$, so $X^Tw$ gives one prediction per observation:
 
-$$Xr=0,\qquad \operatorname{SSE}=4/9+4/9+4/9=4/3,\qquad \operatorname{MSE}=4/9.$$
+$$\hat y=\begin{bmatrix}w_1\\w_2\\w_1+w_2\end{bmatrix}.$$
 
-**Property:** Unique least-squares weights ka matlab zero training error nahi hota. Yahan matrix invertible hai, optimum unique hai, phir bhi residual nonzero hai.
+Exact fit would require $w_1=1$, $w_2=1$, and $w_1+w_2=0$ simultaneously. Yeh impossible hai, so least squares best compromise find karega.
+
+**Step 3 — Formula choose karo aur reason samjho.**
+
+$$L(w)=(1-w_1)^2+(1-w_2)^2+(w_1+w_2)^2.$$
+
+Squared loss differentiate karke gradient zero set karte hain:
+
+$$\nabla L=2X(X^Tw-y)=0
+\quad\Longrightarrow\quad XX^Tw=Xy.$$
+
+This is the **normal equation**. If $XX^T$ invertible hai:
+
+$$\boxed{w^*=(XX^T)^{-1}Xy}.$$
+
+Squared loss convex hai, so stationary solution global minimum hai. Invertibility next steps mein check karenge.
+
+**Step 4 — Calculate $XX^T$, entry by entry.**
+
+$$XX^T=
+\begin{bmatrix}1&0&1\\0&1&1\end{bmatrix}
+\begin{bmatrix}1&0\\0&1\\1&1\end{bmatrix}
+=\begin{bmatrix}
+1(1)+0(0)+1(1)&1(0)+0(1)+1(1)\\
+0(1)+1(0)+1(1)&0(0)+1(1)+1(1)
+\end{bmatrix}
+=\begin{bmatrix}2&1\\1&2\end{bmatrix}.$$
+
+**Step 5 — Inverse calculate karo.** For $A=\begin{bmatrix}a&b\\c&d\end{bmatrix}$:
+
+$$A^{-1}=\frac1{ad-bc}\begin{bmatrix}d&-b\\-c&a\end{bmatrix},\qquad ad-bc\ne0.$$
+
+Here $a=d=2$, $b=c=1$. Determinant $2(2)-1(1)=3\ne0$, hence:
+
+$$\boxed{(XX^T)^{-1}=\frac13\begin{bmatrix}2&-1\\-1&2\end{bmatrix}}.$$
+
+**Step 6 — Calculate $Xy$.**
+
+$$Xy=\begin{bmatrix}1&0&1\\0&1&1\end{bmatrix}
+\begin{bmatrix}1\\1\\0\end{bmatrix}
+=\begin{bmatrix}1(1)+0(1)+1(0)\\0(1)+1(1)+1(0)\end{bmatrix}
+=\begin{bmatrix}1\\1\end{bmatrix}.$$
+
+**Step 7 — Substitute and calculate optimal weights.**
+
+$$w^*=\frac13\begin{bmatrix}2&-1\\-1&2\end{bmatrix}
+\begin{bmatrix}1\\1\end{bmatrix}
+=\frac13\begin{bmatrix}2(1)-1(1)\\-1(1)+2(1)\end{bmatrix}
+=\boxed{\begin{bmatrix}1/3\\1/3\end{bmatrix}}.$$
+
+**Step 8 — Predict all three outputs.**
+
+$$\hat y=X^Tw^*=
+\begin{bmatrix}1&0\\0&1\\1&1\end{bmatrix}
+\begin{bmatrix}1/3\\1/3\end{bmatrix}
+=\begin{bmatrix}1(1/3)+0(1/3)\\0(1/3)+1(1/3)\\1(1/3)+1(1/3)\end{bmatrix}
+=\boxed{\begin{bmatrix}1/3\\1/3\\2/3\end{bmatrix}}.$$
+
+**Step 9 — Residuals aur minimum error calculate karo.** Residual means actual minus predicted:
+
+$$r=y-\hat y=\begin{bmatrix}1-1/3\\1-1/3\\0-2/3\end{bmatrix}
+=\begin{bmatrix}2/3\\2/3\\-2/3\end{bmatrix}.$$
+
+$$\operatorname{SSE}=\|r\|^2=(2/3)^2+(2/3)^2+(-2/3)^2
+=\frac49+\frac49+\frac49=\boxed{\frac43}.$$
+
+$$\operatorname{MSE}=\frac{\operatorname{SSE}}n=\frac{4/3}{3}=\boxed{\frac49}.$$
+
+SSE total squared error hai; MSE per-observation average hai. Dono ke minimizers same hain, numerical loss values different hain.
+
+**Step 10 — Verify optimality using $Xr=0$.**
+
+$$Xr=\begin{bmatrix}1&0&1\\0&1&1\end{bmatrix}
+\begin{bmatrix}2/3\\2/3\\-2/3\end{bmatrix}
+=\begin{bmatrix}2/3-2/3\\2/3-2/3\end{bmatrix}
+=\begin{bmatrix}0\\0\end{bmatrix}.$$
+
+Yeh normal equation ka residual form hai: residual every feature row ke perpendicular hai. Kisi weight ko slightly change karke first-order improvement nahi milti; convexity confirms global optimality.
+
+**Final answer:** $w_1=w_2=1/3$, predictions $(1/3,1/3,2/3)^T$, minimum SSE $4/3$, and MSE $4/9$. Unique weights ka matlab zero error nahi: data exact linear fit allow hi nahi karta.
 
 ### 2.1A Constant-only regression: Baseline is the mean
 
@@ -190,6 +276,12 @@ Consider fitting a linear regression model (as stated below) for the following d
 | 2 | 1 |
 
 Fit $y_i=\beta_0$. Find $\beta_0$.
+
+**Formula ka derivation:** Constant model ke liye $L(\beta_0)=\sum_i(y_i-\beta_0)^2$. Differentiate:
+
+$$L'(\beta_0)=2\sum_i(\beta_0-y_i)=2(3\beta_0-1).$$
+
+Set zero: $3\beta_0-1=0$. Also $L''=6>0$, so solution minimum hai. Ab mean formula aur residual check apply karte hain.
 
 **Solution:**
 
@@ -223,6 +315,14 @@ Consider the following training dataset for a linear regression problem with one
 | −2 | −1 |
 
 Find the value of $w^*$, the optimal weight.
+
+**Formula ka derivation:** No-intercept model mein $L(w)=\sum_i(wx_i-y_i)^2$.
+
+$$L'(w)=2\sum_i x_i(wx_i-y_i)=0
+\Rightarrow w\sum_i x_i^2=\sum_i x_iy_i
+\Rightarrow w^*=\frac{\sum_i x_iy_i}{\sum_i x_i^2}.$$
+
+Numerator mein signed products, denominator mein squares use honge. Neeche dono sums separately calculate karenge.
 
 **Solution:** Model is $\hat y=wx$, no intercept specified.
 
@@ -266,6 +366,14 @@ Based on the above data, answer the given subquestions.
 (d) $y=x_1+x_2$
 
 (ii) Find the mean squared error for the training dataset.
+
+**Matrix formation aur applicable formula:**
+
+$$X=\begin{bmatrix}4&2&1&3\\1&8&4&2\end{bmatrix},\quad y=(2,-14,-7,-1)^T.$$
+
+$$XX^T=\begin{bmatrix}30&30\\30&85\end{bmatrix},\qquad Xy=\begin{bmatrix}-30\\-140\end{bmatrix}.$$
+
+Normal equations give $30w_1+30w_2=-30$ and $30w_1+85w_2=-140$. Subtraction gives $55w_2=-110$, hence $w_2=-2$, $w_1=1$. Neeche direct equations aur every-point check se same optimum verify karenge.
 
 **Solution:** Interpret the stated dot-product model as $\hat y=w^Tx$.
 
@@ -319,6 +427,8 @@ where $x_i$'s are the d-dimensional training data points and $y_i$'s are their c
 
 (d) If we double all the values of $x_i$, $w^*$ will also get doubled.
 
+**Rule being applied:** $w^*=A^{-1}Xy$, where $A=XX^T$. Label scaling changes only $y$; input scaling changes **both** $A$ and $Xy$. For $X'=2X$, $A'=4A$ and $(4A)^{-1}=A^{-1}/4$. Therefore net multiplier $2/4=1/2$, not 2.
+
 **Solution:**
 
 **Labels double:** Normal-equation expression linear in y:
@@ -344,6 +454,8 @@ Consider a dataset $D=\{(x_1,y_1),\ldots,(x_n,y_n)\}$. Let $w^*\in\mathbb R^d$ b
 (a) TRUE
 
 (b) FALSE
+
+**Proof ka plan:** Minimum preserve karna show karne ke liye new objective ki lower bound find karenge. Duplicating all observations doubles their loss: $L\to2L$. New on-model samples contribute squares which equal zero at old optimum. Thus old optimum achieves the smallest possible old-loss term and the smallest possible added term together.
 
 **Solution:**
 
@@ -400,6 +512,13 @@ $$\boxed{Xr=0},\qquad\boxed{\hat y^Tr=0}.$$
 
 Consider the following data points: $\{(1,2),(3,1),(-1,4)\}$. The projection of the label vector onto the span of the feature vectors of the data points is $(2,11,-8)$. Predict the label for $(7,3)$ using linear regression.
 
+**Matrix setup:**
+
+$$X^T=\begin{bmatrix}1&2\\3&1\\-1&4\end{bmatrix},\qquad
+\hat y=\begin{bmatrix}2\\11\\-8\end{bmatrix}.$$
+
+Given vector already projected hai, so solve $X^Tw=\hat y$ exactly. Matrix ki each row one equation deti hai. Fit ke baad test formula $\hat y_*=[7\ 3]w=7w_1+3w_2$ use hoga.
+
 **Solution:**
 
 **Step 1 — Interpret the projection:** Given vector fitted labels $\hat y$ hai. Actual labels y nahi diye, lekin weights recover karne ke liye fitted labels sufficient hain.
@@ -444,6 +563,8 @@ For which label vector y is the linear model $f(x)=w^Tx$ guaranteed to achieve e
 
 (d) $y=[0,0,1]^T$
 
+**Step-by-step criterion:** Exact fit means $y=X^Tw=w_1f_1+w_2f_2$. First coordinate fixes $w_1=y_1$; second fixes $w_2=y_2$. Third coordinate must then equal $y_1+y_2$. Ab each option ke first two entries add karke third se compare karenge. Yeh consistency test hai, inverse calculate karna required nahi.
+
 **Solution:** Any attainable prediction is
 
 $$w_1f_1+w_2f_2=[w_1,w_2,w_1+w_2]^T.$$
@@ -472,6 +593,8 @@ Let X be a data matrix of the shape (d, n) and y be the associated label vector 
 (c) If all the data points satisfy the equality $x_1+x_2+\cdots+x_d=0$, where $x_i$ is the ith feature and y = 0 for all the data points.
 
 (d) If all the data points satisfy the equality $x_1^3+x_2^3+\cdots+x_d^3=0$, where $x_i$ is the ith feature and y = 0 for all the data points.
+
+**Apply two separate checks:** First check $y\in\operatorname{row}(X)$ for zero error. Then check whether $XX^T$ is invertible for the **specified formula**. If $y=0$, $w=0$ predicts every target exactly, regardless of rank; rank only determines whether the displayed inverse is legal. In (c), $XX^T\mathbf1=X(X^T\mathbf1)=0$ proves singularity.
 
 **Solution:**
 
@@ -507,6 +630,8 @@ We have data points $D=\{(x_1,y_1),\ldots,(x_n,y_n)\}$, where $x_i\in\mathbb R^d
 
 (D) Let $Y=(y_1,\ldots,y_n)^T$ and $Y_p$ be the projection of $Y$ onto the span of the feature vectors of $x_1,\ldots,x_n$. Then $\|Y-Y_p\|>0$.
 
+**Reasoning rule:** A sum of squares can vanish only when each square vanishes. Hence derive $w^Tx_i-y_i=0$ before judging the options. This equation involves $d$ input coordinates **and one target coordinate**, so its normal has $d+1$ entries. Generalization needs unseen-label evidence, which a zero training loss does not supply.
+
 **Solution:**
 
 **Step 1:** Har squared term nonnegative hai. Sum zero means har $y_i=w^Tx_i$.
@@ -536,6 +661,12 @@ Let X be the data matrix of shape (d, n) and y be the corresponding label vector
 (c) $\lVert y\rVert^2$
 
 (d) Insufficient information to answer
+
+**Expand the orthogonality condition:** Since every $x_i$ belongs to the data span, $w^{*T}x_i=0$. Substitute into the loss:
+
+$$L(w^*)=\sum_{i=1}^n(y_i-0)^2=y_1^2+\cdots+y_n^2=\|y\|^2.$$
+
+The given condition removes predictions, not targets. Unless every target is zero, the resulting loss is positive.
 
 **Solution:**
 
@@ -567,6 +698,13 @@ $w^*$ is the optimal weight obtained after minimizing the objective function of 
 
 (d) The normal equations have no solution.
 
+**Algebraic verification:** Feature orthogonality gives $Xy=0$. For any attainable $\hat y=X^Tw$, $y^T\hat y=(Xy)^Tw=0$. Expand:
+
+$$\|y-\hat y\|^2=\|y\|^2-2y^T\hat y+\|\hat y\|^2
+=\|y\|^2+\|\hat y\|^2.$$
+
+Minimum occurs at $\hat y=0$, attainable by $w=0$. Thus minimum is $\|y\|^2$, not zero.
+
 **Solution:** y is perpendicular to the whole feature subspace, so its projection onto that subspace is zero. Hence fitted labels zero and SSE $\lVert y\rVert^2>0$.
 
 $$\boxed{\text{(b)}}.$$
@@ -588,6 +726,13 @@ $$\boxed{w_{\min}=X\alpha}.$$
 **Question:**
 
 Consider the data points $\{(c_1u,y_1),\ldots,(c_nu,y_n)\}$ for a regression problem. Here $c_i$ is a real number and $u\in\mathbb R^d$, $u\ne0$. Fit a linear regression model and find the predicted value for $x_{test}=5u$. Assume some $c_i\ne0$. Given $\sum_i c_i y_i=20$ and $\sum_i c_i^2=100$.
+
+**Why the scalar-fit formula applies:** Inputs are $c_i u$, so data only reveal the scalar $a=w^Tu$. Differentiate the reduced loss:
+
+$$\frac{d}{da}\sum_i(c_i a-y_i)^2
+=2a\sum_i c_i^2-2\sum_i c_i y_i=0.$$
+
+Since $\sum c_i^2=100>0$, divide to obtain a unique $a$. A test point $5u$ uses exactly this learned scalar.
 
 **Solution:**
 
@@ -625,6 +770,8 @@ Let $w^*\in\mathbb R^d$ be the solution of the optimization problem $\min_{w\in\
 
 (d) $w^*$ lies in the span of features.
 
+**Dimension and optimality checks:** With $X:d\times n$, $w:d\times1$ while $y,\hat y:n\times1$. Projection of $y$ must stay in $\mathbb R^n$: use feature rows. For a weight, write $w=w_\parallel+w_\perp$ relative to data columns. Since $X^Tw_\perp=0$, removing $w_\perp$ preserves fit and reduces norm. This explains the minimum-norm qualification for (c).
+
 **Solution:**
 
 - (a) True: Fitted label vector is projection onto feature span in $\mathbb R^n$.
@@ -655,6 +802,8 @@ Which of the following is always satisfied at $w^*$? Note that here X is your fe
 (c) $y^T(y-Xw^*)=0$
 
 (d) $y-Xw^*=0$
+
+**Derive the property:** Here samples are rows, so $L=(y-Xw)^T(y-Xw)$ and $\nabla L=-2X^T(y-Xw)$. Set it to zero at $w^*$. Multiplying this zero vector by $(w^*)^T$ turns orthogonality to each feature into orthogonality to their weighted sum, the prediction vector. Residual need not itself be zero.
 
 **Solution:** This question uses rows as observations, so normal equations are $X^T(y-Xw^*)=0$.
 
@@ -695,6 +844,8 @@ Which of the following is true?
 (c) One of $S_1$ or $S_2$ is possible.
 
 (d) Both $S_1$ and $S_2$ are impossible.
+
+**Identify the applicable feature:** The constant first feature makes $w_0$ an intercept. Each residual depends on $w_0$ with derivative $-1$, so differentiating SSE gives $-2\sum_i(y_i-\hat y_i)=0$. Therefore residuals must sum to zero. A nonempty list of strictly positive numbers or strictly negative numbers cannot satisfy that condition.
 
 **Solution:**
 
@@ -746,6 +897,8 @@ SSPD means sum squared perpendicular distance; SSVD means sum squared vertical d
 (C) The SSVD from $D$ to $l_1$ is the minimum possible SSVD to any line in $\mathbb R^2$.
 
 (D) The SSVD from $D$ to $l_2$ is the minimum possible SSVD to any line in $\mathbb R^2$.
+
+**Write both objectives before comparing:** For a candidate line $y=wx$, regression minimizes $\sum_i(y_i-wx_i)^2$. PCA minimizes $\sum_i(y_i-wx_i)^2/(1+w^2)$ for nonvertical lines, and also permits vertical lines. The denominator depends on the chosen slope, so minimizing one objective does not generally minimize the other.
 
 **Solution:**
 
@@ -800,6 +953,8 @@ Consider a linear regression problem. Which of the following is the gradient of 
 
 (d) $xy$
 
+**Chain rule, one coordinate at a time:** $e=\sum_jw_jx_j-y$ gives $\partial e/\partial w_j=x_j$. Hence $\partial(e^2)/\partial w_j=2ex_j$. Collect all coordinates to get $2ex$. If loss includes $1/2$, that factor cancels 2. Check normalization before matching an option.
+
 **Solution:**
 
 1. Single-sample error $e=w^Tx-y$.
@@ -830,6 +985,8 @@ Note: The objective function is given by $f(w)=\lVert X^Tw-y\rVert^2$.
 (c) $w_1=[1,0.5]^T$
 
 (d) $w_1=[-0.2,3.1]^T$
+
+**Formula and dimensions:** Given loss is raw SSE, hence $g=2X(X^Tw_0-y)$. Compute in this order: predictions $(3\times1)$ → errors $(3\times1)$ → $X$ times errors $(2\times1)$ → multiply by 2 → subtract $0.05g$. This order keeps every gradient component evaluated at the same old weight.
 
 **Solution:**
 
@@ -875,6 +1032,8 @@ Use $\nabla f(w)=2(XX^T)w-2Xy$.
 
 (ii) If we stop the algorithm at the weight calculated in the previous question, what will be the predicted value for the data point, $x_1=5$?
 
+**Set up the calculation:** $X=[1\ 2\ 3\ 4]$ and $y=(4,7,10,13)^T$. Thus $XX^T$ is the scalar $\sum x_i^2$, and $Xy=\sum x_i y_i$. Apply $g=2(XX^T)w-2Xy$, then $w_{new}=w-\eta g$. The prediction uses the new weight, not the optimum from a separate fit.
+
 **Solution:**
 
 **(i) Step 1:** $\sum x_i^2=1+4+9+16=30$.
@@ -910,6 +1069,8 @@ Based on the above data, answer the given subquestions.
 (i) If the next iteration of gradient descent is expressed as $w^{(t+1)}=w^{(t)}+\eta w_k$ with $\eta>0$, what would be the value of k?
 
 (ii) If $w^{(t)}=[0.4,0.1]^T$ and $\eta=1/\sqrt{10}$, find $\lVert w^{(t+1)}\rVert$, where we use the usual L2 norm.
+
+**Identify direction versus step length:** Gradient points uphill; a plus-sign update must choose its negative. Since $w_k$ is unit length, $\|\eta w_k\|=\eta$. Here multiplying two factors $1/\sqrt{10}$ gives $1/10$. After adding coordinates, compute $\|v\|=\sqrt{v_1^2+v_2^2}$; norms cannot generally be added directly.
 
 **Solution:**
 
@@ -948,6 +1109,12 @@ Normal-equation dense solve/inversion has roughly $O(d^3)$ solve cost after form
 **Question:**
 
 $f(x)=x^2-2x+1$. We are trying to find an $x$ at which the function's value is minimum. Use gradient descent initialized at $x_0=0$. After how many iterations does the algorithm stop? Use $\eta=0.5$.
+
+**Apply the update rule symbolically:** $x_{t+1}=x_t-\eta f'(x_t)$. With $f'=2x-2$ and $\eta=1/2$:
+
+$$x_{t+1}=x_t-\tfrac12(2x_t-2)=x_t-x_t+1=1.$$
+
+Any starting point reaches 1 after one update. A subsequent unchanged update only detects that the minimum was already reached.
 
 **Solution:**
 
@@ -989,6 +1156,8 @@ Both students use gradient descent with the same learning rate $\eta$ and the sa
 
 (d) They converge to the same minimizer, but Q’s steps are n times larger.
 
+**Compare the actual updates:** At a common weight $w$, P moves by $-\eta\nabla L(w)$ and Q by $-(\eta/n)\nabla L(w)$. Positive rescaling preserves the ordering of loss values, so it preserves minimizers. To preserve each update too, multiply Q's learning rate by $n$; induction then gives the same subsequent iterates.
+
 **Solution:**
 
 1. $L'=L/n$ → same minimizer set.
@@ -1024,6 +1193,13 @@ For the dataset
 $$X_{d\times n}=\begin{bmatrix}1&2&3&4\\2&1&4&3\end{bmatrix},\qquad y=\begin{bmatrix}2\\3\\1\\3\end{bmatrix},$$
 
 initialize $w_0=[0,0]^T$ with learning rate $\eta=0.01$. Let $w_{gd}$ be the updated weight after one iteration of gradient descent and $w_{sgd}$ the updated weight after one full iteration of stochastic gradient descent, taking the first two and then the next two data points as samples. Compute $\|w_{gd}-w_{sgd}\|$. For all calculations, use $\frac12\|X^Tw-y\|^2$ as the loss function.
+
+**Expanded full-batch multiplication:**
+
+$$Xy=\begin{bmatrix}1(2)+2(3)+3(1)+4(3)\\2(2)+1(3)+4(1)+3(3)\end{bmatrix}
+=\begin{bmatrix}23\\20\end{bmatrix}.$$
+
+At zero weights, half-SSE gradient is $-Xy$. In sequential batches, the first update changes predictions used by the second: $3(0.08)+4(0.07)=0.52$ and $4(0.08)+3(0.07)=0.53$. These changing errors explain the difference from full GD.
 
 **Solution:**
 
@@ -1079,6 +1255,8 @@ For a linear regression problem, which among the following are true? Select all 
 (c) Stochastic gradient descent is guaranteed to converge to a global minimum.
 
 (d) Gradient descent will take lesser number of iterations to converge to a local minimum than stochastic gradient descent.
+
+**How to judge convergence claims:** First inspect the objective: its Hessian is $2XX^T\succeq0$, so a local minimum is global. Next inspect the algorithm: convexity alone does not control the learning rate. Finally compare cost per update: GD reads all observations, SGD reads one. A theorem about minimizers does not imply a universal ordering of iteration counts.
 
 **Solution:**
 
@@ -1138,6 +1316,12 @@ The linear regression model is given by $y=w_0+w_1x$. Assume that the Leave-One-
 
 (e) None of these
 
+**Formula before substitution:** For training-fold points only,
+
+$$w_1=\frac{\sum(x_i-\bar x)(y_i-\bar y)}{\sum(x_i-\bar x)^2},\qquad w_0=\bar y-w_1\bar x.$$
+
+After holding out sample 3, $\bar x=(3+0+6)/3=3$ and $\bar y=(8+3+13)/3=8$. Held-out target 12 enters only the final validation error, never these training sums.
+
 **Solution:**
 
 **Step 1:** Remove $(5,12)$. Train on $(3,8),(0,3),(6,13)$.
@@ -1172,6 +1356,8 @@ $$D=\{(1,2),(2,2),(0,1)\}.$$
 
 Assume that Leave one out cross validation is applied on this dataset and the model used is $y=w_0+w_1x$. Suppose $w=[w_0,w_1]^T$ be the weight obtained when (2, 2) is used in the validation set. Then calculate $\lVert w\rVert_2^2$.
 
+**Form the training equations:** Only $(1,2)$ and $(0,1)$ remain. Their design matrix is $A=\begin{bmatrix}1&1\\1&0\end{bmatrix}$ for $w=(w_0,w_1)^T$, with targets $(2,1)^T$. Exact solution gives zero training SSE, hence is least-squares optimal. The requested quantity is $w^Tw$, so square and add both coefficients without taking a square root.
+
 **Solution:**
 
 1. Hold out $(2,2)$; train on $(1,2),(0,1)$.
@@ -1196,6 +1382,13 @@ where $\hat f_{-i}(x_i)$ denote the predicted value of $y_i$ using the model tra
 $$D=\{(1,2),(2,2),(0,1)\},$$
 
 fit the model $\hat f=\beta x_i$ and find $\operatorname{error}_L(A_3)$.
+
+**Derive a fresh coefficient in every fold:** Excluding index $i$, solve
+
+$$0=2\sum_{j\ne i}x_j(\beta x_j-y_j)
+\Rightarrow \beta_{-i}=\frac{\sum_{j\ne i}x_jy_j}{\sum_{j\ne i}x_j^2}.$$
+
+Then compute $\hat y_i=\beta_{-i}x_i$ and $(y_i-\hat y_i)^2$. Three held-out predictions use three separately fitted coefficients. The table shows all three fits.
 
 **Solution:** Dataset same as Q13, but model now **without intercept**. Reusing Q13's line would be wrong.
 
@@ -1247,6 +1440,12 @@ Consider the linear regression model $y=w^Tx+\epsilon$. Assuming $\epsilon\sim N
 
 (b) FALSE
 
+**Likelihood to loss, step by step:** Independence gives a product of Gaussian densities. Taking logs converts the product into a sum:
+
+$$\log p(y\mid X,w)=\sum_i\left[-\tfrac12\log(2\pi\sigma^2)-\frac{(y_i-w^Tx_i)^2}{2\sigma^2}\right].$$
+
+The logarithm is increasing, so maximizing likelihood and log-likelihood agree. Remove terms constant in $w$; the remaining negative squared-error term is largest when SSE is smallest.
+
 **Solution:** Log-likelihood is constant minus SSE divided by positive $2\sigma^2$. Maximizing it means minimizing SSE.
 
 $$\boxed{\text{(a) TRUE}}.$$
@@ -1268,6 +1467,8 @@ Under the probabilistic view of linear regression, assume $y_i\sim N(w^Tx_i,\sig
 (c) It is scaled by 1/4.
 
 (d) It cannot be determined without knowing $\sigma^2$.
+
+**Differentiate to see the cancellation:** With new variance $4\sigma^2$, the weight-dependent negative log-likelihood is $L(w)/(8\sigma^2)$. Its gradient is $\nabla L(w)/(8\sigma^2)$. Setting it to zero still gives $X(X^Tw-y)=0$, because the denominator is positive. The observed $X,y$ have not changed, so the normal equations have not changed.
 
 **Solution:**
 
@@ -1306,6 +1507,8 @@ Note: The regression model is $\operatorname{Thickness}(y)=\beta_0+\beta_1(\oper
 (d) $\hat\beta_0=-252,\quad\hat\beta_1=-0.9,\quad\hat\sigma=360$
 
 (e) $\hat\beta_0=252,\quad\hat\beta_1=-0.9,\quad\hat\sigma=360$
+
+**Rules for reading the graph:** Use two locations on the **fitted line** to estimate $\beta_1=\Delta y/\Delta x$. Then solve $\beta_0=y-\beta_1x$ using either location. Noise scale concerns residuals $r_i=y_i-(\beta_0+\beta_1x_i)$, not the range of temperatures. The figure supports approximate scale comparisons; exact $\hat\sigma$ would require individual residuals.
 
 **Solution:**
 
@@ -1361,6 +1564,8 @@ The training dataset is known to contain several extreme outliers resulting from
 
 (d) All the given options are correct.
 
+**Apply negative log-likelihood separately:** Gaussian density produces $r^2/(2\sigma^2)$; Laplace density produces $|r|/b$, apart from constants. If a residual grows from 10 to 100, its squared term grows from 100 to 10000, whereas its absolute term grows from 10 to 100. This explains the different influence of response outliers without introducing any penalty on weights.
+
 **Solution:**
 
 - (a) Correct: Gaussian MLE minimizes squared residuals.
@@ -1391,6 +1596,12 @@ Consider n data points, with each feature $x_i\in\mathbb R^+$ and label $y_i\in\
 (c) $\hat w_{MLE}=\frac1n\sum_{i=1}^n(y_i-\log x_i)$
 
 (d) $\hat w_{MLE}=\exp\left(\frac1n\sum_{i=1}^n(x_iy_i-\log x_i)\right)$
+
+**Show why the transformed mean is optimal:** Put $z_i=y_i-\log x_i$ and $a=\log w$. Then
+
+$$J(a)=\sum_i(z_i-a)^2,\quad J'(a)=2na-2\sum_i z_i.$$
+
+Setting $J'=0$ gives $a=\sum z_i/n$; $J''=2n>0$ confirms minimum. Since $w=e^a$ is a one-to-one map onto positive weights, exponentiating returns the required MLE.
 
 **Solution:**
 
@@ -1423,6 +1634,12 @@ Suppose we model data as $y_i\sim N(\log(w/x_i),1)$ with a single unknown parame
 (c) $\sum_i y_i/x_i=\sum_i\log(w/x_i)$
 
 (d) $\sum_i y_i=\sum_i w/x_i$
+
+**Differentiate the stated model directly:** For $J(w)=\sum_i[y_i-\log(w/x_i)]^2$,
+
+$$J'(w)=-\frac2w\sum_i[y_i-\log(w/x_i)].$$
+
+Since $w>0$, $J'=0$ is exactly equality between the two unweighted sums in option (a). There is no extra $x_i$ multiplier: derivative of $\log(w/x_i)$ with respect to $w$ is $1/w$.
 
 **Solution:** Similar to Q20, but division changes the sign of $\log x_i$.
 
@@ -1486,6 +1703,14 @@ What role does $K(x,x')$ play in kernel regression? (MSQ)
 
 (e) It minimizes the loss function in regression problems.
 
+**Concrete feature-space example:** For scalar inputs and degree 2,
+
+$$(1+xz)^2=1+2xz+x^2z^2
+=\begin{bmatrix}1&\sqrt2x&x^2\end{bmatrix}
+\begin{bmatrix}1\\\sqrt2z\\z^2\end{bmatrix}.$$
+
+Thus the kernel computes a dot product without explicitly storing the three features. A linear weight combination of these features is a quadratic function of raw $x$, explaining nonlinear prediction.
+
 **Solution:** (b) is transformed inner product; (c) describes nonlinear modeling ability. (a) is misleading if it means linear in original inputs. (d) no automatic variance reduction; (e) kernel is a similarity function, optimizer minimizes loss.
 
 $$\boxed{\text{(b), (c)}}.$$
@@ -1528,6 +1753,12 @@ Let the linear regression model’s solution be written as $w^*=X\alpha$, where 
 
 (d) $\sum_{i=1}^n\alpha_i^2 k(x_i,x_{test})$
 
+**Expand the matrix expression:**
+
+$$w=\Phi\alpha=\alpha_1\phi(x_1)+\cdots+\alpha_n\phi(x_n).$$
+
+Taking the dot product with $\phi(x_*)$ distributes over the sum. Each term becomes $\alpha_i\phi(x_i)^T\phi(x_*)=\alpha_i k(x_i,x_*)$. Hence predictions are a weighted sum of similarities; neither weights nor similarities disappear.
+
 **Solution:**
 
 Linear prediction $w^Tx_*=(X\alpha)^Tx_*=\sum_i\alpha_i x_i^Tx_*$. Kernelized version replaces inner products by k, retaining coefficients unchanged.
@@ -1547,6 +1778,8 @@ Kernel regression with a polynomial kernel of degree three is applied on a data 
 $$w=\phi(X)[2.3,-1.0,0.4,-0.7]^T.$$
 
 Here $\phi(X)$ is the transformed data matrix whose ith column is $\phi(x_i)$. What will be the prediction for the data point $[0,0,0,0]^T$?
+
+**Prediction formula before arithmetic:** $\hat y(x_*)=\alpha^Tk_*$ with $k_*=(k(x_1,x_*),\ldots,k(x_4,x_*))^T$. For the origin and the specified +1 convention, $k_*=(1,1,1,1)^T$. Therefore compute $2.3-1.0=1.3$, then $1.3+0.4=1.7$, then $1.7-0.7=1.0$.
 
 **Solution:** Use course's inhomogeneous kernel $k(x,z)=(1+x^Tz)^3$.
 
@@ -1571,6 +1804,8 @@ Consider the following dataset for a kernel regression problem with a polynomial
 $$X=\begin{bmatrix}1&0&-1&0\\0&1&0&-1\end{bmatrix},\qquad y=\begin{bmatrix}1\\-1\\2\\-2\end{bmatrix},\qquad\alpha=\begin{bmatrix}\alpha_1\\-0.625\\\alpha_3\\\alpha_4\end{bmatrix}.$$
 
 If the prediction for the data-point $[1,1]^T$ is 0, find the value of $\alpha_1$.
+
+**Turn prediction into one equation:** $\hat y_* =\sum_{i=1}^4\alpha_i(1+x_i^Tx_*)^2$. The query is $(1,1)$, so a column $(a,b)$ has dot product $a+b$. Evaluate these four dot products first, then add 1 and square. Zero kernel entries erase their unknown coefficients from this particular equation.
 
 **Solution:** Use $k(x,z)=(1+x^Tz)^2$, consistent with paper's answer.
 
@@ -1613,6 +1848,12 @@ Based on the above data, answer the given subquestions.
 (d) $\begin{bmatrix}4&1&1\\1&4&1\\1&1&1\end{bmatrix}$
 
 (ii) What will be the prediction for the data point $[1,-1]^T$? Enter the answer correct to two decimal places.
+
+**Matrix formation rule:** $K_{ij}=(1+x_i^Tx_j)^2$; $K$ is $3\times3$ because there are three observations. First form raw inner products:
+
+$$X^TX=\begin{bmatrix}1&0&0\\0&1&0\\0&0&0\end{bmatrix}.$$
+
+Add 1 to **each entry**, then square each entry to obtain $K$. This is an entrywise kernel calculation, not matrix squaring. Solve $K\alpha=y$, then use a separate test kernel vector.
 
 **Solution — (i): Pairwise kernel values**
 
@@ -1674,6 +1915,12 @@ $$\alpha=[0.5,1.0,1.5]^T.$$
 
 Then, what will be the predicted value for the data point $[2,2]^T$?
 
+**Formula and first row in detail:** With $x_*=(2,2)$,
+
+$$\hat y_* =\sum_{i=1}^3\alpha_i(1+x_i^Tx_*)^2.$$
+
+For $x_1=(1,2)$: dot product $1(2)+2(2)=6$; kernel $(1+6)^2=49$; contribution $0.5(49)=24.5$. Repeat the same three operations for each remaining point, as shown in the table, then add.
+
 **Solution:** Given coefficients use karo; prediction doesn't require refitting them.
 
 | Training point | Dot product with (2,2) | Kernel value | $\alpha_i k_i$ |
@@ -1701,6 +1948,8 @@ Let the optimal weight vector $w^*$ be given by:
 $$w^*=\phi(X)[1,1.2,0,0.7,-0.5]^T,$$
 
 where $\phi$ is the transformation mapping corresponding to the kernel $K(x,x')=(x^Tx'+1)^2$. Compute the predicted value $y_{pred}$ for a new data point $x'=[1,1,1]^T$. Enter the answer correct to one decimal place.
+
+**Read the columns, then apply the kernel:** The five columns are five training inputs; $\alpha$ therefore has five entries. Since $x_*=(1,1,1)^T$, $x_i^Tx_*=x_{i1}+x_{i2}+x_{i3}$. For column 2, $4+5+6=15$, kernel $(1+15)^2=256$, and weighted contribution $1.2(256)=307.2$. Apply the same sequence to every column.
 
 **Solution:**
 
@@ -1747,6 +1996,8 @@ Gaussian kernel regression with parameter $\sigma^2=\frac12$ was applied to the 
 $$X=\begin{bmatrix}1&0&1&0\\0&1&1&0\end{bmatrix},\qquad y=\begin{bmatrix}2.1\\1\\2\\1.2\end{bmatrix}.$$
 
 The weight vector can be written as $w=\phi(X)\alpha$, where $\phi$ is the transformation mapping corresponding to the kernel. The vector $\alpha=[2.1,-2.1,3,0]^T$ is given, stated to be obtained as $K^{-1}y$, where $K$ is the kernel matrix. What will be the prediction for $[1,1]^T$?
+
+**Squared-distance calculation:** For query $z=(1,1)$, calculate $\|x_i-z\|^2$ as coordinate-square sums: $(1-1)^2+(0-1)^2=1$, $(0-1)^2+(1-1)^2=1$, $0^2+0^2=0$, and $(-1)^2+(-1)^2=2$. Insert these into the exponential **before** multiplying by coefficients. Equal distances give equal kernel values, enabling cancellation.
 
 **Solution:**
 

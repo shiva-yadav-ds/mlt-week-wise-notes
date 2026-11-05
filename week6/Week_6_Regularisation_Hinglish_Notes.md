@@ -2,6 +2,8 @@
 
 **Flow:** Linear regression ki uncertainty → bias–variance → Ridge shrinkage → LASSO sparsity → Gaussian/Laplace priors → cross-validation se hyperparameters → prediction threshold.
 
+**Concept ko connect karo:** Training SSE asks “given data par fit kitna achha hai?” Regularization adds “weights kitne large hain?” Validation asks “unseen examples par prediction kaisi hai?” In teen quantities ko separate rakho. Ridge solve karte waqt objective differentiate karo: $2X(X^Tw-y)+2\lambda w=0$, hence $(XX^T+\lambda I)w=Xy$. Is extra diagonal term se fitting aur stability ke beech trade-off aata hai.
+
 ## Topic index
 
 | Topic | Subtopics | Questions |
@@ -163,6 +165,8 @@ The training dataset consists of information on 200 houses, and you use the mode
 
 (d) Model Q will always perform well on the test dataset.
 
+**Apply model inclusion:** Set $w_2=0$ in Q to obtain P exactly. Thus Q can reproduce P's best training predictions before trying any curved fit. Minimizing over this larger set cannot raise minimum training MSE. Test labels were not used in that minimization, so this inequality says nothing guaranteed about test MSE.
+
 **Solution:**
 
 **(i) Step 1:** Q has every function P can express: choose $w_2=0$.
@@ -199,6 +203,8 @@ If both models are trained on the same one-dimensional dataset and evaluated on 
 
 (d) Insufficient data
 
+**Reason in two stages:** First compare functions: Model 1 can only draw straight lines; Model 2 also draws curves. Then imagine changing the training sample: extra curvature can follow sample-specific deviations. The standard bias–variance comparison is less approximation flexibility → more bias, less sample sensitivity → less variance. These are tendencies, not numerical bias estimates from the supplied data.
+
 **Solution:** Model 1 is less flexible; it cannot express curvature, but typically responds less to sample-specific fluctuations. Standard comparison gives higher bias and lower variance for Model 1.
 
 $$\boxed{\text{(a) Model 1}}.$$
@@ -231,6 +237,8 @@ For a fixed number of training examples, select the correct options from the fol
 
 (d) Model 1 is more likely to overfit.
 
+**Check representability first:** Model 2 reproduces the true mean by setting $(a_0,a_1,a_2,a_3)=(w_0,w_1,w_2,w_3)$ and $a_4=a_5=0$. Model 1 cannot do this for nonzero quadratic/cubic terms. Its systematic miss is bias; fitting random $\epsilon_i$ instead of the mean is overfitting. Use these two distinctions to evaluate the options.
+
 **Solution:**
 
 1. Genuinely nonlinear cubic truth cannot generally be represented by Model 1.
@@ -253,6 +261,8 @@ Is the following statement true or false? For a fixed size of the training and t
 (a) TRUE
 
 (b) FALSE
+
+**Test “always” with an explicit case:** Let noiseless truth be $y=x^2$ and training inputs $-1,0,1$. OLS line is $\hat y=2/3$, giving error $1/9$ at test input 1. A quadratic fit gives $\hat y=x^2$, hence test error 0. Increasing complexity can therefore reduce test error; one counterexample disproves the universal claim.
 
 **Solution:** False. Underfitted straight line ko suitable quadratic curve se replace karne par test error decrease ho sakta hai. Excessive flexibility later overfit kar sakti hai. Word **always** makes the statement wrong.
 
@@ -280,6 +290,8 @@ Which of the following options are correct? Select all that apply. (MSQ)
 
 (d) All the estimators in bagging can be trained parallelly.
 
+**Definitions to apply, in order:** Underfitting means the model cannot express the signal well. A deep tree can isolate very small sample groups and follow noise. A weak learner has an advantage over the relevant chance baseline. Bagging trains on separate bootstrap datasets; no model needs an earlier model's residuals. Match each statement to its definition.
+
 **Solution:**
 
 - (a) False: Underfitting usually high bias/lower variance.
@@ -304,6 +316,8 @@ Consider the effect of each operation below on a model’s bias and variance. Wh
 (c) Increasing the number of hidden units in a neural network decreases bias and increases variance.
 
 (d) Removing all the non-support-vectors from the training set of an SVM leaves both bias and variance unchanged.
+
+**Separate capacity from fitted-model invariance:** Weight penalties restrict fitting; tree depth and hidden units expand capacity. These operations suggest opposite bias–variance trends. For SVM deletion, use $w=\sum_i\alpha_i y_i x_i$: zero-coefficient points contribute nothing to that sum. This is a fact about one optimum, while bias and variance average over repeated datasets.
 
 **Solution:**
 
@@ -382,6 +396,13 @@ $$\sum_i x_i^2=10\qquad\text{and}\qquad\sum_i x_i y_i=4,$$
 
 with $\lambda=10$, compute the optimal $w_{\mathrm{ridge}}$. Note that $x_i$ is ith data point and $y_i$ is ith label. (Round to 2 decimal places.)
 
+**Derive the scalar formula:**
+
+$$J(w)=\sum_i(wx_i-y_i)^2+\lambda w^2,$$
+$$J'(w)=2w\sum_i x_i^2-2\sum_i x_iy_i+2\lambda w=0.$$
+
+Group terms in $w$: $(\sum x_i^2+\lambda)w=\sum x_i y_i$. Here $J''=2(10+10)=40>0$, so the resulting weight is the unique minimum.
+
 **Solution:**
 
 1. Matrix formula scalar form:
@@ -401,6 +422,12 @@ OLS would be $4/10=0.40$; ridge shrinks it by $10/(10+10)=1/2$.
 **Question:**
 
 Consider the dataset $X=[-3,5,4]$ and $y=[-10,20,20]^T$. Assuming a ridge penalty $\lambda=50$, what is the value of $w_{ridge}/w_{MLE}$? Here $w_{ridge}$ and $w_{MLE}$ are the Ridge and MLE estimates of the weight, respectively.
+
+**Keep numerator and denominator visible:** Write OLS as $b/a$ and ridge as $b/(a+\lambda)$, where $a=\sum x_i^2$ and $b=\sum x_i y_i$. Then
+
+$$\frac{b/(a+\lambda)}{b/a}=\frac{b}{a+\lambda}\frac{a}{b}=\frac{a}{a+\lambda}.$$
+
+Cancellation needs $b\ne0$. The data below give $b=210$, so the ratio is well-defined.
 
 **Solution:**
 
@@ -449,6 +476,8 @@ Calculate the coefficients $\beta$ for Ridge regression with $\lambda=1$.
 
 (e) None of these
 
+**Formula and inverse rule:** Differentiating $\|X^T\beta-Y\|^2+\lambda\beta^T\beta$ gives $2X(X^T\beta-Y)+2\lambda\beta=0$. Therefore $(XX^T+\lambda I)\beta=XY$. For the resulting $2\times2$ matrix, apply $\begin{bmatrix}a&b\\c&d\end{bmatrix}^{-1}=\frac1{ad-bc}\begin{bmatrix}d&-b\\-c&a\end{bmatrix}$. Add $\lambda$ only to the diagonal.
+
 **Solution:**
 
 **Step 1:** X is d × n, so use $(XX^T+I)^{-1}XY$.
@@ -496,6 +525,14 @@ Based on the above data, answer the given subquestions.
 (b) The coefficients increases in magnitude.
 
 (c) The coefficients remain unchanged.
+
+**Form the shared products explicitly:**
+
+$$XX^T=\begin{bmatrix}2(2)+0(0)&2(1)+0(1)\\1(2)+1(0)&1(1)+1(1)\end{bmatrix}
+=\begin{bmatrix}4&2\\2&2\end{bmatrix},$$
+$$XY=\begin{bmatrix}2(1)+0(3)\\1(1)+1(3)\end{bmatrix}=\begin{bmatrix}2\\4\end{bmatrix}.$$
+
+OLS solves $Aw=b$; each ridge case solves $(A+\lambda I)w=b$. Only the diagonal penalty changes between cases.
 
 **Solution — Shared calculations:**
 
@@ -549,6 +586,8 @@ Let $\hat w_R$ and $\hat w$ be the ridge coefficient estimate and the least squa
 
 (d) For $\lambda=\infty$, $\lVert\hat w_R\rVert_2/\lVert\hat w\rVert_2=1$.
 
+**Take the limits in eigen-directions:** Ridge multiplies an OLS coordinate by $a_j/(a_j+\lambda)$ for $a_j>0$. At $\lambda=0$ this multiplier is 1; as $\lambda\to\infty$ it tends to 0. Thus the entire penalized vector tends from the OLS vector to zero, giving the stated norm ratios when the OLS norm is nonzero.
+
 **Solution:**
 
 1. At zero penalty, ridge reduces to the same OLS estimate → ratio 1.
@@ -573,6 +612,8 @@ What is the role of the regularization term in ridge regression?
 (c) It forces more coefficients to be exactly zero, performing feature selection.
 
 (d) It increases the variance of the model.
+
+**Inspect the actual penalty:** $\lambda\|w\|^2=\lambda\sum_jw_j^2$. Doubling a coefficient quadruples its contribution to this penalty, making very large coefficients costly. This changes the optimization preference, not the distribution of the observed dataset. Stronger shrinkage can stabilize fitting, but excessive shrinkage can also remove useful signal.
 
 **Solution:** L2 penalty discourages large coefficients and reduces instability. It doesn't change data distribution; exact sparsity more characteristic of LASSO; variance usually decreases.
 
@@ -641,6 +682,8 @@ If $\theta=10$, which of the following weight vectors will be selected as the fi
 (c) $w_3$
 
 (d) $w_4$
+
+**Use a two-stage selection rule:** First reject vectors with $\|w\|_2>10$, equivalently $\sum_jw_j^2>100$. For example, $w_3$ has squared norm $1^2+2^2+0^2+1^2=6$, so it passes. Among passing vectors compare the supplied MSE values. The constraint is an eligibility test, not the objective to minimize.
 
 **Solution:**
 
@@ -720,6 +763,8 @@ $$w=[0.1,0.2,0.3]^T.$$
 (i) Compute the ridge loss for regularization parameter 0.2, correct to two decimal places.
 
 (ii) Compute the LASSO loss for regularization parameter 0.2, correct to two decimal places.
+
+**Calculation order:** Add the constant feature → calculate four predictions → subtract targets → square and sum → multiply by $1/2$ → add the requested penalty. Ridge uses the sum of coefficient **squares**; LASSO uses the sum of **absolute values**. Since $w$ is supplied, the task is objective evaluation; no fitting formula is needed.
 
 **Solution:**
 
@@ -829,6 +874,8 @@ Based on the above data, answer the given subquestions.
 
 (d) Total loss at optimal point is $c_2+\lambda$
 
+**Read the geometry as an optimization:** A contour contains weights with equal SSE. Start at the unconstrained minimum and increase contour level until it first reaches the allowed region. The diamond is $|w_1|+|w_2|\le1$; its right corner is $(1,0)$. At that contact, compute the full loss by adding $\lambda(|1|+|0|)$ to the contour's SSE value.
+
 **Solution:**
 
 **(i):** Blue diamond represents $|w_1|+|w_2|\le1$, so L1 constraint → **LASSO, option (b)**.
@@ -876,6 +923,13 @@ Select the most appropriate match for these weight vectors.
 (c) $w_1\to$ Lasso regression, $w_2\to$ Ridge regression, $w_3\to$ Linear regression
 
 (d) $w_1\to$ Lasso regression, $w_2\to$ Linear regression, $w_3\to$ Ridge regression
+
+**Calculate the size clues:**
+
+$$\|w_1\|^2=0.1681+0.0676+0.2916+0.0289=0.5562,$$
+$$\|w_2\|^2=0.6561+0.7921+0.8649+0.2704=2.5835.$$
+
+Take square roots to compare L2 norms. Separately count exact zeros in $w_3$. Small dense weights suggest ridge; a sparse vector suggests LASSO. These are the pattern clues used by this MCQ.
 
 **Solution:**
 
@@ -947,6 +1001,8 @@ Using the given information, find the expression for the regularization paramete
 
 (d) $\lambda=1/(\sigma^2+\gamma^2)$
 
+**Apply Bayes before matching coefficients:** $p(w\mid X,y)\propto p(y\mid X,w)p(w)$. Taking minus logs changes this product into likelihood loss plus prior penalty. Gaussian exponents give coefficients $1/(2\sigma^2)$ and $1/(2\gamma^2)$. Divide the prior coefficient by the data-loss coefficient to express the objective with SSE coefficient 1.
+
 **Solution:**
 
 1. Negative log-likelihood contributes $\operatorname{SSE}/(2\sigma^2)$.
@@ -976,6 +1032,8 @@ Which of the following optimization problems is equivalent to finding the Maximu
 (c) $\lVert y-Xw\rVert^2+\alpha\lVert w\rVert^2$
 
 (d) $\lVert y-Xw\rVert^2-\alpha\lVert w\rVert^2$
+
+**Read covariance versus precision:** For a Gaussian prior, the quadratic exponent is $\frac12w^T\Sigma^{-1}w$. Here $\Sigma=\alpha^{-1}I$, hence $\Sigma^{-1}=\alpha I$ and the exponent is $\alpha\|w\|^2/2$. Combine with Gaussian likelihood SSE/2 under unit noise, then multiply both terms by 2. The penalty must have a positive sign.
 
 **Solution:**
 
@@ -1011,6 +1069,12 @@ Let $\hat w_{MAP}$ denote the maximum a posteriori estimate of w. For which valu
 (c) $\lambda=1$
 
 (d) $\lambda=1/\sigma^2$
+
+**Match the complete expressions:** Likelihood variance is 1 and prior variance is $\sigma^2$, so the negative log-posterior is
+
+$$\tfrac12\operatorname{SSE}+\tfrac1{2\sigma^2}\|w\|^2+\text{constant}.$$
+
+Compare this with $\tfrac12\operatorname{SSE}+\tfrac\lambda2\|w\|^2$. Equal coefficients require $\lambda/2=1/(2\sigma^2)$; multiply both sides by 2.
 
 **Solution:**
 
@@ -1070,6 +1134,8 @@ Hint: If $X\sim\operatorname{Laplace}(\mu,b)$, then $f_X(x)=\frac1{2b}e^{-|x-\mu
 
 (d) $\hat w_{MAP}=\arg\max_w\sum_{i=1}^n(w^Tx_i-y_i)^2+\lambda\lVert w\rVert_1$, where $\lVert w\rVert_1=\sum_{i=1}^d|w_i|$
 
+**Identify which MSE is asked:** Parameter risk is $E\|\hat w-w_*\|^2=\|E\hat w-w_*\|^2+\operatorname{tr}(\operatorname{Cov}\hat w)$. Ridge can reduce the second term enough to offset added bias. For a Laplace **weight prior**, $-\log p(w)=\sum_j|w_j|/b+\text{constant}$, so MAP adds an L1 coefficient penalty to the Gaussian data loss.
+
 **Solution — (i): Parameter MSE, not training SSE**
 
 Standard fixed-design, full-rank noisy linear model mein suitable positive shrinkage variance reduce karke added bias compensate kar sakti hai. Section 3.3 example: OLS risk 1, ridge at $\lambda=1$ risk 0.5.
@@ -1115,6 +1181,8 @@ Which of the following statements is/are true?
 (c) The estimator $\hat w_{MAP}$ can achieve lower MSE than $\hat w_{MLE}$ for some $\lambda>0$, where $\lambda\in\mathbb R$.
 
 (d) The MSE of $\hat w_{MLE}$ and $\hat w_{MAP}$ is always equal when the sample size is small.
+
+**Apply bias–variance decomposition:** Unbiasedness sets only $\|E\hat w-w_*\|^2$ to zero. It does not minimize variance. For example, risks $0^2+4=4$ and $1^2+1=2$ show that a biased estimator can have lower MSE. Judge any “always better” claim by the total, not by bias alone.
 
 **Solution:**
 
@@ -1176,6 +1244,8 @@ Based on the above data, answer the given subquestions.
 
 (ii) While training each of these models, how many data-points does the training set have?
 
+**Count the roles of the folds:** Divide 1000 samples into four disjoint groups of 250. Fit once with fold 1 held out, then folds 2, 3, and 4. Each fit uses $1000-250=750$ samples. The four fits evaluate one fixed candidate $\lambda$; selecting and refitting the winning candidate is a later operation.
+
 **Solution:**
 
 1. One candidate $\lambda$, four held-out fold choices → **4 models**.
@@ -1220,6 +1290,8 @@ The linear regression model is $y=w_0+w_1x$. Assume that Leave-One-Out Cross-Val
 (i) Enter the value of $w_1$ obtained when the third sample is used as the validation data point.
 
 (ii) What is the predicted value for the left-out data point?
+
+**State the fitting rule:** On the remaining three points use $w_1=S_{xy}/S_{xx}$, where $S_{xy}=\sum(x_i-\bar x)(y_i-\bar y)$ and $S_{xx}=\sum(x_i-\bar x)^2$. Then use $w_0=\bar y-w_1\bar x$. This is an intercept model, so the uncentered ratio $\sum xy/\sum x^2$ would fit a different model.
 
 **Solution:**
 
@@ -1276,6 +1348,8 @@ Which hyperparameter setting would you choose based on the training and validati
 
 (d) Setting 4, because it uses the highest learning rate and converges the fastest.
 
+**Selection formula:** Choose $h^*=\arg\min_h E_{validation}(h)$ over the four listed settings. Here $150<160$, $150<190$, and $150<180$. Thus setting 2 wins every comparison. The training error helps explain fitting behavior, but neither training error nor iteration count replaces the held-out selection criterion.
+
 **Solution:**
 
 **Step 1:** Compare validation errors: 160, 150, 190, 180.
@@ -1313,6 +1387,8 @@ Based on the cross-validation results provided, what is the most appropriate cho
 (d) 10.0
 
 (e) 100
+
+**Apply cross-validation averaging:** For each candidate, $CV(\lambda)=\frac15\sum_{k=1}^5MSE_k(\lambda)$. The table already supplies these averages, so do not average the rows again. Compare $8.40,4.20,3.15,3.20,11.90$ and select the row with the smallest value. Training penalty size is not an extra term to add to this validation MSE.
 
 **Solution:**
 
@@ -1370,6 +1446,8 @@ The following chart plots MAE against degree of polynomial features for a regres
 
 (iv) 4
 
+**Read the requested metric first:** $MAE=\sum|y_i-\hat y_i|/n$; lower is better. For every displayed degree, compare the held-out curve's height. The lowest point determines the selected degree, while the training curve explains whether extra flexibility is still improving fit on observed data. Exact decimal MAEs are unnecessary when the minimum location is clear.
+
 **Solution:**
 
 **Step 1 — Read axes and legend:** Horizontal axis polynomial degree hai, vertical axis MAE. Purple training error hai; red curve supplied chart mein “Test error” labelled hai.
@@ -1402,6 +1480,8 @@ Recall that the regularized loss is the sum of the SSE and the regularization te
 (c) $\lambda^2$
 
 (d) $\log(\lambda)$
+
+**Why the training objective increases with penalty:** If $\lambda_2>\lambda_1$, then for every $w$, $SSE(w)+\lambda_2\|w\|^2\ge SSE(w)+\lambda_1\|w\|^2$. Taking minima preserves this inequality. A training curve decreasing left-to-right must therefore correspond to decreasing $\lambda$. Test each proposed horizontal-axis function for that direction.
 
 **Solution:**
 
@@ -1443,6 +1523,8 @@ Identify the curves corresponding to the training and validation datasets. Selec
 
 (d) Curve (B) represents the validation loss.
 
+**Use objective and axis together:** Horizontal position is training time. The optimizer directly minimizes training loss, while validation loss is evaluated on samples excluded from updates. Read which curve continues decreasing and which levels off, then match the graph's labels. A growing gap suggests fitting improvements are not transferring equally to held-out examples.
+
 **Solution:**
 
 1. Curve A continues to lower loss; model is directly optimized on training data.
@@ -1483,6 +1565,8 @@ Consider a logistic regression model trained to detect spam emails. Emails conta
 A good spam detector should correctly identify almost all emails with phishing links. Even a single phishing email incorrectly classified as not spam could expose users to significant risks. However, the detector may classify some regular emails as spam. This trade-off is acceptable to ensure safety.
 
 To ensure user safety, if the threshold is set to a low value to prioritize the detection of phishing emails, type 1. If the threshold is set to a high value to minimize false positives (misclassifying regular emails as spam), type 0.
+
+**Apply the threshold rule to an example:** Predict spam when $p\ge t$. An email scored 0.3 is safe at $t=0.5$ but spam at $t=0.2$. Lowering $t$ expands the flagged set. An actual phishing email in the newly flagged group changes from false negative to true positive; harmless emails there become false positives. The question explicitly accepts this trade-off.
 
 **Solution:**
 

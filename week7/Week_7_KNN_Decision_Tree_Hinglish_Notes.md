@@ -2,6 +2,8 @@
 
 **Flow:** Classification aur error → nearest neighbours → choice of k → cross-validation → decision-tree questions → entropy → information gain → tree boundaries aur depth.
 
+**Concept connection:** KNN query ke aas-paas stored examples use karta hai; tree training ke waqt rules seekhta hai aur prediction par un rules ko follow karta hai. KNN mein sequence **distance → neighbours → vote/mean** hai. Tree mein **class counts → entropy → weighted child entropy → information gain** hai. Nearest-point distances, class probabilities aur branch probabilities teen alag quantities hain; denominator hamesha relevant set ka size rakho.
+
 ## Topic index
 
 | Topic | Subtopics | Questions |
@@ -108,6 +110,8 @@ Consider the following binary classification task for which we use the Manhattan
 
 ![Supplied integer-coordinate points and test query](images/new_manhattan_source.png)
 
+**Formula before selecting a neighbour:** Manhattan distance sums absolute coordinate differences: $d_1(x,z)=|x_1-z_1|+|x_2-z_2|$. For $(2,2)$ and query $(3,2)$, this is $|2-3|+|2-2|=1$. Calculate the same quantity for all candidates, choose the smallest, and copy its label because $k=1$.
+
 **Solution:**
 
 **Step 1:** Manhattan distance is $|x_1-3|+|x_2-2|$. Read coordinates and labels from the plot.
@@ -154,6 +158,8 @@ Consider a KNN classifier for a binary classification problem with $k=3$. A test
 
 Enter the answer as comma-separated values.
 
+**Compare metrics before votes:** On the unit diamond, $|x_1|+|x_2|=1$, so Manhattan distances all tie. Euclidean squared distance is $x_1^2+x_2^2$. For a nonvertex edge point, write $a=|x_1|$, $b=|x_2|$; both are positive. Expanding $(a+b)^2$ reveals why $a^2+b^2<1$. Only after this distance comparison select three voters.
+
 **Solution:**
 
 **Step 1 — Manhattan:** Har edge/vertex par $|x_1|+|x_2|=1$. Thus **all six training points distance 1** par hain. First three choose karne ke liye tie rule chahiye.
@@ -182,6 +188,8 @@ $$x_1=[1,2,3]^T,\quad x_2=[-1,-2,0]^T,\quad x_3=[3,0,1]^T,\quad x_4=[0,1,4]^T,\q
 
 The labels of these points are $y_1=0,y_2=1,y_3=1,y_4=0,y_5=1$.
 If we use a k-NN algorithm with $k=3$, what would be the predicted label for the test point $x_{\mathrm{test}}=[1,1,2]^T$?
+
+**Rule being applied:** $d_i^2=\sum_{j=1}^3(x_{ij}-x_{*j})^2$; square root is increasing, so sorting squared distances gives the same neighbours. The query has no training label. After selecting the three smallest distances, count their labels: classification uses majority vote, not the average of feature coordinates.
 
 **Solution:**
 
@@ -228,6 +236,8 @@ Perform a 3-NN regressor for the following dataset:
 
 where, $x=[x_1\ x_2]^T$ is a feature vector and $y$ is the label. What will be the predicted value for the test data point $[3\ 2]^T$? Enter the answer correct to one decimal place.
 
+**Regression formula:** After selecting neighbour indices $N_3(x_*)$, use $\hat y_*=(1/3)\sum_{i\in N_3}y_i$. Distance uses the two input coordinates only; targets do not enter neighbour selection. For the second row, $(2-3)^2+(1-2)^2=2$. Repeat for each row, then average only the three selected targets.
+
 **Solution:**
 
 **Step 1:** Distances from $(3,2)$:
@@ -265,6 +275,13 @@ Perform a 3-NN regressor for the following dataset:
 | 2 | 1 | 3.9 |
 
 where, $x=[x_1\ x_2]^T$ is a feature vector and $y$ is the label. What will be the predicted value for the test data point $x_{\mathrm{test}}=[2\ 2]^T$? Enter the answer correct to one decimal place.
+
+**Show each distance before averaging:** For query $(2,2)$, squared distances in row order are
+
+$$0^2+1^2=1,\quad(-1)^2+2^2=5,\quad2^2+0^2=4,$$
+$$1^2+3^2=10,\quad3^2+0^2=9,\quad0^2+(-1)^2=1.$$
+
+Sort: $1,1,4,5,9,10$. Rows 1,6,3 win. Unweighted regression predicts their target mean, not their majority label.
 
 **Solution:** Q15 ka same method, but dataset different hai.
 
@@ -309,6 +326,8 @@ These are standard trends, har individual dataset par strict monotonic theorem n
 
 Suppose a binary classification dataset has 1000 data points, with 600 belonging to class 0 and 400 belonging to class 1. If a k-nearest neighbour model uses $k=900$ to predict a test point's class, what will k-NN predict?
 
+**Use a counting bound:** Of the selected 900, at most 400 can belong to class 1 because only 400 exist in the entire dataset. Therefore class 0 contributes at least 500 votes. Compare this lower bound with half of $k$, namely 450: $500>450$ proves the majority independently of the geometry.
+
 **Solution:**
 
 **Step 1 — Worst case for class 0:** Selected 900 neighbours mein all 400 class-1 points aa bhi jaayein, class-0 points at least $900-400=500$ honge.
@@ -344,6 +363,8 @@ Based on the above data, answer the given subquestions.
 
 (ii) Assuming there are outliers, the decision boundary becomes smoother with increasing value of k in a k-NN algorithm (Fill in 1 for yes and 0 for no).
 
+**Minimum possible needs an achievable example:** Error counts are nonnegative, so 0 is a lower bound. To prove it is the minimum, arrange each class in a separate tight cluster. Every sample then has itself and two same-class neighbours, giving three correct votes. This constructs one zero-error dataset; it does not assert zero error for every arrangement.
+
 **Solution:**
 
 **(i) Step 1:** Minimum possible error count zero se less nahi ho sakta.
@@ -377,6 +398,8 @@ Based on the above data, answer the given subquestions.
 
 (b) False
 
+**Work the construction for these counts:** Put all 50 class-0 points near $(0,0)$ and all 50 class-1 points near $(100,100)$, with distinct locations inside each small cluster. Each training point's three nearest neighbours have its own class, so every vote is correct. For part (ii), decreasing $k$ makes each isolated sample more influential, which typically makes the boundary less smooth.
+
 **Solution:**
 
 (i) Q1(i) ka same separated-cluster construction 50+50 points par work karta hai; full argument repeat karne ki need nahi. **Answer: $\boxed{0}$.**
@@ -398,6 +421,8 @@ Identify the correct relationship(s) between bias, variance, and the hyperparame
 (c) Increasing k leads to an increase in variance.
 
 (d) Decreasing k leads to an increase in variance.
+
+**Connect $k$ to averaging:** At $k=1$, replacing the closest training example can immediately change the prediction. With larger $k$, several neighbours contribute, so one example has less influence. That reduces sensitivity to the sampled dataset (variance), but averaging across a larger region can blur a real local boundary (bias). Apply the direction of change to each option.
 
 **Solution:** Large k smooths over local structure → higher bias, lower variance. Small k adapts closely to sample-specific structure → lower bias, higher variance.
 
@@ -428,6 +453,8 @@ Which of the following statements about the K-Nearest Neighbours (KNN) algorithm
 (c) Every prediction does not require computing distances from the test point to all training data.
 
 (d) The computational cost of prediction generally increases with the size of the training dataset.
+
+**Follow the prediction algorithm:** Store inputs and labels → compare the query using the chosen metric → retrieve neighbours → vote. For brute-force search in $d$ dimensions, $n$ distances each need roughly $d$ coordinate operations, giving $O(nd)$ distance work. Search indexes may avoid visiting every point, so distinguish the direct course algorithm from all possible implementations.
 
 **Solution:**
 
@@ -479,6 +506,8 @@ Based on the above data, answer the given subquestions.
 (b) No
 
 (c) Cannot conclude from the given information
+
+**Three tasks, three checks:** Test prediction selects three neighbours from all seven points. LOOCV excludes the held-out point itself before selecting neighbours; error is $\frac17\sum_i\mathbf1\{\hat y_{-i}\ne y_i\}$. Relabeling changes votes and targets, not distances. Keep these roles separate when using the common dataset.
 
 **Solution — (i): Test prediction**
 
@@ -553,6 +582,8 @@ Note: We use KNN with $k=3$ for both datasets.
 (c) $16\pi$
 
 (d) $9\pi$
+
+**Find the distance where membership changes:** Existing nearest-three labels are $+,-,-$. An inserted positive changes the majority only if it enters that set and pushes out a negative. The cutoff is the third-neighbour radius, 3. Translate the allowed distance interval into geometry using disk area $\pi r^2$, then subtract the excluded inner disk.
 
 **Solution:**
 
@@ -631,6 +662,8 @@ Stump has depth 1; root-only leaf depth 0. Number of internal splits across enti
 
 For a decision tree, each node has exactly two child nodes (balanced tree). If the tree has a depth of 5, how many leaf nodes are there?
 
+**Apply the level recurrence:** Root is depth 0 with $N_0=1$. For a fully filled binary tree, every nonleaf node has two children, so $N_{j+1}=2N_j$. Repeating five times gives $N_5=2^5$. Depth counts edges; counting the root as level 1 instead would shift the numbering, so fix that convention first.
+
 **Solution:**
 
 **Step 1 — Interpret wording:** Leaf ke zero children hote hain, so “each node” means each **internal** node. Supplied solution assumes every level fully filled, i.e. a perfect binary tree, and depth counts edges.
@@ -662,6 +695,8 @@ Consider a training dataset for a binary classification problem. Two decision tr
 
 ![Supplied simple and finely partitioned decision-tree boundaries](images/new_tree_complexity_source.png)
 
+**Compare capacity and evidence:** Count the qualitative partitions: many tiny regions allow fitting isolated training labels, while a few broad regions impose more smoothing. If isolated labels reflect noise, the finely split tree changes more when samples change. That is the variance reason for the likely preference; without test observations, no numerical accuracy difference can be calculated.
+
 **Solution:**
 
 **Step 1:** Tree-1 larger, simpler regions banata hai. Tree-2 central region ko many tiny rectangles mein subdivide karke individual training labels ko follow karta hai.
@@ -690,6 +725,8 @@ Which of the following classifiers are certainly capable of achieving zero train
 
 (d) Naive Bayes
 
+**Check the zero-error mechanism:** 1-NN can return the point's own label at distance 0. A sufficiently deep tree can isolate distinct observations into pure leaves. For 5-NN, one self-vote cannot defeat four opposite votes. Finally check whether identical feature vectors have conflicting labels, because no deterministic feature-only prediction can satisfy both simultaneously.
+
 **Solution:**
 
 1. **Decision tree:** Sufficient depth aur distinct feature vectors hon toh successive coordinate thresholds finite training samples ko separate karke pure leaves bana sakte hain.
@@ -716,6 +753,8 @@ Which of the following statements are true about the decision tree algorithm? (M
 (c) Decision trees are sensitive to small perturbations in the dataset and can result in different tree structures.
 
 (d) Decision trees can handle both numerical and categorical features.
+
+**Evaluate the mechanism behind each claim:** A shallow tree has few regions, so it tends to miss structure. A unique best split remains best after column reordering, but ties may depend on implementation order. Small data changes can switch the best root split and alter all downstream branches. Numeric thresholds and category-membership tests both partition data, so both feature types are usable.
 
 **Solution:**
 
@@ -777,6 +816,8 @@ Based on the above data, answer the given subquestions.
 
 (ii) If the answer to the previous question is “Yes,” calculate the entropy of this node to three decimal places. If the answer to the previous question is “No,” enter −1 as your answer.
 
+**Entropy calculation rule:** For two classes, $H=-p\log_2p-(1-p)\log_2(1-p)$. Here use fractions $p=0.6$ and $1-p=0.4$, not percentages 60 and 40. The logs are negative; the leading minus makes each contribution nonnegative. Add the two contributions and report bits because the logarithm base is 2.
+
 **Solution:**
 
 (i) Yes: Class proportions known hain, total sample count required nahi. $\boxed{\text{(a)}}$.
@@ -807,6 +848,8 @@ p is the proportion of points with label 1 in some node in a decision tree. Whic
 
 (d) $p=0.5$ correspond to the case of maximum impurity.
 
+**Derive the maximum:** $H'(p)=\log_2[(1-p)/p]$. Setting it to zero gives $(1-p)/p=1$, hence $p=1/2$. Also $H''(p)=-[1/p+1/(1-p)]/\ln2<0$ inside $(0,1)$, confirming a maximum. Balanced classes have the most uncertainty; pure endpoints have zero entropy.
+
 **Solution:** Entropy curve first rises, then falls. It depends on p and peaks at equal proportions.
 
 $$\boxed{\text{(d)}}.$$
@@ -827,6 +870,8 @@ Which of the following conditions must be satisfied for a decision tree to be pu
 
 (d) The entropy of the node is 0.
 
+**Apply purity literally:** A pure node has all labels in one class, so its class probabilities are 1 and 0. In $H=-\sum_cp_c\log_2p_c$, use $1\log_2 1=0$ and the limit $0\log_2 0=0$. Therefore entropy is 0. For binary Gini, $1-p^2-(1-p)^2$ is also 0 at these endpoints.
+
 **Solution:** Pure means all labels same, so $p=0$ or 1 and entropy 0. Maximum entropy means maximum mixing. Negative information gain is not purity criterion.
 
 $$\boxed{\text{(c), (d)}}.$$
@@ -846,6 +891,12 @@ A node in a decision tree contains an equal number of positive and negative trai
 (c) 1
 
 (d) It depends on the total number of training examples.
+
+**Normalize the counts:** Equal counts imply $p=n_1/(n_0+n_1)=1/2$. Substitute both probabilities into entropy:
+
+$$H=-\tfrac12\log_2(1/2)-\tfrac12\log_2(1/2)=\tfrac12+\tfrac12=1.$$
+
+Multiplying both class counts by the same factor leaves these probabilities, and therefore entropy, unchanged.
 
 **Solution:** Equal proportions give $p=1/2$. Since $\log_2(1/2)=-1$,
 
@@ -876,6 +927,8 @@ Weights sum to 1. Equal half-half weighting tabhi valid jab children same size k
 **Question:**
 
 The dataset at node Q has 1000 points. After asking question Q, it splits into two parts: 250 in node L (Yes) and 750 in node R (No). What is the value of $\gamma$?
+
+**Interpret the weighted average:** A uniformly selected parent sample reaches the left child with probability $N_L/N=250/1000$. Thus its expected post-split uncertainty is $(250/1000)H(L)+(750/1000)H(R)$. The coefficient called $\gamma$ is the first fraction. Check that the two branch weights sum to 1.
 
 **Solution:**
 
@@ -908,6 +961,8 @@ Gini impurity optional alternative: $G=1-\sum_c p_c^2$; binary $G=2p(1-p)$. Entr
 **Question:**
 
 Consider a decision stump (parent with two children). The parent node has 200 data-points out of which 50 belong to the positive class. The left child has 100 data-points out of which 50 belong to the positive class. Find the information gain. Use $\log_2$. Enter your answer correct to three decimal places.
+
+**Formula and required counts:** $IG=H(P)-(N_L/N)H(L)-(N_R/N)H(R)$. First obtain right-child counts by parent minus left, separately for each class. Calculate each entropy using that node's own class fractions. Finally weight by sample counts: even when a child is more mixed than its parent, the weighted average can decrease.
 
 **Solution:**
 
@@ -946,6 +1001,8 @@ Set D has x data points. All points in D answer question Q, whose answer can be 
 There are 60 points with label 1 in D and 36 points with label 1 in $D_Y$. There are 12 points with label 0 in $D_Y$ and 8 points with label 0 in $D_N$.
 
 Find the information gain for question Q. Use $\log_2$ for calculations.
+
+**Conservation comes before entropy:** Each parent class count equals Yes count plus No count. So No positives $=60-36=24$ and total negatives $=12+8=20$. Once each child has positive fraction $3/4$, its entropy equals the parent's entropy $h$. Since branch weights sum to 1, remaining entropy is $h$ and gain is exactly 0.
 
 **Solution:**
 
@@ -1003,6 +1060,8 @@ where p is the fraction of positive data-points in the node. Use at least three 
 
 (iii) Find the information gain. Enter your answer correct to two decimal places.
 
+**Build the branch groups first:** Test $x\le7$ on each row. Only $x=4$ goes left; the other four go right. Parent positive fraction is $3/5$, right fraction $3/4$, left fraction 0. Apply $H(p)$ to these fractions, then calculate $IG=H(3/5)-\frac15H(0)-\frac45H(3/4)$. Round only after the subtraction.
+
 **Solution:**
 
 **(i):** Parent has 3 positives, 2 negatives, so $p=3/5=0.6$. Q10 ka entropy calculation reuse karo:
@@ -1053,6 +1112,8 @@ $\log_2(3/4)=-0.41$, $\log_2(4/5)=-0.32$, $\log_2(1/5)=-2.32$, $\log_2(1/4)=-2$,
 
 (c) Insufficient information
 
+**Use the same parent for a fair comparison:** Both candidates partition the same six labels, so $H(D)$ is common. Maximizing $IG=H(D)-H_{after}$ therefore equals minimizing $H_{after}$. For each threshold, assign every row to Yes/No, calculate class fractions within each child, and weight its entropy by child size divided by 6.
+
 **Solution:**
 
 **Step 1:** Parent same for both candidates: 4 positives, 2 negatives. Instead of computing parent twice, minimize weighted child entropy.
@@ -1099,6 +1160,8 @@ Which of the following statements about entropy and information gain in decision
 
 (d) After a parent node is split into child nodes, no individual child node can have entropy greater than the parent node’s entropy.
 
+**Substitute into the gain identity:** Pure children give $H_{after}=0$, hence $IG=H_P$. A pure parent already has $H_P=0$. For any partition, entropy concavity gives $H_P\ge\sum_j(N_j/N)H_j$, so gain is nonnegative. This bounds the weighted average; it does not bound each individual child by $H_P$.
+
 **Solution:**
 
 - **(a) True:** Both child entropies 0 → $IG=H_P$.
@@ -1125,6 +1188,8 @@ Select all true statements. (MSQ)
 (d) The depth of the tree is a hyperparameter and has to be chosen using cross validation.
 
 (e) Decision trees are prone to overfit if the maximum depth is set too low.
+
+**Use a concrete empty-split check:** If all observed $f_k$ values exceed 0, testing $f_k\le0$ sends every point to No and leaves Yes empty. Thus a threshold test need not produce two nonempty children. For other options distinguish stored-data prediction (KNN), the split score (information gain), and the capacity limit selected before training (maximum depth).
 
 **Solution:**
 
@@ -1171,6 +1236,8 @@ Disjoint leaf areas add kar sakte hain. Uniform assumption important: Nonuniform
 Consider the following decision tree for a classification problem in which all the data-points are constrained to lie in the unit square in the first quadrant. That is $0\le x_1,x_2\le1$. If a point is picked uniformly at random from the unit square, what is the probability that the decision tree predicts this point as belonging to class 1?
 
 ![Q3 supplied decision tree](images/q3_tree.png)
+
+**Probability from geometry:** Uniform sampling gives $P(\hat y=1)=\operatorname{Area}(\text{class-1 region})/\operatorname{Area}(\text{domain})$. Follow each root-to-leaf path and intersect its inequalities to get one rectangle. Different leaves are disjoint apart from boundaries, so their areas add without double-counting. The unit square has area 1.
 
 **Solution:**
 
@@ -1224,6 +1291,8 @@ $$y=[1\quad1\quad0\quad0\quad0\quad0\quad1\quad1]^T.$$
 (iv) If $E_R$ is the entropy of the root and $E_L$ is the weighted entropy of all the leaves, what is $E_R-E_L$? Use $\log_2$.
 
 (v) What is the predicted label of the test data-point $[3,-4]^T$?
+
+**Threshold and entropy workflow:** Read each column as one $(x_1,x_2)$ sample. To keep the left group below a strict threshold while excluding the right, require $\max x_{left}<a\le\min x_{right}$. Apply the integer restriction after finding the interval. Entropy uses class counts; test prediction uses the branch conditions sequentially, with equality handled exactly as written.
 
 **Solution — First convert columns into points**
 
@@ -1291,6 +1360,8 @@ Based on the above data, answer the given subquestions.
 
 (ii) What will be the prediction for the new datapoint (2, 2)?
 
+**Translate each path into a region:** Tests along one path combine with AND, so intersect their inequalities. Separate class-1 leaves combine with OR, so take their union. A split inside a subtree affects only that subtree's region, not the whole plane. For the query $(2,2)$, evaluate just its own root-to-leaf path.
+
 **Solution — (i): All class-1 paths collect karo**
 
 Root asks $f_1\le1.5$.
@@ -1344,6 +1415,8 @@ Consider the following decision boundary obtained for a decision tree trained on
 
 ![Q5 box boundary](images/q5_box.png)
 
+**Count constraints along the inside path:** A bounded 3D box needs two inequalities per coordinate: lower and upper. Each axis-aligned binary test can impose one such bound. Therefore the all-inside path needs $2\times3=6$ tests. A failing test may terminate early at class 0, but depth uses the longest path, which passes every test.
+
 **Solution:**
 
 **Step 1:** Box inside means:
@@ -1387,6 +1460,8 @@ Each region contains the same number of observations. All observations in region
 (c) 4
 
 (d) It is impossible using only axis-aligned splits.
+
+**Distinguish total splits from path length:** A root sign test creates two mixed halves. Each half needs its own second-coordinate test, producing four pure quadrants. Total internal nodes are $1+2=3$, while a single prediction traverses only two tests. The binary-tree identity $\text{leaves}=\text{internal nodes}+1$ verifies $4=3+1$.
 
 **Solution — Intended quadrant construction:**
 
