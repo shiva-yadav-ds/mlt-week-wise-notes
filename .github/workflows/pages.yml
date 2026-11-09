@@ -25,6 +25,8 @@ jobs:
       - run: python notes-site/build.py
       - run: python notes-site/check.py
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
       - uses: actions/upload-pages-artifact@v4
         with:
           path: notes-site/dist

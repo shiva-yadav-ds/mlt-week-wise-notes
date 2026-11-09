@@ -2,6 +2,6 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
   "installCommand": "python3 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt",
-  "buildCommand": ".venv/bin/python notes-site/build.py && .venv/bin/python notes-site/check.py",
+  "buildCommand": "(test -f .venv/bin/python || (python3 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt)) && .venv/bin/python notes-site/build.py && .venv/bin/python notes-site/check.py",
   "outputDirectory": "notes-site/dist"
 }

@@ -1,0 +1,10 @@
+{
+  "name": "mlt-week-wise-notes",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MLT week-wise study notes site",
+  "scripts": {
+    "build": "python3 notes-site/build.py && python3 notes-site/check.py",
+    "test": "node notes-site/check-theme.cjs && node notes-site/check-performance.cjs"
+  }
+}
