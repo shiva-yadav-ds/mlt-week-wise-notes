@@ -12,14 +12,19 @@
 <div class="layout"><aside class="weeks"><details open><summary>Course weeks <span>12</span></summary><nav aria-label="Course weeks"><a class="week-link " href="index.html" ><span class="week-number">01</span><span>Principal Component Analysis</span></a><a class="week-link " href="week2.html" ><span class="week-number">02</span><span>Kernel PCA</span></a><a class="week-link selected" href="week3.html" aria-current=page><span class="week-number">03</span><span>K-Means Clustering</span></a><a class="week-link " href="week4.html" ><span class="week-number">04</span><span>Estimation, GMM and EM Algorithm</span></a><a class="week-link " href="week5.html" ><span class="week-number">05</span><span>Linear and Kernel Regression</span></a><a class="week-link " href="week6.html" ><span class="week-number">06</span><span>Regularisation and Cross-Validation</span></a><a class="week-link " href="week7.html" ><span class="week-number">07</span><span>KNN and Decision Tree</span></a><a class="week-link " href="week8.html" ><span class="week-number">08</span><span>Naive Bayes</span></a><a class="week-link " href="week9.html" ><span class="week-number">09</span><span>Perceptron and Logistic Regression</span></a><a class="week-link " href="week10.html" ><span class="week-number">10</span><span>Support Vector Machine</span></a><a class="week-link " href="week11.html" ><span class="week-number">11</span><span>Soft-Margin SVM and Ensemble Methods</span></a><a class="week-link " href="week12.html" ><span class="week-number">12</span><span>Loss Functions and Artificial Neural Networks</span></a></nav></details></aside>
 <main id="notes"><div class="eyebrow">MACHINE LEARNING TECHNIQUES <span>/ WEEK 03</span></div><article><h1 id="topic-0">MLT Week 3: K-Means Clustering Notes</h1>
 <p><strong>Flow:</strong> Similar points ko group karna → centroid aur WCSS → Lloyd's assign–update cycle → convergence → cluster geometry → K-Means++ initialization → distance variants → silhouette.</p>
-<h2 id="topic-1">1. Clustering, centroid aur objective</h2>
-<h3 id="topic-2">1.1 Clustering kya karti hai?</h3>
+<p><strong>K-Means ka calculation cycle:</strong> Current centers se squared distances → nearest-center assignments → assigned points ka mean → new distances aur objective check. Initialization probabilities belong to K-Means++ and are calculated <strong>before</strong> the Lloyd fitting cycle. A cluster label, centroid coordinate, WCSS value and sampling probability answer different questions; har subpart ka requested stage pehle identify karo.</p>
+<h2 id="topic-1">Prerequisites: PCA se clustering tak</h2>
+<p>Weeks 1–2 mein representation change hui; ab observations ko groups assign karne hain. $x_i\in\mathbb R^d$ one sample; $\|x_i-\mu\|_2^2=\sum_{j=1}^d(x_{ij}-\mu_j)^2$ squared Euclidean distance; $\arg\min$ minimum <strong>dene wala label/parameter</strong> return karta hai, minimum value nahi. No target $y_i$ supplied hai.</p>
+<p><strong>Pehla sochne wala example — teaching example:</strong> Points $0,2,8,10$, two centers $0,10$. Nearest-center assignments $\{0,2\}$ and $\{8,10\}$. Means 1 and 9. Old-center loss $0^2+2^2+(-2)^2+0^2=8$; updated-center loss $(-1)^2+1^2+(-1)^2+1^2=4$. Reassignment same rahegi, so stable. Zero loss zaroori nahi: each cluster mein two distinct points hain.</p>
+<p>Is tiny cycle mein three separate tasks hue: assign labels, average assigned points, evaluate loss. Q26 sirf averaging; Q1 full loop; Q36 intermediate-stage loss; Q2 initialization ki sampling poochhta hai. Har question ko requested task se connect karke padho.</p>
+<h2 id="topic-2">1. Clustering, centroid aur objective</h2>
+<h3 id="topic-3">1.1 Clustering kya karti hai?</h3>
 <p><strong>Definition:</strong> Bina target labels ke similar data points ko groups mein divide karna clustering hai; yeh unsupervised learning hai.</p>
 <p><strong>Real life:</strong> Customers ko spending aur visit frequency ke basis par group karo. Pehle se “regular customer” label nahi diya; groups features se discover honge.</p>
 <p>K-Means compact, roughly spherical groups aur comparable scales par naturally useful hai. Curved moons/rings ya strongly unequal densities ko natural groups ki tarah recover karna difficult ho sakta hai, because assignment nearest-centroid boundaries use karti hai.</p>
 <p>K-Means mein $K$ groups pehle choose karte hain. Har point exactly ek cluster mein jaata hai: <strong>hard assignment</strong>. Centroid us cluster ka representative average hai. Goal: points apne centroid ke paas hon.</p>
 <p><img src="assets/week3/clusters.png" loading="lazy" alt="Compact groups versus overlapping groups" /></p>
-<h3 id="topic-3">1.2 Notation aur centroid</h3>
+<h3 id="topic-4">1.2 Notation aur centroid</h3>
 <table>
 <thead>
 <tr>
@@ -56,7 +61,11 @@
 <p>Assignment vector ka order dataset ke order se match karta hai. Labels swap karne se grouping nahi badalti: $(1,1,2,2)$ aur $(2,2,1,1)$ same partition describe karte hain.</p>
 <p>Har point ke $K$ possible labels hon toh $K^n$ assignment vectors hain. Yeh <strong>labelled assignments allowing empty clusters</strong> ka count hai; exactly $K$ non-empty, unlabelled groups ka count nahi.</p>
 <hr />
-<h3 id="topic-4">Q26 — Direct centroid update</h3>
+<p><strong>Average hi representative kyun?</strong> Non-empty cluster ka mean $\bar x$ lo. Any candidate center $a$ ke liye $x_i-a=(x_i-\bar x)+(\bar x-a)$. Square aur sum karne par cross-term zero, because $\sum_i(x_i-\bar x)=0$:</p>
+<p>$$\sum_{i\in C}\|x_i-a\|^2
+=\sum_{i\in C}\|x_i-\bar x\|^2+|C|\|a-\bar x\|^2.$$</p>
+<p>First part fixed hai; second nonnegative aur only $a=\bar x$ par zero. Mean update exact minimizer hai. Is argument mein <strong>squared Euclidean</strong> essential hai: absolute-distance objective ka coordinate-wise minimizer median hota hai. Metric change karke mean ko automatically optimal mat maan lena.</p>
+<h3 id="topic-5">Q26 — Direct centroid update</h3>
 <p><strong>Question:</strong></p>
 <p>The centroid update in K-Means is:</p>
 <p>$$
@@ -67,6 +76,7 @@ $$</p>
 C_1=\{(2,2),(3,3),(4,4)\}
 $$</p>
 <p>Which is the updated centroid $\mu_1$?</p>
+<p><strong>Why the mean is the update:</strong> For fixed cluster $C$, minimize $J(\mu)=\sum_{x_i\in C}\|x_i-\mu\|^2$. Gradient is $2|C|\mu-2\sum_{i\in C}x_i$. Setting it to zero gives $\mu=\sum x_i/|C|$. Average each coordinate separately; the result is a center location, not a cluster label.</p>
 <p><strong>Solution:</strong></p>
 <p>Oct 2023 Quiz 1.</p>
 <p><strong>Step 1:</strong> Cluster mein 3 points hain. Coordinate sums: $2+3+4=9$ dono axes par.</p>
@@ -74,7 +84,7 @@ $$</p>
 <p>$$\boxed{\mu_1=(9/3,9/3)=(3,3)}.$$</p>
 <p>Yahi coordinate-wise averaging har update question mein use hogi.</p>
 <hr />
-<h3 id="topic-5">1.3 WCSS: Cluster compactness ka measure</h3>
+<h3 id="topic-6">1.3 WCSS: Cluster compactness ka measure</h3>
 <p><strong>Definition:</strong> Within-cluster sum of squares (WCSS) har point se uske assigned centroid tak squared distance ka total hai.</p>
 <p>$$\boxed{J(z,\mu)=\sum_{i=1}^n\|x_i-\mu_{z_i}\|_2^2
 =\sum_{k=1}^K\sum_{x_i\in C_k}\|x_i-\mu_k\|_2^2}.$$</p>
@@ -87,8 +97,8 @@ $$</p>
 <li>Feature scale matters: income rupees mein aur age years mein ho toh income distance dominate kar sakti hai. Meaningful scaling choose karo; scaling ke baad clusters change ho sakte hain.</li>
 <li>Same positive factor $c$ se <strong>sab coordinates aur centers</strong> scale karo toh assignments same, WCSS $c^2J$. Ek feature alone rescale karna different baat hai.</li>
 </ul>
-<h2 id="topic-6">2. Lloyd's algorithm: Assign → update → repeat</h2>
-<h3 id="topic-7">2.1 Ek iteration mein kya badalta hai?</h3>
+<h2 id="topic-7">2. Lloyd's algorithm: Assign → update → repeat</h2>
+<h3 id="topic-8">2.1 Ek iteration mein kya badalta hai?</h3>
 <p><strong>Real life:</strong> Pehle customer ko nearest branch do; phir har branch ko uske customers ke average location par move karo. Updated branches se assignment dubara check karo.</p>
 <ol>
 <li>$K$ choose karo aur centers initialize karo.</li>
@@ -101,7 +111,7 @@ $$</p>
 <p>Tie par stated rule follow karo; otherwise fixed deterministic convention state karo. Empty cluster ka mean undefined hai; uske liye explicit handling chahiye, zero se divide mat karo.</p>
 <p>Dec 2024 End Term Q14 ka step-order isi cycle se: <strong>choose K → random centers → assign → recompute → reassign</strong>, supplied operation numbers <strong>5,3,1,4,2</strong>.</p>
 <hr />
-<h3 id="topic-8">Q1 — Complete iteration and convergence</h3>
+<h3 id="topic-9">Q1 — Complete iteration and convergence</h3>
 <p><strong>Question:</strong></p>
 <p>The dataset contains the following points:</p>
 <p>$$
@@ -112,6 +122,7 @@ $$</p>
 \mu_1^{(0)}=(0,0),\qquad \mu_2^{(0)}=(6,0)
 $$</p>
 <p>Find the cluster means after convergence.</p>
+<p><strong>One Lloyd iteration has two parts:</strong> Assign each point using $z_i=\arg\min_k\|x_i-\mu_k\|^2$, then update $\mu_k=\sum_{z_i=k}x_i/N_k$. All assignments in a pass use the current centers. After averaging, repeat the distance comparison to check whether membership changes; the first update is not automatically the final answer.</p>
 <p><strong>Solution:</strong></p>
 <p>Jan 2024 Quiz 1.</p>
 <p><strong>Step 1 — Nearest center:</strong> $d_1^2=x^2+y^2$, $d_2^2=(x-6)^2+y^2$.</p>
@@ -187,10 +198,11 @@ $$</p>
 <p><img src="assets/week3/q1_convergence.png" loading="lazy" alt="Q1 initial and final cluster boundaries" /></p>
 <p>Same assign–average–check pattern: May 2024 Quiz 1 Q3, Jul 2023 Quiz 1 Q25, Dec 2023 End Term Q44. $K=3$ mein bas three distances compare honge; method same hai.</p>
 <hr />
-<h3 id="topic-9">Q1(ii) — New point add hone par</h3>
+<h3 id="topic-10">Q1(ii) — New point add hone par</h3>
 <p><strong>Question:</strong></p>
 <p>A new point $(7,0)$ is added. Find the sum of the x-coordinates of the two final cluster means.</p>
 <p>Accepted answer range in the notes: 8.18–8.22.</p>
+<p><strong>Update from the old sum:</strong> An old cluster with $m$ points and mean $\mu$ has coordinate sum $m\mu$. Adding one point gives new mean $(m\mu+x)/(m+1)$. Here $4(8.5,0)+(7,0)=(41,0)$, so divide by 5. Recheck the new bisector because adding data can also move other points between clusters.</p>
 <p><strong>Solution:</strong></p>
 <p><strong>Step 1:</strong> Existing final centers se $(7,0)$ ki squared distances 49 aur 2.25 hain. Point cluster 2 mein jaayega.</p>
 <p><strong>Step 2:</strong> Purane cluster 2 ka count 4, sum $(34,0)$ tha. New sum $(41,0)$, count 5:</p>
@@ -199,7 +211,7 @@ $$</p>
 <p>$$\boxed{\text{Required sum}=0+8.2=8.20}.$$</p>
 <p>Useful formula: old cluster size $m$ ho toh $\mu&#x27;=(m\mu+x_{\rm new})/(m+1)$, <strong>provided baaki membership unchanged rahe</strong>. Adding point ke baad recheck zaroor karo. Related changed-data question: Oct 2025 Quiz 1 Q32; uski full figure supplied notes/PDF mein missing hai.</p>
 <hr />
-<h3 id="topic-10">Q17 — First update; Q45 — Final objective</h3>
+<h3 id="topic-11">Q17 — First update; Q45 — Final objective</h3>
 <p><strong>Question:</strong></p>
 <p>Given:</p>
 <p>$$
@@ -214,6 +226,7 @@ $$</p>
 \mu_1^{(0)}=1,\qquad\mu_2^{(0)}=4
 $$</p>
 <p>Find the centroids after the first iteration of Lloyd's algorithm.</p>
+<p><strong>Separate assignment, mean and cost:</strong> In 1D, initial centers 1 and 4 split nearest-center regions at $(1+4)/2=2.5$. Average the assigned values, then recompute the midpoint. For final WCSS, use each point minus its final assigned mean: the deviations in cluster 2 are $4-19/3=-7/3$, $7-19/3=2/3$, $8-19/3=5/3$. Square before summing.</p>
 <p><strong>Solution:</strong></p>
 <p>Q17 ke term labels existing notes mein Dec 2025 / Sep 2026 hain.</p>
 <p><strong>Step 1:</strong> Centers 1 aur 4 ka midpoint 2.5. So $C_1=\{1\}$, $C_2=\{4,7,8\}$.</p>
@@ -227,7 +240,7 @@ $$</p>
 =\frac{49+4+25}{9}=\boxed{26/3\approx8.67}.$$</p>
 <p>Same dataset ka solution repeat nahi kiya; changed subpart mein sirf required WCSS nikala.</p>
 <hr />
-<h3 id="topic-11">Q20 — Missing cluster membership</h3>
+<h3 id="topic-12">Q20 — Missing cluster membership</h3>
 <p><strong>Question:</strong></p>
 <p>Given:</p>
 <p>$$
@@ -239,6 +252,7 @@ z=(3,1,?,2,1,3,2)
 $$</p>
 <p>Which cluster should be assigned to $x_3$?</p>
 <p>Options: 1, 2, or 3.</p>
+<p><strong>Recover centers from known groups:</strong> First average the points whose memberships are given. Then evaluate $\|(0,0)-\mu_k\|^2$ for each recovered mean. Minimum squared distance determines the missing assignment under this interpretation. A membership identifier has no numerical averaging meaning; average coordinates, not label numbers.</p>
 <p><strong>Solution:</strong></p>
 <p>Oct 2022 Quiz 1.</p>
 <p><strong>Step 1:</strong> Known memberships se $C_1=\{(2,0),(-2,0)\}$, $C_2=\{(0,-2),(0,-1)\}$, $C_3=\{(0,2),(0,1)\}$.</p>
@@ -248,7 +262,7 @@ $$</p>
 <p>Yeh known groups se centers banakar missing point assign karne ki interpretation hai. Sirf arbitrary assignment vector ke blank se label mathematically force nahi hota; nearest-center criterion use ho raha hai.</p>
 <p>Reassignment ke same pattern wale questions: Apr 2025 End Term Q15, Oct 2023 Quiz 1 Q27. Har baar <strong>updated</strong> means se distance compare karo.</p>
 <hr />
-<h3 id="topic-12">Q35 — Initial assignments given hon toh</h3>
+<h3 id="topic-13">Q35 — Initial assignments given hon toh</h3>
 <p><strong>Question:</strong></p>
 <p>For the points:</p>
 <p>$$
@@ -262,6 +276,7 @@ $$</p>
 <li>$z^{(0)}=(1,1,2,2)$</li>
 <li>$z^{(0)}=(1,2,2,1)$</li>
 </ol>
+<p><strong>Assignments given means update first:</strong> An initial label vector already specifies groups, so compute their coordinate means before doing nearest-center reassignment. With new groups, average again. Keep the sample order fixed when writing the new label vector; equal final groups may be named differently if center labels are swapped, even though the geometric clustering agrees.</p>
 <p><strong>Solution:</strong></p>
 <p>Mar 2026 Quiz 1.</p>
 <p><strong>Case 1, Step 1:</strong> $(1,1,2,2)$ se means $(1.5,0)$ aur $(2.5,1)$ aate hain.</p>
@@ -307,12 +322,13 @@ $$</p>
 <p>$$\boxed{\text{Dono cases: }z^{(\infty)}=(1,2,2,1)}.$$</p>
 <p>Different initialization same result de <strong>sakti</strong> hai, always de yeh guarantee nahi. Related assignment-initialization question: Oct 2022 Quiz 1 Q19.</p>
 <hr />
-<h3 id="topic-13">Q46 — Two iterations, exact WCSS, and a shared dataset</h3>
+<h3 id="topic-14">Q46 — Two iterations, exact WCSS, and a shared dataset</h3>
 <p><strong>Question:</strong> Consider the following 2D dataset: $[(1,1),(2,1),(4,3),(5,4),(6,6),(8,7)]$. Let us select two initial cluster centroids at $(2,1)$ and $(6,6)$. Based on the above information answer the following questions:</p>
 <p>(i) After two iteration of k-means, let $C=C_1+C_2$, where $C_1$ and $C_2$ denotes the updated centroids. What is the value of $|\sum_{i=1}^2 C_i|$?</p>
 <p>(ii) What is the value of objective function after two iteration?</p>
 <p>(iii) If we choose k-means++, with $k=3$, then with what probability the third cluster centroids will be chosen if the first two are $(2,1)$ and $(6,6)$ based on k-means++ initialization?</p>
 <p><code>Week 3.pdf</code>, Q2, pp. 4–14. Part (i) mein source notation overloaded hai: source solution $C$ ke <strong>coordinate sum ka absolute value</strong> leta hai. Isi intended scalar quantity ko calculate karenge. Part (iii) ko initialization section ke Q46(iii) mein isi dataset se solve karenge.</p>
+<p><strong>Use exact fractions through the second pass:</strong> The first centers become $(7/3,5/3)$ and $(19/3,17/3)$. For point $(1,1)$, squared distance to the first is $(-4/3)^2+(-2/3)^2=20/9$. Repeat for both centers and every point, keep the smaller assigned distance for WCSS, then add those fractions before rounding.</p>
 <p><strong>Step 1 — Initial squared distances:</strong></p>
 <table>
 <thead>
@@ -423,11 +439,13 @@ $$</p>
 <p>PDF ka 16.68 rounded intermediate distances ka sum hai; exact answer $50/3$ hai. Source mein ek line $(8,8)$ likhti hai, lekin given point <strong>$(8,7)$</strong> hai. Second-iteration table mein kuch cross-distances bhi incorrect hain; upar exact values hain.</p>
 <p><strong>Useful property:</strong> Equal-size clusters (here 3 each) mein $\mu_1+\mu_2=2\bar x$. Unequal sizes par simple average of means generally wrong; use $\bar x=\sum_j |C_j|\mu_j/n$.</p>
 <hr />
-<h3 id="topic-14">2.2 Iteration counting ka trap</h3>
+<p><strong>Same starting centers, changed question:</strong> Initial assignments poochhe toh distances old centers tak. First updated means poochhe toh old assignments ke averages. First-cycle WCSS poochhe toh question ne old ya updated centers specify kiye hain, woh read karo. Converged answer poochhe toh updated centers se assignment dobara check karni hogi. New point add ho toh old cluster size $m$ aur mean $\mu$ se provisional mean $(m\mu+x_{\rm new})/(m+1)$; phir all memberships recheck, because boundary shift ho gayi.</p>
+<p>Q1, Q17/Q45 and Q46 ek same assign–update idea ko different stopping stages par test karte hain. Final centers ka answer intermediate-stage objective mein substitute karna stage mismatch hai, arithmetic mistake nahi.</p>
+<h3 id="topic-15">2.2 Iteration counting ka trap</h3>
 <p>Jul 2023 Quiz 1 Q23 mein points $(1,1),(2,1),(4,3),(5,4)$ aur initial centers $(0,0),(4,4)$ hain. Initial squared-distance pairs $(2,18),(5,13),(25,1),(41,1)$ se groups first two / last two bante hain. Means $(1.5,1),(4.5,3.5)$.</p>
 <p>Recheck pairs $(0.25,18.5),(0.25,12.5),(10.25,0.5),(18.25,0.5)$ same groups dete hain. Thus <strong>one effective update</strong>, but source <strong>2 iterations</strong> count karta hai because second stability check bhi count hua. Numerical result aur counting convention ko separate samjho.</p>
-<h2 id="topic-15">3. Objective stages, convergence aur choosing K</h2>
-<h3 id="topic-16">3.1 Old/new center ka superscript kyun important hai?</h3>
+<h2 id="topic-16">3. Objective stages, convergence aur choosing K</h2>
+<h3 id="topic-17">3.1 Old/new center ka superscript kyun important hai?</h3>
 <p><strong>Definition:</strong> Lloyd's algorithm alternating minimization hai: ek time par assignments ya centers optimize hote hain, dono ek saath nahi.</p>
 <p>$$J_A=J(z^{(t)},\mu^{(t)}),\quad
 J_B=J(z^{(t+1)},\mu^{(t)}),\quad
@@ -436,7 +454,7 @@ J_C=J(z^{(t+1)},\mu^{(t+1)}).$$</p>
 <p>Assignment mein nearest center choose karne se cost nahi badhti; update mein mean best squared-error center hai. Already stable ho toh equality possible: <strong>strict decrease always</strong> false hai.</p>
 <p><img src="assets/week3/objective_stages.png" loading="lazy" alt="Objective stages with old and new quantities" /></p>
 <hr />
-<h3 id="topic-17">Q36 — Assignment ke baad, update se pehle</h3>
+<h3 id="topic-18">Q36 — Assignment ke baad, update se pehle</h3>
 <p><strong>Question:</strong></p>
 <p>For:</p>
 <p>$$
@@ -450,6 +468,7 @@ $$</p>
 <p>$$
 \sum_{i=1}^{4} \left\|x_i-\mu_{z_i^{(t+1)}}^{(t)}\right\|^2
 $$</p>
+<p><strong>Read the iteration superscripts:</strong> An assignment-only cost uses new labels but <strong>old</strong> centers. Centers 0 and 10 assign $0,2$ left and $6,8$ right. Therefore residuals for this stage are $0,2,-4,-2$. Squaring gives $0+4+16+4=24$. Replacing centers by 1 and 7 would evaluate the next stage instead.</p>
 <p><strong>Solution:</strong></p>
 <p>Jul 2026 Quiz 1.</p>
 <p><strong>Step 1:</strong> Old centers 0,10 ka midpoint 5. New groups $\{0,2\}$ aur $\{6,8\}$.</p>
@@ -457,7 +476,7 @@ $$</p>
 <p>$$\boxed{J_B=0^2+2^2+(6-10)^2+(8-10)^2=24}.$$</p>
 <p><strong>Stage comparison:</strong> Update karte toh means 1,7 aur $J_C=1+1+1+1=4$. Dono answers different stages ke hain; is question ka answer 24 hai.</p>
 <hr />
-<h3 id="topic-18">Q6 — Three objectives ki inequality</h3>
+<h3 id="topic-19">Q6 — Three objectives ki inequality</h3>
 <p><strong>Question:</strong></p>
 <p>Three objective expressions are given:</p>
 <p>Expression (1) — Before reassignment</p>
@@ -473,6 +492,7 @@ $$</p>
 (3)=\sum_i\|x_i-\mu_{z_i^{(t+1)}}^{(t+1)}\|^2
 $$</p>
 <p>Find the correct inequality relating these three quantities.</p>
+<p><strong>Prove each inequality separately:</strong> With centers fixed, nearest-center assignment minimizes every point's cost, so their sum cannot increase. With those assignments fixed, each cluster mean minimizes its within-cluster squared sum, so averaging cannot increase it either. Chain these two non-increases. Equality is allowed when the existing assignments or means are already optimal for that stage.</p>
 <p><strong>Solution:</strong></p>
 <p>Jan 2025 Quiz 1.</p>
 <p><strong>Step 1:</strong> Assignment minimize karta hai, so $(2)\leq(1)$.</p>
@@ -481,13 +501,13 @@ $$</p>
 <p>$$\boxed{(3)\leq(2)\leq(1)}.$$</p>
 <p>Strict $&lt;$ tabhi jab dono steps actually improve karein. Already optimal groups/means counterexample hain: teeno expressions equal ho sakte hain.</p>
 <hr />
-<h3 id="topic-19">3.2 Convergence kya guarantee karti hai?</h3>
+<h3 id="topic-20">3.2 Convergence kya guarantee karti hai?</h3>
 <p>Finite data, consistent deterministic tie handling aur suitable empty-cluster handling ke standard setting mein Lloyd iterations terminate at a stable configuration. Objective lower-bounded by zero hai aur non-increasing hai; finite-assignment structure termination argument ko complete karta hai. <strong>Sirf decreasing bounded sequence se finite termination prove nahi hota</strong>: $1,1/2,1/3,\ldots$ counterexample hai.</p>
 <p>Stable configuration ko usually local optimum kehte hain; precise idea: current assign/update steps aur improve nahi karte. <strong>Global optimum guaranteed nahi.</strong> Multiple restarts karo aur same dataset, scaling, $K$ par lowest final WCSS choose karo.</p>
 <p>Poor initialization worse result ya slower convergence laa sakti hai; “always more iterations” guaranteed nahi. May 2025 Quiz 1 Q11 isi distinction ke saath initialization aur $K$ sensitivity test karta hai. Feb 2024 Quiz 1 Q29 bhi local minima/practical initialization par hai.</p>
 <p>Jul 2026 Quiz 1 Q37 ka “cannot revisit a partition” statement pre-termination convergence argument ke context mein hai. Converged state ko dobara check karoge toh same partition naturally repeat hogi.</p>
 <hr />
-<h3 id="topic-20">Q10 — Objective plateau</h3>
+<h3 id="topic-21">Q10 — Objective plateau</h3>
 <p><strong>Question:</strong></p>
 <p>The following table shows objective values across iterations.</p>
 <table>
@@ -521,6 +541,7 @@ $$</p>
 </tbody>
 </table>
 <p>At which iteration has the objective reached its final stable value?</p>
+<p><strong>Identify start versus detection of a plateau:</strong> Compare successive differences: $500-800=-300$, $400-500=-100$, then $400-400=0$ twice. The eventual value first occurs at iteration 3; iteration 4 supplies the first repeated value. If the question asks when a stopping test detects equality, that count differs from when the stable objective first appears.</p>
 <p><strong>Solution:</strong></p>
 <p>May 2025 Quiz 1.</p>
 <p><strong>Step 1:</strong> Values $800\to500\to400\to400\to400$ dekho.</p>
@@ -528,12 +549,13 @@ $$</p>
 <p>$$\boxed{\text{Stable objective starts at iteration 3}}.$$</p>
 <p>Question objective ki stability poochhta hai. Assignment-level convergence ke liye labels bhi inspect karna relevant hai.</p>
 <hr />
-<h3 id="topic-21">Q30 — Convergence and outliers</h3>
+<h3 id="topic-22">Q30 — Convergence and outliers</h3>
 <p><strong>Question:</strong></p>
 <p>A. Lloyd's algorithm always converges.</p>
 <p>B. It may fail to converge for one initialization while converging for another.</p>
 <p>C. It is sensitive to outliers.</p>
 <p>D. Its solution is always globally optimal.</p>
+<p><strong>Use the objective properties:</strong> Squared distances are nonnegative and Lloyd updates do not increase their sum. Under consistent tie/empty-cluster handling this supports convergence, but not the global optimum. The mean is outlier-sensitive: adding value 100 to $(0,0)$ moves the mean from 0 to $100/3$, illustrating why extreme points can move centers substantially.</p>
 <p><strong>Solution:</strong></p>
 <p>Oct 2025 Quiz 1.</p>
 <p><strong>A:</strong> Standard assumptions ke under true.</p>
@@ -542,18 +564,19 @@ $$</p>
 <p><strong>D:</strong> False; global optimum guaranteed nahi.</p>
 <p>$$\boxed{A,C}.$$</p>
 <hr />
-<h3 id="topic-22">3.3 K badhane se WCSS</h3>
+<h3 id="topic-23">3.3 K badhane se WCSS</h3>
 <p><strong>Real life:</strong> Ek city ko 1 service center do versus har customer ko individual center. More centers se distance kam karna easy hai, lekin groups ka practical meaning bhi chahiye.</p>
 <p>Globally minimized WCSS obeys $J^*_{K+1}\leq J^*_K$. Extra cluster se existing group split kar sakte hain; best achievable error badhne ki need nahi. Arbitrary different Lloyd runs ke final errors compare karte waqt local minima ka effect aa sakta hai.</p>
 <p>$K=n$ par har point ka own center ho sakta hai, WCSS 0. Isliye <strong>sirf minimum training WCSS se best K choose mat karo</strong>. Elbow plot mein reduction slow hone ka region useful heuristic hai; silhouette separation bhi check karti hai.</p>
 <hr />
-<h3 id="topic-23">Q38 — Minimum possible WCSS</h3>
+<h3 id="topic-24">Q38 — Minimum possible WCSS</h3>
 <p><strong>Question:</strong></p>
 <p>A dataset contains 1000 points. Which value of $K$ is most likely to yield the minimum K-Means objective?</p>
 <p>A. $K=1$</p>
 <p>B. $K=10$</p>
 <p>C. $K=100$</p>
 <p>D. $K=1000$</p>
+<p><strong>Construct a matching lower bound:</strong> WCSS is a sum of squares, so $J\ge0$. If $K=n=1000$, put a center at every sample and assign each sample to its identical center. Every term is $\|x_i-x_i\|^2=0$, achieving the bound. Thus zero is a global objective minimum, independently of whether these clusters are useful.</p>
 <p><strong>Solution:</strong></p>
 <p>Jul 2026 Quiz 1.</p>
 <p><strong>Step 1:</strong> 1000 points aur 1000 centers allow hain.</p>
@@ -562,7 +585,7 @@ $$</p>
 <p>$$\boxed{D:\ K=1000}.$$</p>
 <p>Yeh objective-minimum ka answer hai; meaningful grouping ke liye 1000 clusters zaroori nahi.</p>
 <hr />
-<h3 id="topic-24">Q47 — WCSS trend aur strict inequality ka trap</h3>
+<h3 id="topic-25">Q47 — WCSS trend aur strict inequality ka trap</h3>
 <p><strong>Question:</strong> Suppose you have 300 data points. After performing K-means clustering, for $k=3,5,10,50$, you calculate the sum of squared distances between points and their respective cluster centroids as follows:</p>
 <table>
 <thead>
@@ -598,10 +621,11 @@ $$</p>
 <p>(v) $a&lt;b$</p>
 <p>(vi) None of the above</p>
 <p><code>Week 3.pdf</code>, Q1, pp. 2–3; options column-wise listed hain.</p>
+<p><strong>Non-increase does not mean strict decrease:</strong> A larger allowed number of clusters can reproduce an old solution, so globally optimal WCSS cannot rise. It need not fall: if all points coincide, one center already gives zero and extra centers leave zero unchanged. Also separate Lloyd runs may end at different local optima, so compare optimal costs only when invoking this monotonicity.</p>
 <p><strong>Step 1:</strong> Section 3.3 ka rule optimal costs ke liye $a\ge b\ge c\ge d$ hai. Typical improving fit mein <strong>(iv) $a&gt;d$</strong> intended choice hai.</p>
 <p><strong>Step 2 — Strict guarantee nahi:</strong> 300 identical points hon toh all costs zero; $a&gt;d$ false. Independent local runs ka ordering bhi guaranteed nahi. Thus agar “holds true” ka meaning <strong>every dataset/run par guaranteed</strong> hai, <strong>(vi)</strong> correct interpretation hai. PDF explanation typical decreasing trend batati hai, strict theorem nahi.</p>
 <p>Same property ke liye separate long proof nahi chahiye; $K$ badhana aur Lloyd iterations badhana alag comparisons hain.</p>
-<h3 id="topic-25">3.4 Loss plus complexity penalty se K choose karna</h3>
+<h3 id="topic-26">3.4 Loss plus complexity penalty se K choose karna</h3>
 <p><strong>Definition:</strong> Penalized score fit error ke saath extra clusters ka cost add karta hai:</p>
 <p>$$\boxed{F(K)=J(K)+P(K),\qquad K_{\rm chosen}\in\arg\min_K F(K)}.$$</p>
 <p><strong>Real life:</strong> Har customer ke liye separate service branch distance error kam karegi, lekin har branch ka cost bhi hai. Penalty isi complexity cost ko represent karti hai.</p>
@@ -611,7 +635,7 @@ $$</p>
 <li>Penalty specify kiye bina unique best $K$ claim nahi kar sakte.</li>
 <li>Minimum <strong>sum</strong> dekho; loss aur penalty ka intersection necessarily optimum nahi.</li>
 </ul>
-<h3 id="topic-26">Q48 — Identify loss, penalty and best K from the graph</h3>
+<h3 id="topic-27">Q48 — Identify loss, penalty and best K from the graph</h3>
 <p><strong>Question:</strong> After running k-means clustering on a dataset, we get the following plots. The blue plots are the sum of the red and black plots.</p>
 <p><img src="assets/week3/new_penalty_source.png" loading="lazy" alt="Supplied PDF Q7 loss, penalty and combined score" /></p>
 <p>Based on the general behaviour of the k-means algorithm, answer the following questions:</p>
@@ -619,20 +643,25 @@ $$</p>
 <p>(ii) Which coloured plot could possibly represent the penalty function for different choices of $k$?</p>
 <p>(iii) What could be a good choice of $k$ from the given scatter plots?</p>
 <p><code>Week 3.pdf</code>, Q7, pp. 33–34.</p>
+<p><strong>Selection criterion:</strong> For each candidate $K$, total objective is $F(K)=J(K)+P(K)$. Lower clustering loss favors larger $K$, while increasing penalty charges for that complexity. Read the minimum of the <strong>sum</strong> curve, not its crossing with another curve or the minimum of loss alone. The displayed selected $K$ is the total-objective minimizer.</p>
 <p><strong>Step 1:</strong> Red decreases with $K$: loss $J(K)$.</p>
 <p><strong>Step 2:</strong> Black increases with $K$: penalty $P(K)$.</p>
 <p><strong>Step 3:</strong> Blue is $F(K)=J(K)+P(K)$. Graph ka lowest blue point $K=13$ par hai.</p>
 <p>$$\boxed{\text{Loss: red; penalty: black; selected }K=13}.$$</p>
 <p><strong>Property:</strong> Fixed candidate $K$ par one-cluster improvement worthwhile tab hai jab loss reduction penalty increase se greater ho: $J(K)-J(K+1)&gt;P(K+1)-P(K)$. Yeh local comparison hai; global choice ke liye sab candidate totals compare karo.</p>
 <hr />
-<h2 id="topic-27">4. Cluster geometry: Boundary aur convexity</h2>
-<h3 id="topic-28">4.1 Nearest-center boundary</h3>
+<h2 id="topic-28">4. Cluster geometry: Boundary aur convexity</h2>
+<h3 id="topic-29">4.1 Nearest-center boundary</h3>
+<p><strong>Linear boundary squares se kaise aati hai?</strong> Two fixed centers $a,b$ ke distances equal set karo. Expand:</p>
+<p>$$\|x\|^2-2a^Tx+\|a\|^2=\|x\|^2-2b^Tx+\|b\|^2,$$</p>
+<p>$$2(b-a)^Tx=\|b\|^2-\|a\|^2.$$</p>
+<p>Common $\|x\|^2$ cancel hota hai, so boundary line/hyperplane banti hai. One dimension mein centers 1,9 give $16x=80$, hence midpoint 5. Cluster $a$ ka side check karne ke liye $x=a$ substitute karo: uski own distance zero honi chahiye. Three centers hon toh a point ko chosen center ke <strong>dono competitors</strong> se compare karo; one pairwise boundary enough nahi. Q49 two-center case, Q50 full half-space intersection test karta hai.</p>
 <p><strong>Definition:</strong> Do centers se equal distance wale points decision boundary par hain. 2D Euclidean K-Means mein straight line; higher dimensions mein hyperplane.</p>
 <p>$$\boxed{2x^T(\mu_2-\mu_1)=\|\mu_2\|^2-\|\mu_1\|^2}.$$</p>
 <p>Boundary centers ko join karne wale segment ki perpendicular bisector hai. Example: centers $(1,2),(5,2)$ ka midpoint $(3,2)$, boundary $x_1=3$.</p>
 <p><img src="assets/week3/bisector.png" loading="lazy" alt="Perpendicular bisector example" /></p>
 <p>Sep 2024 End Term Q13 mein recorded boundary $2x_1+x_2=0$ hai. Yeh valid <strong>linear form</strong> hai, lekin exact centers/figure available nahi; sirf linear hone se isi specific equation ko correct option prove nahi kar sakte.</p>
-<h3 id="topic-29">Q49 — PCA scores par K-Means, phir updated boundary</h3>
+<h3 id="topic-30">Q49 — PCA scores par K-Means, phir updated boundary</h3>
 <p><strong>Question:</strong> You are working with a dataset containing 1000 data points, each with 50 features. Directly applying K-means to the full 50-dimensional dataset is computationally expensive. To address this, you decide to use Principal Component Analysis (PCA) to reduce the dimensionality of the dataset before applying K-means.</p>
 <p>After performing PCA, you retain only the first 2 principal components (PC1 and PC2), which together explain 90% of the variance in the dataset. Let the first four transformed data-points are:</p>
 <p>$$X_{\rm PCA}=\begin{bmatrix}1&amp;2&amp;0&amp;2\\2&amp;1&amp;2&amp;3\end{bmatrix}.$$</p>
@@ -640,6 +669,10 @@ $$</p>
 <p>$$C_1=(1,2),\qquad C_2=(2.5,3).$$</p>
 <p>What is the equation of Voronoi regions boundary?</p>
 <p><code>Week 3.pdf</code>, Q3, pp. 15–20. Columns are the four points; remaining 996 points are not supplied or used in this requested run.</p>
+<p><strong>Derive the boundary equation:</strong> Equate squared distances to updated centers:</p>
+<p>$$\|z-\mu_1\|^2=\|z-\mu_2\|^2
+\Rightarrow2z^T(\mu_2-\mu_1)=\|\mu_2\|^2-\|\mu_1\|^2.$$</p>
+<p>The $z^Tz$ terms cancel. Substitute the updated means, clear fractional denominators, and test each mean in the resulting inequality to identify its side.</p>
 <p><strong>Step 1 — Assign to given centers:</strong></p>
 <table>
 <thead>
@@ -696,7 +729,7 @@ $$</p>
 <li>Boundary above lives in PC-score coordinates. Raw-space boundary needs the fitted loadings $W$ and training mean $m$: scores $W^T(x-m)$ can be substituted into it. Those quantities are not provided.</li>
 </ul>
 <hr />
-<h3 id="topic-30">4.2 Voronoi cell aur convex hull</h3>
+<h3 id="topic-31">4.2 Voronoi cell aur convex hull</h3>
 <p><strong>Definition:</strong> Ek center ke nearest points ka region uska Voronoi cell hai. Cell half-spaces ka intersection hai, so convex.</p>
 <p>Convex ka simple meaning: region ke do points ko straight segment se join karo; poora segment region ke andar rehta hai. Finite observed points khud filled region nahi hain; guarantee nearest-center <strong>region</strong> ke baare mein hai.</p>
 <p>$$A,B\in V_k\Rightarrow\lambda A+(1-\lambda)B\in V_k,\quad0\leq\lambda\leq1.$$</p>
@@ -706,7 +739,7 @@ $$</p>
 <p><strong>Counterexample:</strong> Ring-shaped region ka opposite ends join karne wala segment empty middle se guzarta hai, so region non-convex. Standard Euclidean nearest-center cell aisa ring nahi ho sakta. $K=2$ mein do distinct centers ke regions ko ek straight line separate karti hai.</p>
 <p>Oct 2022 Quiz 1 Q24 impossible-shape question isi property par based hai. Supplied MD aur PDF mein option figures absent hain; recorded A,B,D ko option-wise verify nahi kiya ja sakta.</p>
 <hr />
-<h3 id="topic-31">Q50 — Three complete Voronoi regions from half-spaces</h3>
+<h3 id="topic-32">Q50 — Three complete Voronoi regions from half-spaces</h3>
 <p><strong>Question:</strong> We have 12 data points in $\mathbb R^2$. There are three clusters. Each color in the image below represents a cluster.</p>
 <p><img src="assets/week3/new_regions_source.png" loading="lazy" alt="Supplied three colored clusters" /></p>
 <p>(i) Find the center of every cluster.</p>
@@ -770,6 +803,7 @@ $$</p>
 </tbody>
 </table>
 <p><code>Week 3.pdf</code>, Q5, pp. 24–30.</p>
+<p><strong>Build one cell by beating every rival:</strong> Region of center $\mu_k$ satisfies $\|z-\mu_k\|^2\le\|z-\mu_j\|^2$ for every other $j$. Expanding each pair produces a linear half-space. Intersect the two relevant half-spaces for each of the three centers. A line joining centers is different from the perpendicular bisector that defines equal distances.</p>
 <p><strong>Step 1 — Read points and calculate means:</strong></p>
 <ul>
 <li>Green: $(7,9),(9,7),(7,7),(9,9)$; mean $G=(32/4,32/4)=(8,8)$.</li>
@@ -798,7 +832,7 @@ $$</p>
 <li>Bisectors meet at $(32/5,5)$. Only appropriate rays form actual cell boundaries: the other portion of a pairwise bisector can be closer to the third center.</li>
 </ul>
 <hr />
-<h3 id="topic-32">Q43 — Square ke corners se guaranteed membership</h3>
+<h3 id="topic-33">Q43 — Square ke corners se guaranteed membership</h3>
 <p><strong>Question:</strong></p>
 <p>The following points belong to the same K-Means cluster:</p>
 <p>$$
@@ -809,6 +843,7 @@ $$</p>
 <p>B. $(2,2)$</p>
 <p>C. $(-0.5,0.5)$</p>
 <p>D. $(0.75,0.9)$</p>
+<p><strong>Apply convexity of a nearest-center cell:</strong> Each pairwise distance comparison is a half-space; their intersection is convex. Therefore a cell containing four square corners contains their entire convex hull. Test whether each candidate satisfies $-1\le x\le1$ and $-1\le y\le1$. Outside the square means not guaranteed, not necessarily excluded from the actual cell.</p>
 <p><strong>Solution:</strong></p>
 <p>Sep 2023 End Term.</p>
 <p><strong>Step 1:</strong> Four corners ka convex hull square $-1\leq x\leq1$, $-1\leq y\leq1$ hai.</p>
@@ -849,7 +884,7 @@ $$</p>
 <p><strong>B not guaranteed</strong> ka matlab B definitely kisi aur cluster mein hai nahi. Actual cell square se bada bhi ho sakta hai.</p>
 <p>Same convexity pattern: Jan 2025 Quiz 1 Q7 mein $(0,1),(1,1)$ ke between $(0.2,1)$ guaranteed; Sep 2026 End Term Q18 mein $(2,2),(2,-2)$ ka midpoint $(2,0)$ guaranteed. Alag full solution ki need nahi; segment rule same hai.</p>
 <hr />
-<h3 id="topic-33">Q51 — Coincident centroids: A tie-handling exception</h3>
+<h3 id="topic-34">Q51 — Coincident centroids: A tie-handling exception</h3>
 <p><strong>Question:</strong> There are 8 data points, $d_1,\ldots,d_8$. Let $k=2$. After running the Lloyd's k-means algorithm, is it possible to have the following:</p>
 <p>(i) Data points in cluster 1: $\{d_1,d_3,d_6,d_8\}$.</p>
 <p>(ii) Data points in cluster 2: $\{d_2,d_4,d_5,d_7\}$.</p>
@@ -857,6 +892,7 @@ $$</p>
 <p><code>Week 3.pdf</code>, Q6, pp. 31–32. Figure coordinates:</p>
 <p>$$d_1=(1,1),\ d_2=(3,1),\ d_3=(1,3),\ d_4=(3,3),$$
 $$d_5=(5,3),\ d_6=(7,3),\ d_7=(5,5),\ d_8=(7,5).$$</p>
+<p><strong>Compute before claiming stability:</strong> Both group sums are $(16,12)$ over four points, so both means equal $(4,3)$. Then every point has identical distances to both centers. Assignment is controlled entirely by the tie rule. Keeping prior memberships preserves this state; assigning all ties to one center does not. Cost comparisons still use the supplied group's squared residuals.</p>
 <p><strong>Step 1 — Calculate both means:</strong></p>
 <p>$$\mu_1=\frac{(1,1)+(1,3)+(7,3)+(7,5)}4=(4,3),$$</p>
 <p>$$\mu_2=\frac{(3,1)+(3,3)+(5,3)+(5,5)}4=(4,3).$$</p>
@@ -869,7 +905,7 @@ $$d_5=(5,3),\ d_6=(7,3),\ d_7=(5,5),\ d_8=(7,5).$$</p>
 <p><strong>Geometry property:</strong> Distinct centers have a proper separating bisector. Identical centers tie everywhere; their closed nearest-center cells both equal the whole space. History-based tie labels can interleave, so the usual disjoint convex-region picture cannot be applied blindly to those labels.</p>
 <p>Source answer's second label list accidentally repeats $d_6,d_8$; question's groups and its computed second mean use $d_2,d_4,d_5,d_7$ as above.</p>
 <hr />
-<h3 id="topic-34">Q12 — Perfect negative correlation</h3>
+<h3 id="topic-35">Q12 — Perfect negative correlation</h3>
 <p><strong>Question:</strong></p>
 <p>A two-feature dataset has perfect negative correlation:</p>
 <p>$$
@@ -880,6 +916,9 @@ $$</p>
 K=3
 $$</p>
 <p>What can be said about the positions of the cluster centers minimizing WCSS?</p>
+<p><strong>Average the affine relationship:</strong> Perfect negative correlation with nonzero variances means $x_{i2}=a+bx_{i1}$, $b&lt;0$. For any group of size $m$,</p>
+<p>$$\mu_2=\frac1m\sum_i(a+bx_{i1})=a+b\frac1m\sum_i x_{i1}=a+b\mu_1.$$</p>
+<p>Thus every cluster mean stays on the same line; the slope depends on measurement scales.</p>
 <p><strong>Solution:</strong></p>
 <p>Apr 2024 End Term.</p>
 <p><strong>Step 1:</strong> Nonzero feature variances ke saath correlation $-1$ ka matlab data line $x_2=a+bx_1$, $b&lt;0$ par hain.</p>
@@ -889,8 +928,8 @@ $$</p>
 <p>Slope necessarily $-1$ nahi; correlation $-1$ perfect decreasing linear relation batata hai, units slope change kar sakte hain.</p>
 <p><img src="assets/week3/correlation.png" loading="lazy" alt="Points and their means remain on the same line" /></p>
 <hr />
-<h2 id="topic-35">5. K-Means++: Better starting centers</h2>
-<h3 id="topic-36">5.1 Random start se distance-weighted sampling tak</h3>
+<h2 id="topic-36">5. K-Means++: Better starting centers</h2>
+<h3 id="topic-37">5.1 Random start se distance-weighted sampling tak</h3>
 <p><strong>Definition:</strong> K-Means++ Lloyd's algorithm ke starting centers choose karne ka method hai. Baad ka assign–update loop same rehta hai.</p>
 <p><strong>Real life:</strong> First service center randomly choose ho gaya. Ab already covered area ke paas ek aur center kholne se better, door ke regions ko higher chance do.</p>
 <ol>
@@ -905,7 +944,9 @@ $$\boxed{p_i=D_i^2/\sum_jD_j^2}.$$</li>
 <p><img src="assets/week3/plusplus_cycle.png" loading="lazy" alt="K-Means++ sampling cycle" /></p>
 <p><strong>Properties:</strong> Farther point ka higher probability, guaranteed selection nahi. Centers spread karne mein help milti hai (May 2025 Quiz 1 Q9); global optimum, fixed iteration count aur automatically chosen $K$ guaranteed nahi. Uniform first choice aur weighted later choices ko mix mat karo.</p>
 <hr />
-<h3 id="topic-37">Q2 — Second center probability</h3>
+<p><strong>Sampling ka beginner calculation:</strong> Same four points $0,2,8,10$, first chosen center 0. Scores $D_i^2=(0,4,64,100)$; total 168. Next-center probabilities $(0,1/42,8/21,25/42)$; sum $(0+4+64+100)/168=1$. Farthest point 10 has largest probability $25/42$, certainty nahi.</p>
+<p>Agar next selected center 8 ho, nearest-selected-center scores <strong>recompute</strong> karo: $(0,4,0,4)$, so third center 2 or 10, probability $1/2$ each. Old scores $64,100$ keep karna galat hai because coverage change hui. Q2 one sampling step; Q5 and Q46(iii) same normalization after this minimum-distance recomputation.</p>
+<h3 id="topic-38">Q2 — Second center probability</h3>
 <p><strong>Question:</strong></p>
 <p>In K-Means++, $x_7$ has already been selected as the first centroid.</p>
 <p>The Euclidean distances from the remaining points to the selected centroid are:</p>
@@ -944,6 +985,7 @@ $$\boxed{p_i=D_i^2/\sum_jD_j^2}.$$</li>
 </tbody>
 </table>
 <p>Find the probability that $x_2$ is selected as the second centroid.</p>
+<p><strong>Normalize the sampling scores:</strong> K-Means++ uses $P_i=D_i^2/\sum_jD_j^2$, where $D_i$ is distance to the nearest chosen center. Square the supplied distances once, add all candidate scores, then divide the requested point's score by this total. Because the first center is given, this is conditional probability, with no additional uniform first-selection factor.</p>
 <p><strong>Solution:</strong></p>
 <p>May 2024 Quiz 1.</p>
 <p><strong>Step 1:</strong> Given distances square karo: scores $1,4,2,3,5,1$.</p>
@@ -953,7 +995,7 @@ $$\boxed{p_i=D_i^2/\sum_jD_j^2}.$$</li>
 <p>First center already selected hai, isliye extra $1/7$ multiply nahi karna.</p>
 <p><img src="assets/week3/probabilities.png" loading="lazy" alt="Second center sampling probabilities" /></p>
 <hr />
-<h3 id="topic-38">Q5 — Second center ke baad scores update</h3>
+<h3 id="topic-39">Q5 — Second center ke baad scores update</h3>
 <p><strong>Question:</strong></p>
 <p>Consider seven two-dimensional points:</p>
 <p>$$
@@ -969,6 +1011,7 @@ $$</p>
 <li>After choosing that center, which remaining point has the lowest probability of being selected as the third centroid?</li>
 </ol>
 <p>Important: Part (1) explicitly requests the highest-scoring point, rather than a random sample.</p>
+<p><strong>Update distance-to-nearest-center, not just distance to the last center:</strong> After choosing two centers, each candidate score is $\min(\|x-\mu_1\|^2,\|x-\mu_2\|^2)$. Compare both values before normalizing. For $(2,3)$, the minimum changes from 4 to 1 because the new center $(2,4)$ is close. This changes the sampling denominator as well.</p>
 <p><strong>Solution:</strong></p>
 <p>Existing notes mein term labels Sep 2024 / Jan 2025 Quiz 1 hain.</p>
 <p><strong>Step 1:</strong> First center $(2,1)$ se squared distances:</p>
@@ -1058,8 +1101,9 @@ $$</p>
 <p>$$\boxed{\text{Least likely: }(2,3),\quad p=1/11\approx0.0909}.$$</p>
 <p>Mar 2026 Quiz 1 Q34 bhi third-center minimum-distance rule test karta hai. Uske missing remaining points ke bina recorded probability 0.5 verify nahi hoti; method yahan complete data par solve ho gaya.</p>
 <hr />
-<h3 id="topic-39">Q46(iii) — Same six points, third-center sampling</h3>
+<h3 id="topic-40">Q46(iii) — Same six points, third-center sampling</h3>
 <p>Use Q46 ka original dataset and <strong>given initial centers</strong> $(2,1),(6,6)$, not its updated Lloyd means. Yeh already-stated question ka remaining subpart hai.</p>
+<p><strong>Third-center probability formula:</strong> With two centers already fixed, compute $D_i^2$ as the smaller of their two squared distances for every sample. Selected center locations have score zero. Sum the updated scores and divide the requested point's updated score by that total. Do not reuse the second-center denominator, which only accounted for one existing center.</p>
 <p><strong>Step 1 — Nearest selected-center squared scores:</strong> Q46 ki initial table se row-wise minimum:</p>
 <p>$$D_i^2=(1,0,8,5,0,5).$$</p>
 <p><strong>Step 2 — Normalize:</strong> Total $1+0+8+5+0+5=19$.</p>
@@ -1100,7 +1144,7 @@ $$</p>
 <p><strong>Step 3 — Interpret:</strong> Most likely candidate $\boxed{(4,3)}$, probability $\boxed{8/19\approx0.4211}$. All probabilities sum to 1. Question target point specify nahi karta, isliye full distribution diya hai; PDF most likely point ka answer deta hai.</p>
 <p>PDF ka “take maximum” sentence deterministic selection suggest karta hai. Standard K-Means++ <strong>samples</strong>; most likely point select hona guaranteed nahi. Pehle se selected two centers ki probability dobara multiply nahi karni.</p>
 <hr />
-<h3 id="topic-40">Q31 — Probabilities aur assignment ties</h3>
+<h3 id="topic-41">Q31 — Probabilities aur assignment ties</h3>
 <p><strong>Question:</strong></p>
 <p>Given:</p>
 <p>$$
@@ -1119,6 +1163,7 @@ $$</p>
 <p>B. The probability of selecting $(2,2)$ is twice the probability of selecting $(0,2)$.</p>
 <p>C. If $(2,2)$ is selected, the algorithm always converges in one iteration.</p>
 <p>D. The tie-breaking rule affects the final centers.</p>
+<p><strong>Separate seeding randomness from assignment ties:</strong> From the first corner, squared scores are $4,4,8$, so probabilities are $4/16,4/16,8/16$. Once the opposite corner is selected, the remaining two corners are equidistant from both centers. Seeding probabilities do not resolve these assignment ties; a separate tie policy determines the updated groups.</p>
 <p><strong>Solution:</strong></p>
 <p>Oct 2025 Quiz 1.</p>
 <p><strong>Step 1:</strong> $(0,0)$ se other corners ke squared scores $4,4,8$; total 16. Probabilities $1/4,1/4,1/2$. So A false, B true.</p>
@@ -1127,7 +1172,7 @@ $$</p>
 <p>Tie ko split karo toh vertical ya horizontal groups mil sakte hain: means $(0,1),(2,1)$ ya $(1,0),(1,2)$; ye bhi stable. So D true: tie rule final centers affect kar sakta hai.</p>
 <p><strong>C ka convention:</strong> First assignment/update se stable means mil jaate hain, next check confirm karta hai. Source isi sense mein C true maanta hai. Thus recorded answer <strong>B,C,D</strong>; “one iteration” ko check-counting convention ke saath interpret karo.</p>
 <hr />
-<h3 id="topic-41">Q8 — Distance versus squared-distance weights</h3>
+<h3 id="topic-42">Q8 — Distance versus squared-distance weights</h3>
 <p><strong>Question:</strong></p>
 <p>Five points:</p>
 <p>$$
@@ -1138,6 +1183,7 @@ $$</p>
 \mu_1=(1,1)
 $$</p>
 <p>Determine which remaining point has the least chance of becoming the next center, and its probability using the distance-based rule specified in the question.</p>
+<p><strong>State which probability rule is used:</strong> Unsquared-distance sampling uses $p_i=d_i/\sum d_j$; standard K-Means++ uses $p_i=d_i^2/\sum d_j^2$. Both choose the same least-distance candidate, but their denominators and probabilities differ. Here that point has distance 1, so only the denominator changes between the two displayed calculations.</p>
 <p><strong>Solution:</strong></p>
 <p>Existing notes mein Jan 2025 / May 2025 labels conflict karte hain.</p>
 <p><strong>Step 1:</strong> $(1,1)$ se candidates ki squared distances:</p>
@@ -1179,7 +1225,7 @@ $$</p>
 <p>$$p=\frac1{17+10+5+1}=\boxed{1/33\approx0.0303}.$$</p>
 <p>Available notes unsquared rule se approximately 0.10 report karte hain. Question ki exact weight definition follow karo; dono answers interchangeable nahi hain.</p>
 <hr />
-<h3 id="topic-42">Q16 — Farthest point choose karna optimal hai?</h3>
+<h3 id="topic-43">Q16 — Farthest point choose karna optimal hai?</h3>
 <p><strong>Question:</strong></p>
 <p>For:</p>
 <p>$$
@@ -1196,6 +1242,7 @@ $$</p>
 <p>B. May be optimal or worse.</p>
 <p>C. Does not converge.</p>
 <p>D. Always unique.</p>
+<p><strong>Initialization is not global optimization:</strong> Farthest-first chooses centers using distances from already selected centers, not by evaluating every possible final partition. Lloyd then improves that starting solution locally. Thus final cost can equal $J^*$ or exceed it; it cannot be below the global minimum by definition. A good initialization heuristic is not a certificate of exact optimality.</p>
 <p><strong>Solution:</strong></p>
 <p>Existing notes mein Aug 2025 / Dec 2025 End Term labels hain.</p>
 <p><strong>Step 1:</strong> Method starting centers choose karta hai; saare possible final partitions compare nahi karta.</p>
@@ -1204,14 +1251,14 @@ $$</p>
 <p><strong>Step 3:</strong> Equality possible hai, worse local solution bhi possible. So $\boxed{B:\ \text{May be optimal or worse}}$.</p>
 <p>Farthest-point deterministic choice aur distance-weighted random K-Means++ same algorithm nahi.</p>
 <hr />
-<h3 id="topic-43">5.2 Ordered aur unordered center probabilities</h3>
+<h3 id="topic-44">5.2 Ordered aur unordered center probabilities</h3>
 <p>Conditional probability mein first center already known hai. Joint ordered probability mein first selection ka chance bhi multiply karo:</p>
 <p>$$\boxed{P(a\text{ first},b\text{ second})=\frac1n
 \frac{\|x_b-x_a\|^2}{\sum_j\|x_j-x_a\|^2}}.$$</p>
 <p>Unordered pair $\{a,b\}$ ke liye $P(a,b)+P(b,a)$; second direction ka denominator change ho sakta hai, blindly double mat karo.</p>
 <p><strong>Example:</strong> Points $\{0,1,3\}$, ordered pair $(0,3)$: first probability $1/3$, conditional second $9/(1+9)$, joint $3/10$. Reverse $(3,0)$: $(1/3)\cdot9/(9+4)=3/13$. Unordered pair probability $3/10+3/13=69/130$.</p>
 <p>Oct 2022 Quiz 1 Q22 isi ordered-pair skill par hai. Uske six-point coordinates/figure MD aur PDF mein missing hain; listed 0.033,0.017,0.067 ko reconstruct nahi kiya ja sakta. Formula ke complete numerical example se method samjho.</p>
-<h3 id="topic-44">5.3 Expected approximation guarantee: Average guarantee, exact optimum nahi</h3>
+<h3 id="topic-45">5.3 Expected approximation guarantee: Average guarantee, exact optimum nahi</h3>
 <p><strong>Definition:</strong> Expected cost means initialization randomness par average objective. Ek individual run ka objective expectation ke equal hona required nahi.</p>
 <p>Standard squared-Euclidean K-Means++ ke liye classical bound:</p>
 <p>$$\boxed{\mathbb E[J_{\rm seed}]\le8(\ln K+2)J_K^*}.$$</p>
@@ -1223,26 +1270,27 @@ $$</p>
 <li>Guarantee global optimum exactly attain karna nahi kehti.</li>
 <li>Poor initialization slow convergence laa sakti hai; bound fixed iteration count promise nahi karta.</li>
 </ul>
-<h3 id="topic-45">Q52 — Deterministic initialization versus expected-cost bound</h3>
+<h3 id="topic-46">Q52 — Deterministic initialization versus expected-cost bound</h3>
 <p><strong>Question:</strong> Which of the following is/are true?</p>
 <p>(i) The initialization of cluster centers is done in a deterministic way in k-means++ algorithm.</p>
 <p>(ii) A constant multiple of the objective function's value for the best possible k-clusters gives an upper bound for the expected value of the objective function after the convergence of k-means++ algorithm.</p>
 <p><code>Week 3.pdf</code>, Q8, pp. 35–36.</p>
+<p><strong>Read the expectation correctly:</strong> Standard K-Means++ samples centers randomly with distance-squared probabilities. Its guarantee bounds the average initialization cost over this randomness. Lloyd updates can only lower each run's cost, so taking expectations preserves the bound for final cost too. For fixed $K$ the factor is fixed; this does not bound each individual run by that same factor.</p>
 <p><strong>Step 1:</strong> First center uniform random; later centers $D^2$-weighted random samples. Statement (i) false. Fixing a random seed makes a run reproducible, not the underlying method deterministic.</p>
 <p><strong>Step 2:</strong> For fixed $K$, the stated expected upper bound follows from the property above and non-increasing Lloyd updates. Statement (ii) true in that sense.</p>
 <p>$$\boxed{\text{Only statement (ii), with the fixed-}K\text{ interpretation}}.$$</p>
 <p>Question theorem identify karna poochhta hai, proof nahi; full approximation-proof ki need nahi.</p>
 <p><strong>Related repeat — PDF Q4 (pp. 21–23):</strong> Different starts can give different clusters; nearest-center assignment; poor initialization can slow convergence: <strong>true</strong>. Non-convergence under standard assumptions and guaranteed global optimum: <strong>false</strong>. “K-Means++ initializes randomly, just like standard K-Means” ambiguous hai: <strong>both randomized</strong> hain, but same uniform seeding scheme nahi. PDF last interpretation mein false marks karta hai; K-Means++ ko deterministic mat samjho.</p>
 <hr />
-<h2 id="topic-46">6. Distance variants: Question ka metric follow karo</h2>
-<h3 id="topic-47">6.1 Euclidean versus Manhattan</h3>
+<h2 id="topic-47">6. Distance variants: Question ka metric follow karo</h2>
+<h3 id="topic-48">6.1 Euclidean versus Manhattan</h3>
 <p><strong>Definition:</strong> Euclidean straight-line distance; Manhattan axis-wise absolute movement ka total. City blocks mein horizontal + vertical travel Manhattan intuition hai.</p>
 <p>$$d_2(x,y)=\sqrt{\sum_j(x_j-y_j)^2},\qquad
 \boxed{d_1(x,y)=\sum_j|x_j-y_j|}.$$</p>
 <p><img src="assets/week3/distances.png" loading="lazy" alt="Straight line versus city-block path" /></p>
 <p>Squared-Euclidean objective ka optimizer mean hai. <strong>Unsquared Manhattan objective</strong> ke liye coordinate-wise median minimizes cost. Example $\{0,0,9\}$: median 0 ka absolute cost 9; mean 3 ka cost 12. Isliye metric/objective badalne par mean-update guarantee automatically transfer mat karo.</p>
 <hr />
-<h3 id="topic-48">Q28 — Same question mein different metrics</h3>
+<h3 id="topic-49">Q28 — Same question mein different metrics</h3>
 <p><strong>Question:</strong></p>
 <p>Consider six data points:</p>
 <p>$$
@@ -1257,6 +1305,7 @@ $$</p>
 <li>Which point has the highest probability of becoming the second center when Manhattan distance is used?</li>
 <li>If $(3,3),(10,10),(12,12)$ are the centers, which center is closest to a new point $(-5,10)$ using Euclidean distance?</li>
 </ol>
+<p><strong>Reset the metric between subparts:</strong> First use $d_1((a,b),(2,2))=|a-2|+|b-2|$ and identify the largest score. Second use squared Euclidean distances from $(-5,10)$ to each candidate center; taking square roots is unnecessary for ordering. The most likely seed and the closest assigned center are different operations.</p>
 <p><strong>Solution:</strong></p>
 <p>Oct 2023 Quiz 1.</p>
 <p><strong>Part (i), Step 1:</strong> $(2,2)$ se Manhattan distances in dataset order: $0,2,4,16,20,22$.</p>
@@ -1270,7 +1319,7 @@ $$</p>
 <p><strong>Step 2:</strong> $113&lt;225&lt;293$, so nearest center $\boxed{(3,3)}$.</p>
 <p>Final: <strong>(i) $(13,13)$; (ii) $(3,3)$</strong>. Part (i) ka metric part (ii) mein carry forward mat karo.</p>
 <hr />
-<h3 id="topic-49">Q40 — Manhattan assignment</h3>
+<h3 id="topic-50">Q40 — Manhattan assignment</h3>
 <p><strong>Question:</strong></p>
 <p>Given:</p>
 <p>$$
@@ -1285,6 +1334,7 @@ $$</p>
 \mu_1=(1,1),\qquad\mu_2=(5,4)
 $$</p>
 <p>To which cluster does point $(2.4,3)$ belong after the assignment step?</p>
+<p><strong>Substitute absolute differences:</strong> For center 1, differences are $1.4,2$, so Manhattan distance 3.4. For center 2, differences are $-2.6,-1$; absolute values give $2.6+1=3.6$. Since 3.4 is smaller, the query joins cluster 1. Do not sum signed differences, which could cancel.</p>
 <p><strong>Solution:</strong></p>
 <p>Aug 2022 End Term.</p>
 <p><strong>Step 1:</strong> First center se distance</p>
@@ -1294,8 +1344,8 @@ $$</p>
 <p><strong>Step 3:</strong> $3.4&lt;3.6$, hence $\boxed{C_1}$.</p>
 <p>Existing notes mein key $C_2$ recorded hai, lekin printed coordinates/metric se $C_1$ milta hai. Calculation ko follow karo.</p>
 <hr />
-<h2 id="topic-50">7. Silhouette: Compact hone ke saath separated bhi?</h2>
-<h3 id="topic-51">7.1 Definition aur formula</h3>
+<h2 id="topic-51">7. Silhouette: Compact hone ke saath separated bhi?</h2>
+<h3 id="topic-52">7.1 Definition aur formula</h3>
 <p><strong>Real life:</strong> Apne group ke customers tumhare similar hain, lekin neighbouring group aur bhi similar hai? Silhouette isi within-group versus other-group comparison ko measure karti hai.</p>
 <p>For point $i$:</p>
 <p>$$a(i)=\frac1{|C_{z_i}|-1}\sum_{j\in C_{z_i},\ j\ne i}d(x_i,x_j),$$</p>
@@ -1327,13 +1377,13 @@ $$</p>
 </table>
 <p>Singleton cluster ke point ka silhouette conventionally 0; $a=b=0$ ho toh bhi zero convention use hota hai. Usual dataset-level silhouette ke liye $2\leq K\leq n-1$ distinct non-empty clusters chahiye.</p>
 <p><img src="assets/week3/silhouette.png" loading="lazy" alt="Silhouette sign and worked numerical examples" /></p>
-<h3 id="topic-52">7.2 Formula ka short calculation</h3>
+<h3 id="topic-53">7.2 Formula ka short calculation</h3>
 <p><strong>Question:</strong> A point has average within-cluster distance 2. Its average distances to the other two clusters are 8 and 10. Find its silhouette score.</p>
 <p><strong>Step 1:</strong> $a=2$. Other-cluster averages mein minimum $b=\min(8,10)=8$.</p>
 <p><strong>Step 2:</strong> $s=(8-2)/8=\boxed{0.75}$. Positive and high: point well matched hai.</p>
 <p><strong>Counterexample:</strong> $a=6,b=3$ ho toh $s=(3-6)/6=\boxed{-0.5}$. Negative score ka matlab exactly $-1$ nahi.</p>
 <hr />
-<h3 id="topic-53">Q39 — Silhouette interpretation</h3>
+<h3 id="topic-54">Q39 — Silhouette interpretation</h3>
 <p><strong>Question:</strong></p>
 <p>For an unlabeled two-feature dataset, centroids $C_1$ and $C_2$ are obtained after K-Means iterations.</p>
 <p>Which statement about the silhouette score $S$ is correct?</p>
@@ -1341,16 +1391,19 @@ $$</p>
 <p>B. $S$ is positive and close to 1.</p>
 <p>C. $S=-1$ exactly.</p>
 <p>D. $S$ is negative but need not be exactly $-1$.</p>
+<p><strong>Interpret the sign using the formula:</strong> $s=(b-a)/\max(a,b)$. Denominator is positive in the ordinary case, so $a&gt;b$ gives negative silhouette: the point is closer on average to another cluster than its own. For $a=6,b=3$, $s=-3/6=-0.5$. A dataset score needs all point scores, not merely center coordinates.</p>
 <p><strong>Solution:</strong></p>
 <p>Aug 2022 End Term.</p>
 <p><strong>Step 1:</strong> Negative silhouette tab aati hai jab relevant points ke liye own-group average $a$ alternative $b$ se bada ho. Dataset score individual values ka average hai.</p>
 <p><strong>Step 2:</strong> $a=6,b=3$ example se $-0.5$ milta hai: negative hone ke liye exactly $-1$ zaroori nahi.</p>
 <p><strong>Step 3:</strong> Existing notes answer D record karte hain, but figure/cluster data supplied PDF mein bhi missing hain. <strong>Given text alone se A/B/D decide nahi kar sakte</strong>; negative score establish karne ke liye distances chahiye. D ka interpretation valid hai, dataset-specific choice unverified hai.</p>
 <hr />
-<h3 id="topic-54">7.3 WCSS aur silhouette ka difference</h3>
+<h3 id="topic-55">7.3 WCSS aur silhouette ka difference</h3>
 <p>WCSS center se squared error measure karta hai: lower better, nonnegative. Silhouette own versus other clusters ke pairwise distances compare karti hai: higher generally better, negative bhi possible.</p>
 <p>Low WCSS alone strong separation prove nahi karta; two compact groups bahut paas bhi ho sakte hain. $K$ select karte waqt scale, meaningful groups, elbow aur silhouette ko saath dekho.</p>
-<h2 id="topic-55">8. Quick revision</h2>
+<h2 id="topic-56">8. Quick revision</h2>
+<p><strong>Concept recall:</strong> Lloyd ka loss kyun nahi badhta? Assignment each point ke liye best available center choose karti hai; update fixed assignments ka exact squared-error minimizer choose karta hai. Dono steps apne variables optimize karte hain, so loss non-increasing; joint global optimum follow nahi hota. More $K$ ka optimal WCSS lower/equal kyun? Larger model old grouping reproduce kar sakta hai; strict decrease har dataset par required nahi.</p>
+<p><strong>Week 4 bridge:</strong> Hard membership $\mathbf1(z_i=k)$ ko uncertain membership $r_{ik}\in[0,1]$ se replace karoge toh cluster mean weighted mean banegi. GMM additionally spreads and mixture probabilities model karta hai; nearest center alone membership decide nahi karega. Is week ki assign–update thinking EM ko samajhne ka starting point hai.</p>
 <table>
 <thead>
 <tr>
@@ -1419,6 +1472,6 @@ $$</p>
 </table>
 <p>Question solve karne se pehle four things circle karo: <strong>given centers ya assignments, distance metric, asked iteration/stage, tie convention</strong>. Final means nikalne ke baad assignment stability check karo. Initialization, final partition aur optimality teen separate ideas hain.</p>
 </article><nav class="next-prev" aria-label="Previous and next weeks"><a href="week2.html">← Week 2</a><a href="week4.html">Week 4 →</a></nav></main>
-<aside class="contents"><details open><summary>On this page</summary><nav aria-label="Topic index"><a class="level-h2" href="#topic-1">1. Clustering, centroid aur objective</a><a class="level-h3" href="#topic-2">1.1 Clustering kya karti hai?</a><a class="level-h3" href="#topic-3">1.2 Notation aur centroid</a><a class="level-h3" href="#topic-4">Q26 — Direct centroid update</a><a class="level-h3" href="#topic-5">1.3 WCSS: Cluster compactness ka measure</a><a class="level-h2" href="#topic-6">2. Lloyd&#x27;s algorithm: Assign → update → repeat</a><a class="level-h3" href="#topic-7">2.1 Ek iteration mein kya badalta hai?</a><a class="level-h3" href="#topic-8">Q1 — Complete iteration and convergence</a><a class="level-h3" href="#topic-9">Q1(ii) — New point add hone par</a><a class="level-h3" href="#topic-10">Q17 — First update; Q45 — Final objective</a><a class="level-h3" href="#topic-11">Q20 — Missing cluster membership</a><a class="level-h3" href="#topic-12">Q35 — Initial assignments given hon toh</a><a class="level-h3" href="#topic-13">Q46 — Two iterations, exact WCSS, and a shared dataset</a><a class="level-h3" href="#topic-14">2.2 Iteration counting ka trap</a><a class="level-h2" href="#topic-15">3. Objective stages, convergence aur choosing K</a><a class="level-h3" href="#topic-16">3.1 Old/new center ka superscript kyun important hai?</a><a class="level-h3" href="#topic-17">Q36 — Assignment ke baad, update se pehle</a><a class="level-h3" href="#topic-18">Q6 — Three objectives ki inequality</a><a class="level-h3" href="#topic-19">3.2 Convergence kya guarantee karti hai?</a><a class="level-h3" href="#topic-20">Q10 — Objective plateau</a><a class="level-h3" href="#topic-21">Q30 — Convergence and outliers</a><a class="level-h3" href="#topic-22">3.3 K badhane se WCSS</a><a class="level-h3" href="#topic-23">Q38 — Minimum possible WCSS</a><a class="level-h3" href="#topic-24">Q47 — WCSS trend aur strict inequality ka trap</a><a class="level-h3" href="#topic-25">3.4 Loss plus complexity penalty se K choose karna</a><a class="level-h3" href="#topic-26">Q48 — Identify loss, penalty and best K from the graph</a><a class="level-h2" href="#topic-27">4. Cluster geometry: Boundary aur convexity</a><a class="level-h3" href="#topic-28">4.1 Nearest-center boundary</a><a class="level-h3" href="#topic-29">Q49 — PCA scores par K-Means, phir updated boundary</a><a class="level-h3" href="#topic-30">4.2 Voronoi cell aur convex hull</a><a class="level-h3" href="#topic-31">Q50 — Three complete Voronoi regions from half-spaces</a><a class="level-h3" href="#topic-32">Q43 — Square ke corners se guaranteed membership</a><a class="level-h3" href="#topic-33">Q51 — Coincident centroids: A tie-handling exception</a><a class="level-h3" href="#topic-34">Q12 — Perfect negative correlation</a><a class="level-h2" href="#topic-35">5. K-Means++: Better starting centers</a><a class="level-h3" href="#topic-36">5.1 Random start se distance-weighted sampling tak</a><a class="level-h3" href="#topic-37">Q2 — Second center probability</a><a class="level-h3" href="#topic-38">Q5 — Second center ke baad scores update</a><a class="level-h3" href="#topic-39">Q46(iii) — Same six points, third-center sampling</a><a class="level-h3" href="#topic-40">Q31 — Probabilities aur assignment ties</a><a class="level-h3" href="#topic-41">Q8 — Distance versus squared-distance weights</a><a class="level-h3" href="#topic-42">Q16 — Farthest point choose karna optimal hai?</a><a class="level-h3" href="#topic-43">5.2 Ordered aur unordered center probabilities</a><a class="level-h3" href="#topic-44">5.3 Expected approximation guarantee: Average guarantee, exact optimum nahi</a><a class="level-h3" href="#topic-45">Q52 — Deterministic initialization versus expected-cost bound</a><a class="level-h2" href="#topic-46">6. Distance variants: Question ka metric follow karo</a><a class="level-h3" href="#topic-47">6.1 Euclidean versus Manhattan</a><a class="level-h3" href="#topic-48">Q28 — Same question mein different metrics</a><a class="level-h3" href="#topic-49">Q40 — Manhattan assignment</a><a class="level-h2" href="#topic-50">7. Silhouette: Compact hone ke saath separated bhi?</a><a class="level-h3" href="#topic-51">7.1 Definition aur formula</a><a class="level-h3" href="#topic-52">7.2 Formula ka short calculation</a><a class="level-h3" href="#topic-53">Q39 — Silhouette interpretation</a><a class="level-h3" href="#topic-54">7.3 WCSS aur silhouette ka difference</a><a class="level-h2" href="#topic-55">8. Quick revision</a></nav></details></aside></div>
+<aside class="contents"><details open><summary>On this page</summary><nav aria-label="Topic index"><a class="level-h2" href="#topic-1">Prerequisites: PCA se clustering tak</a><a class="level-h2" href="#topic-2">1. Clustering, centroid aur objective</a><a class="level-h3" href="#topic-3">1.1 Clustering kya karti hai?</a><a class="level-h3" href="#topic-4">1.2 Notation aur centroid</a><a class="level-h3" href="#topic-5">Q26 — Direct centroid update</a><a class="level-h3" href="#topic-6">1.3 WCSS: Cluster compactness ka measure</a><a class="level-h2" href="#topic-7">2. Lloyd&#x27;s algorithm: Assign → update → repeat</a><a class="level-h3" href="#topic-8">2.1 Ek iteration mein kya badalta hai?</a><a class="level-h3" href="#topic-9">Q1 — Complete iteration and convergence</a><a class="level-h3" href="#topic-10">Q1(ii) — New point add hone par</a><a class="level-h3" href="#topic-11">Q17 — First update; Q45 — Final objective</a><a class="level-h3" href="#topic-12">Q20 — Missing cluster membership</a><a class="level-h3" href="#topic-13">Q35 — Initial assignments given hon toh</a><a class="level-h3" href="#topic-14">Q46 — Two iterations, exact WCSS, and a shared dataset</a><a class="level-h3" href="#topic-15">2.2 Iteration counting ka trap</a><a class="level-h2" href="#topic-16">3. Objective stages, convergence aur choosing K</a><a class="level-h3" href="#topic-17">3.1 Old/new center ka superscript kyun important hai?</a><a class="level-h3" href="#topic-18">Q36 — Assignment ke baad, update se pehle</a><a class="level-h3" href="#topic-19">Q6 — Three objectives ki inequality</a><a class="level-h3" href="#topic-20">3.2 Convergence kya guarantee karti hai?</a><a class="level-h3" href="#topic-21">Q10 — Objective plateau</a><a class="level-h3" href="#topic-22">Q30 — Convergence and outliers</a><a class="level-h3" href="#topic-23">3.3 K badhane se WCSS</a><a class="level-h3" href="#topic-24">Q38 — Minimum possible WCSS</a><a class="level-h3" href="#topic-25">Q47 — WCSS trend aur strict inequality ka trap</a><a class="level-h3" href="#topic-26">3.4 Loss plus complexity penalty se K choose karna</a><a class="level-h3" href="#topic-27">Q48 — Identify loss, penalty and best K from the graph</a><a class="level-h2" href="#topic-28">4. Cluster geometry: Boundary aur convexity</a><a class="level-h3" href="#topic-29">4.1 Nearest-center boundary</a><a class="level-h3" href="#topic-30">Q49 — PCA scores par K-Means, phir updated boundary</a><a class="level-h3" href="#topic-31">4.2 Voronoi cell aur convex hull</a><a class="level-h3" href="#topic-32">Q50 — Three complete Voronoi regions from half-spaces</a><a class="level-h3" href="#topic-33">Q43 — Square ke corners se guaranteed membership</a><a class="level-h3" href="#topic-34">Q51 — Coincident centroids: A tie-handling exception</a><a class="level-h3" href="#topic-35">Q12 — Perfect negative correlation</a><a class="level-h2" href="#topic-36">5. K-Means++: Better starting centers</a><a class="level-h3" href="#topic-37">5.1 Random start se distance-weighted sampling tak</a><a class="level-h3" href="#topic-38">Q2 — Second center probability</a><a class="level-h3" href="#topic-39">Q5 — Second center ke baad scores update</a><a class="level-h3" href="#topic-40">Q46(iii) — Same six points, third-center sampling</a><a class="level-h3" href="#topic-41">Q31 — Probabilities aur assignment ties</a><a class="level-h3" href="#topic-42">Q8 — Distance versus squared-distance weights</a><a class="level-h3" href="#topic-43">Q16 — Farthest point choose karna optimal hai?</a><a class="level-h3" href="#topic-44">5.2 Ordered aur unordered center probabilities</a><a class="level-h3" href="#topic-45">5.3 Expected approximation guarantee: Average guarantee, exact optimum nahi</a><a class="level-h3" href="#topic-46">Q52 — Deterministic initialization versus expected-cost bound</a><a class="level-h2" href="#topic-47">6. Distance variants: Question ka metric follow karo</a><a class="level-h3" href="#topic-48">6.1 Euclidean versus Manhattan</a><a class="level-h3" href="#topic-49">Q28 — Same question mein different metrics</a><a class="level-h3" href="#topic-50">Q40 — Manhattan assignment</a><a class="level-h2" href="#topic-51">7. Silhouette: Compact hone ke saath separated bhi?</a><a class="level-h3" href="#topic-52">7.1 Definition aur formula</a><a class="level-h3" href="#topic-53">7.2 Formula ka short calculation</a><a class="level-h3" href="#topic-54">Q39 — Silhouette interpretation</a><a class="level-h3" href="#topic-55">7.3 WCSS aur silhouette ka difference</a><a class="level-h2" href="#topic-56">8. Quick revision</a></nav></details></aside></div>
 <footer>MLT Notes · Notes by Shiva <span>Learn one concept at a time.</span></footer>
 </body></html>

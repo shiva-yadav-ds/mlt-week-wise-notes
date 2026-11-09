@@ -21,6 +21,14 @@
 
 ---
 
+## Prerequisites aur do connected goals
+
+Week 10 se $m_i=y_i(w^Tx_i+b)$, canonical requirement $m_i\ge1$, regularizer $\|w\|^2/2$, and $w=\sum_i\alpha_i y_i x_i$. Week 6 se bias/variance; Week 7 se decision stumps/trees, depth and information gain. Is week first strict separation relax karega, phir multiple models ko combine karke single-model limitations address karega.
+
+$\xi_i$ (xi) sample ka margin shortfall, $C>0$ shortfall ki cost. SVM $\alpha_i$ **sample-specific** coefficient. Later AdaBoost $a_t$ **learner-specific** vote weight aur $D_t(i)$ **sample-sampling** weight hoga. They answer different questions; all ko one probability vector samajhna wrong hoga.
+
+Soft-margin loss/constraints feasible rakhte hain even when two identical inputs ke opposite labels hon. Ensemble ka separate need: one noisy tree prediction unstable ho sakti hai, ya one stump pattern express nahi kar paata. Bagging variation average karega; boosting successive weighted rules combine karega.
+
 ## 1. Soft-margin SVM: Perfect separation possible na ho toh?
 
 ### 1.1 Week 10 se connection
@@ -115,6 +123,16 @@ $$\boxed{\min_{w,b}\frac12\|w\|^2+C\sum_i\max(0,1-y_if_i)}.$$
 **Why negative C is invalid here:** Slack has no upper bound. If $C<0$, sending a feasible slack to infinity drives objective to $-\infty$; the optimization is unbounded below.
 
 **At C = 0:** Slack no longer penalized, so it is not uniquely forced to its minimum. $\max(0,1-m)$ still gives the minimum feasible slack, but other larger values can also be optimal. Also $w=0$ does not define a meaningful separating hyperplane; do not interpret $2/\|w\|$ as a useful trained margin there.
+
+**Slack ko classification error se alag calculate karo — teaching example:** Three signed margins $1.4,0.4,-0.6$. Predicted side first two ke liye correct, third wrong. Minimum slacks $0,0.6,1.6$; total hinge loss 2.2, mistake count 1. With $\|w\|^2/2=0.5,C=2$, objective $0.5+2(2.2)=4.9$.
+
+Correct-side low-confidence point cost de sakta hai; wrong point ka cost 1 se larger ho sakta hai. Slack dimensionless score shortfall hai, not count or raw distance. Q8 graph se per-point shortfall; Q20 positive-slack count, mistakes count aur slack sum distinguish karta hai.
+
+**$C$ versus ridge $\lambda$:** Divide SVM objective by $C>0$:
+
+$$\frac1{2C}\|w\|^2+\sum_i\max(0,1-m_i).$$
+
+So larger $C$ means **weaker relative norm regularization**, opposite direction from larger ridge $\lambda$. Mean hinge loss convention mein equivalent coefficient would involve $N$ too. Parameter names dekhkar effect decide nahi karna; expression read karo.
 
 ### 1.7 Q8 — Read slack values from a graph
 
@@ -266,6 +284,14 @@ Yeh two equations, $\alpha_i+\beta_i=C$, aur minimum-slack formula se saare regi
 **Counterexample:** Correctly classified point with $m=0.5$ has $\xi=0.5$ and $\alpha=C$. Thus “$\alpha=C$ means misclassified” is false.
 
 **On-margin subtlety:** $m=1$ can have $\alpha=0$ in degenerate/redundant cases; graph position alone does not always establish strict positivity.
+
+**Three multiplier cases ko derive karo:** $C>0$ and optimal minimum slacks assume karo.
+
+1. $m_i<1$ implies $\xi_i=1-m_i>0$. Since $\beta_i\xi_i=0$, $\beta_i=0$ and $\alpha_i=C$.
+2. $m_i>1$ implies $\xi_i=0$, but $1-m_i-\xi_i<0$. Its product with $\alpha_i$ zero hona chahiye, so $\alpha_i=0$.
+3. $m_i=1$ and $\xi_i=0$ make **both products automatically zero**. Feasibility only $0\le\alpha_i\le C$ says; graph se exact value nahi.
+
+Interior coefficient $0<\alpha_i<C$ means $\beta_i>0$, so slack zero; first product then forces margin exactly 1. $\alpha_i=C$ se incorrect label conclude nahi hota: $m_i=0.4$ example correct hai. Q21 strict inequalities; Q22 zero-slack supports; Q17 interior coefficient; Q5 all cases ek graph mein test karta hai.
 
 ### 2.3A Q21 — Strict versus non-strict margin inequalities
 
@@ -801,6 +827,15 @@ Yeh formula averaged real-valued predictions ka hai; classification majority-vot
 
 **Best typical candidates:** High-variance, low-bias learners, such as deep unpruned trees. Bagging mainly reduces variance; it is not primarily a systematic bias-removal method.
 
+**Averaging ka variance formula derive karo:** $B$ real predictions $h_b$ ke average ka variance
+
+$$\operatorname{Var}\left(\frac1B\sum_b h_b\right)
+=\frac1{B^2}\left[\sum_b\operatorname{Var}(h_b)+\sum_{b\ne c}\operatorname{Cov}(h_b,h_c)\right].$$
+
+Equal variances $\sigma^2$, pairwise covariance $\rho\sigma^2$ assume karo. $B$ diagonal terms aur $B(B-1)$ ordered cross terms, so result $\sigma^2[\rho+(1-\rho)/B]$. Independence of bootstrap **draws across bags** fitted predictions ko independent across random training datasets automatically nahi banati: same source dataset share hota hai.
+
+**Meaning:** Ten identical copied trees ki $\rho=1$, averaging se variance reduce nahi. Random forest feature randomness correlation lower karne ki attempt hai; more trees alone correlation floor remove nahi karte. Q19 bagging assumptions; Q14 candidate-feature count versus diversity/strength; Q13 supplied probabilities ka aggregation. Hard labels vote aur probabilities average question-specific operations hain.
+
 ### 4.5 Q19 — Bagging properties
 
 **Source:** 2026 Sep 13 ET, Q19.
@@ -1116,6 +1151,18 @@ For $0<\epsilon_t<0.5$, incorrect samples increase weight; correct samples decre
 - $\epsilon=0.5$: coefficient 0; no useful weighted vote or redistribution.
 - $\epsilon>0.5$: coefficient negative. Standard binary weak-learning setup seeks error below 0.5; flipping all predictions gives error $1-\epsilon$ if such a reversed classifier is permitted.
 - Mislabelled/noisy outliers can receive repeatedly increasing attention; boosting is not automatically robust to label noise.
+
+**First AdaBoost round — teaching example:** Four samples equal weights $1/4$; chosen stump only one wrong, so $\epsilon=1/4$. Learner coefficient
+
+$$a=\tfrac12\ln[(3/4)/(1/4)]=\tfrac12\ln3.$$
+
+Wrong sample multiplies by $e^a=\sqrt3$; correct sample by $e^{-a}=1/\sqrt3$. Unnormalized wrong weight $\sqrt3/4$, each correct $1/(4\sqrt3)$. Their total
+
+$$Z=\frac{\sqrt3}{4}+\frac3{4\sqrt3}=\frac{\sqrt3}{2}.$$
+
+Divide by $Z$: wrong point gets $1/2$, each of three correct points $1/6$; total 1. **Normalizing is not optional for sampling probabilities.** For an explicitly unnormalized weight question, stop before dividing.
+
+Q6 correct versus wrong weight direction; Q11 learner selection/coefficient; Q15 normalized individual weights; Q23 explicitly unnormalized weight; Q24 normalized sampling. Same update, different requested stopping stage.
 
 ### 7.5 Q6 — Which samples lose weight?
 
@@ -1450,6 +1497,14 @@ Each correct point gets $1/140$. Check $30/60+70/140=1$. Wrong group total 0.5; 
 
 **Source correction:** Solution's starting $1/1000$ is a typo for $1/100$. The square roots in its coefficient/options matter: $\ln\sqrt{7/3}=\frac12\ln(7/3)$, not $\ln(7/3)$. Use visual formula, not faulty extracted text.
 
+**Why classifier vote is half log-odds:** For a fixed current stump, total unnormalized weight after choosing coefficient $a$ is
+
+$$Z(a)=(1-\epsilon)e^{-a}+\epsilon e^a.$$
+
+Differentiate: $Z'(a)=-(1-\epsilon)e^{-a}+\epsilon e^a=0$ implies $e^{2a}=(1-\epsilon)/\epsilon$. Take natural log and divide by 2. Thus the half factor follows from balancing mistaken/correct total mass; removing it describes a different update convention.
+
+At the minimizing coefficient both groups' unnormalized masses equal $\sqrt{\epsilon(1-\epsilon)}$. Normalizing gives half to each **group**, not half to every wrong point. One high-weight mistake in a later round need not have error $1/N$: sum current $D_t(i)$ over mistakes first. Q15 one initial mistake; Q24 thirty initial mistakes; both use group mass, then divide among equally weighted mistaken points.
+
 ### 7.9 Training-error bound: What it actually guarantees
 
 For standard binary AdaBoost with $0<\epsilon_t<1/2$, define edge:
@@ -1583,6 +1638,10 @@ $$\boxed{\text{a, b, c, e, h, i, j, k}}.$$
 | Error bound decreases, so every realized error must decrease | Upper bound and actual error are different |
 
 ### 8.3 Last-minute solving checklist
+
+**Recall:** Support vector with zero slack possible? Yes, on correct margin with positive coefficient. Bagging bags different means predictions independent? No; learners still share source data and strong signals. Boosting weight means probability of class? No; $D_t(i)$ sampling importance and $a_t$ vote strength. Adding a useful round guarantees actual zero-one training error decrease? No; the exponential-loss bound decreases under its assumptions.
+
+**Week 12 bridge:** Slack became hinge loss by eliminating an auxiliary variable. Next week compares hinge, perceptron, logistic and squared losses on the same margin axis, then replaces manually chosen features with learned nonlinear hidden layers. Decision stumps and neurons both make simple decisions, but neural layers train jointly through chain-rule gradients.
 
 1. **SVM:** Read true label and score; calculate signed margin first.
 2. **Slack:** Use $\max(0,1-m)$, not distance guessed from pixels.

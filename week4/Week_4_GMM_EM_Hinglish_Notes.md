@@ -23,6 +23,21 @@
 
 ---
 
+## Prerequisites: Distance-based grouping se probabilistic learning
+
+Week 3 mein point ko nearest center mila. Ab poochhenge: **data kis distribution se aaya, aur unknown parameters ke kaunse values us data ko explain karte hain?** Probability basics: disjoint alternatives ki probabilities add; conditionally independent observations ki likelihoods multiply; Bayes rule prior belief ko observed evidence se update karta hai.
+
+| Notation | Role |
+|---|---|
+| $x_i$, $D$ | Observed sample, complete observed dataset |
+| $\theta$ | Unknown parameter, possibly vector |
+| $f(x;\theta)$ | Specified model ki PMF/PDF |
+| $L(\theta)$, $\ell(\theta)$ | Same fixed data ki likelihood, its natural log |
+| $\hat\theta$, $\arg\max$ | Estimated parameter, maximizing parameter value |
+| $\propto$ | Parameter-independent positive normalizing factor omitted |
+
+$\ln$ natural log; $e^a=\exp(a)$ its inverse. Hats estimates identify karte hain; they do not mean future outcome guaranteed hai. Bernoulli/Beta ka $p$ unknown success probability hai; $p(\theta\mid D)$ notation probability density bhi denote kar sakti hai. Formula mein argument read karke difference identify karo.
+
 ## 1. Estimation: Data dekhkar unknown parameter find karna
 
 ### 1.1 Probabilistic model ka meaning
@@ -98,6 +113,16 @@ $$\boxed{\hat p_{\mathrm{MLE}}=\frac{s}{s+f}=\frac{s}{n}}.$$
 **Real life:** 10 tosses mein 8 heads → fitted heads probability 0.8. Iska matlab next toss certainly head nahi; estimated chance 0.8 hai.
 
 **Boundary property:** All zeros → $\hat p=0$; all ones → $\hat p=1$, when parameter space includes endpoints. Tiny sample par extreme MLE aa sakti hai; Bayesian prior later ise moderate karega.
+
+**Fraction ko derive karo, memorize nahi:** $s$ successes, $f$ failures fixed hain. Interior $0<p<1$ par:
+
+$$\ell'(p)=\frac{s}{p}-\frac{f}{1-p}=0
+\Rightarrow s(1-p)=fp
+\Rightarrow s=(s+f)p.$$
+
+Hence $\hat p=s/(s+f)$. Minus sign $\ln(1-p)$ ki chain rule se aata hai. Both counts positive hon toh $\ell''(p)=-s/p^2-f/(1-p)^2<0$, so maximum. All-success/all-failure cases boundary par directly check karo.
+
+**Teaching example:** Outcomes $1,0,1,1$ give $L(p)=p^3(1-p)$. At $p=1/2$, $L=1/16=0.0625$; at $p=3/4$, $L=27/256\approx0.10547$. Data higher fraction support karte hain. Q3/Q9 and Q17 formula reverse karke **count** recover karte hain; Q10 stopping rule ke through observed sequence/count identify karta hai. First count observations correctly, then estimate invert karo.
 
 ### Q3 and Q9 — Type-B count from Bernoulli MLE
 
@@ -677,6 +702,14 @@ Prior mean aur sample fraction ka weighted average hai. Fixed prior ke saath n l
 
 **Counterexample:** Beta(1,1) prior, one success and no failures → MLE 1, posterior Beta(2,1), mean $2/3$. Uniform prior ke saath **posterior mean** MLE ke equal hona necessary nahi.
 
+**Bayes update ka small calculation — teaching example:** Prior Beta(2,2) has mean $2/4=1/2$. Three successes, one failure ki likelihood $p^3(1-p)$. Prior density proportional to $p^1(1-p)^1$, so posterior proportional to
+
+$$p^{1+3}(1-p)^{1+1}=p^4(1-p)^2.$$
+
+Beta exponents parameter-minus-one hote hain, hence posterior Beta(5,3). Its mean $5/8=0.625$, interior MAP $(5-1)/(5+3-2)=4/6=2/3$, MLE $3/4$. These three answers different questions answer karte hain: posterior average, posterior peak, and likelihood peak.
+
+Q5, Q12, Q19, Q22 mein method unchanged hai. Prior and data counts change hone se updated shapes aur prior/data balance change hota hai. Q24 mein Gamma–Exponential family hai, but same operation: likelihood × prior, parameter powers collect, posterior density pattern match.
+
 ### Q5 — Beta prior with eight ones and five zeros
 
 **Source:** May 2024 Quiz 1, Q5.
@@ -1125,6 +1158,10 @@ component k ka **effective sample count** hai; it can exceed 1 and need not be i
 
 **Prior vs posterior:** $\pi_k=P(z_i=k)$ before seeing point; $r_{ik}=P(z_i=k\mid x_i)$ after observing point. Same numbers hona necessary nahi.
 
+**E-step Bayes rule ka direct use hai:** $P(z=k,x)=\pi_k\phi_k(x)$ joint contribution hai. Observing $x$ ke baad divide by all possible components ka total $\sum_j\pi_j\phi_j(x)$. Numerator component ka score; denominator same observation ka total score. Densities individually 1 se badi ho sakti hain, normalized responsibilities nahi.
+
+**Teaching example — one point:** Current mixture weights $(0.8,0.2)$, a point par Gaussian density values $(0.1,0.3)$. Weighted scores $(0.08,0.06)$, total $0.14$, hence responsibilities $(4/7,3/7)$. Component 2 ki density three times hai, phir bhi component 1 more probable because prior weight four times hai. Q11 density calculation deta hai; Q25 unequal priors ke saath isi comparison ko test karta hai. Q4 mein row sum already sufficient hai, isliye Gaussian PDF calculate karna unnecessary.
+
 ### Q4 — Missing responsibility by normalization
 
 **Source:** May 2024 Quiz 1, Q4.
@@ -1254,6 +1291,15 @@ Multivariate analogue:
 $$\mu_k^{\mathrm{new}}=\frac1{N_k}\sum_i r_{ik}x_i,\qquad\Sigma_k^{\mathrm{new}}=\frac1{N_k}\sum_i r_{ik}(x_i-\mu_k^{\mathrm{new}})(x_i-\mu_k^{\mathrm{new}})^T.$$
 
 **Tiny calculation:** Points 0,2 with component weights 0.75,0.25 give $N_k=1$, mean 0.5, variance $0.75(0-0.5)^2+0.25(2-0.5)^2=0.75$. If dataset contains these two points, mixture weight update is $1/2$.
+
+**E se M tak same toy data par poora pass — teaching example:** Two points $x=(0,2)$ ke E-step rows $(3/4,1/4)$ and $(1/4,3/4)$ maan lo. Component counts $N_1=N_2=1$. Weighted sums $T_1=(3/4)0+(1/4)2=1/2$, $T_2=(1/4)0+(3/4)2=3/2$. Thus new means $1/2,3/2$ and weights $1/2,1/2$.
+
+First component variance:
+
+$$\frac{(3/4)(0-1/2)^2+(1/4)(2-1/2)^2}{1}
+=\frac3{16}+\frac9{16}=\frac34.$$
+
+Second by symmetry also $3/4$. Only ab next E-step new means/variances use karega. Ek M-step ke beech responsibilities recompute nahi karni. Q8, Q26, Q27 exactly these weighted counts/products ko larger tables mein test karte hain.
 
 ### Q8 — Weighted mean update, with an invalid supplied responsibility
 
@@ -1614,6 +1660,10 @@ $$\boxed{\text{Paper's intended answer: (b), (d), (e)}}.$$
 | EM monotonicity means global convergence | Local/stationary behavior and degeneracy remain possible |
 
 ### 10.3 Solving checklist
+
+**Recall:** (1) One observation ke possible hidden groups add kyun? Alternatives mutually exclusive hain. (2) Different IID observations multiply kyun? Conditional independence. (3) Logs lo toh mixture sum kyun bachta hai? Log product ko sum karta hai, sum ko distribute nahi karta. (4) Mean denominator $N_k$ kyun? Component ko total fractional membership utna hi mila hai.
+
+**Week 5 bridge:** Gaussian noise ke under numerical targets ki likelihood maximize karoge toh squared residuals minimize karna niklega. Is week ka product → log → optimize sequence regression ki normal equations ko probabilistic meaning dega. Week 8 class-conditional densities aur Bayes rule ko supervised classification mein use karega.
 
 1. Model identify karo: Bernoulli, exponential, Poisson, Pareto, uniform or mixture?
 2. Observation support aur parameter constraints write karo.

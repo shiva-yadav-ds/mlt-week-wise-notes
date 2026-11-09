@@ -20,6 +20,14 @@
 
 ---
 
+## Prerequisite bridge: Purane models ko ek training language mein jodo
+
+Week 5 squared residual loss; Week 9 perceptron updates, sigmoid/BCE and gradient descent; Weeks 10–11 signed margin and hinge; Week 6 regularization. Is week ka first goal un losses ka meaning compare karna. Second goal learned hidden features ka forward calculation aur training gradient samajhna.
+
+$y\in\{-1,+1\}$ loss-graph signed label; $t\in\{0,1\}$ BCE target, with $y=2t-1$. $f$ real classification score, $u=yf$ signed functional margin, $p=\sigma(f)$ model probability. Neural network mein $z$ pre-activation, $a=g(z)$ post-activation; $W$ matrix of learned weights, $b$ learned bias. A number ka role pehle identify karo, phir its formula use karo.
+
+**Learning order:** Same margin par loss compare → one neuron → multiple neurons/layers and parameter count → full forward pass → output loss → local derivatives → backward sensitivities → one simultaneous parameter update. Forward-pass questions mein weights fit nahi karne; backward example mein actual learning step hota hai.
+
 ## 1. Classification loss: Model ki galti ko number kaise dein?
 
 ### 1.1 Loss function ka meaning
@@ -181,6 +189,12 @@ Left side negative margin = wrong side. Right side positive margin = correct sid
 | $2$ | 1 | 0 | 0.1269 | 0 |
 
 **Graph recognition:** Parabola → squared; kink at 1 → hinge; smooth decreasing curve → logistic; kink at 0 → perceptron.
+
+**Different losses ka need ek example se:** True signed label $+1$ aur score $f=0.5$ gives correct label, margin $u=0.5$. Squared loss $(0.5-1)^2=0.25$; hinge $1-0.5=0.5$; logistic $\ln(1+e^{-0.5})\approx0.4741$; perceptron 0. Score improve to $f=2$: losses $1,0,0.1269,0$. Same correct classification, different objectives prefer different scores.
+
+Why? Squared loss **target score 1** seekhti hai; hinge **at least margin 1**; logistic ever-increasing correct-class probability; perceptron nonnegative signed margin par penalty stop karti hai. Q2 graph shapes; Q9 zero classification error versus positive surrogate loss; Q10 regularizer versus data loss. Raw numerical magnitudes across different losses ko directly model-quality ranking mat banana; compare each model with requested evaluation criterion.
+
+**Gradient directions bhi compare karo:** Margin derivative squared $2(u-1)$, hinge $-1$ below 1 / 0 above 1, logistic $-1/(1+e^u)$, perceptron $-1$ below 0 / 0 above 0. Corners par subgradient needed. At $u=2$, squared gradient positive hai, so gradient descent margin **decrease** karegi; logistic negative hai, so increase karegi. Graph ka right-side behavior ab update se connect hota hai.
 
 ### Q2 — Identify loss curves and their intersection
 
@@ -436,6 +450,15 @@ Isliye sirf linear layers stack karne se nonlinear boundaries represent karne ki
 
 **Counterexample:** Two linear layers laga dene se XOR jaisi non-linearly separable pattern ka linear-separator limitation automatically solve nahi hota. Suitable nonlinear hidden layer ki zaroorat hoti hai.
 
+**Nonlinearity kya extra kar sakti hai — teaching example:** Binary inputs $x_1,x_2\in\{0,1\}$ ka XOR target 1 only jab exactly one input 1 ho. Hidden activations choose karo:
+
+$$a_1=\operatorname{ReLU}(x_1-x_2),\qquad
+ a_2=\operatorname{ReLU}(x_2-x_1).$$
+
+For $(0,0)$ both zero; $(1,0)$ gives $(1,0)$; $(0,1)$ gives $(0,1)$; $(1,1)$ both zero. Score $f=a_1+a_2-1/2$ is negative for equal inputs and positive for unequal inputs. Thus linear combination of **nonlinear learned-feature candidates** can separate XOR. This constructs weights to show representation capacity; it does not claim gradient descent necessarily learns these exact weights.
+
+One neuron ka calculation still dot product → bias add → activation hai. Q1 one sigmoid node; Q4/Q5 whole hidden layer; Q6 active/inactive ReLU paths. Network drawing complex dikh sakti hai, but each node same local operation repeat karti hai.
+
 ### Q1 — Output of a sigmoid hidden neuron
 
 **Source:** 2024 Apr 28 ET, Q1.
@@ -552,6 +575,10 @@ $$\boxed{N_{\mathrm{biases}}=\sum_{\ell=1}^L d_\ell,\qquad N_{\mathrm{total}}=\s
 **Counterexample:** Neurons count $3+4+2=9$ is not parameter count 26. Connections aur biases count karne hain, nodes nahi.
 
 **“Ignore biases”** likha ho toh sirf products sum karo. Activation ReLU vs sigmoid choose karne se standard dense layer ke weight count par effect nahi padta.
+
+**Count ko forward shapes se verify karo:** For $2\to2\to1$ dense network, hidden matrix $W$ shape $2\times2$ (4 weights), hidden bias length 2, output vector $v$ length 2, output bias scalar (1). Total $4+2+2+1=9$. Ek input change hone se activations change hoti hain, **parameter count** nahi. Sample count $n$ is count mein multiply nahi hota: same learned network all examples par reuse hota hai.
+
+Biases exclude hon toh 6. ReLU/sigmoid formula has no extra learnable coefficient in these standard activations. Q3/Q7 weights-only variants; Q8 multiple output neurons; Q11 biases included. Neuron count se connection count infer karne se pehle “fully connected?” aur “ignore biases?” read karo.
 
 ### Q3 — Binary network: Parameters and activation choices
 
@@ -716,6 +743,14 @@ Output identity hai, so output pre-activation itself prediction hai. Target $y$ 
 $$\boxed{L=(\hat y-y)^2}.$$
 
 Question $L=\frac12(\hat y-y)^2$ bole tabhi factor $1/2$ use karo; otherwise apni taraf se add mat karo.
+
+**First complete forward pass — teaching example:** $x=(1,2)^T$, $W=\begin{pmatrix}1&-1\\2&1\end{pmatrix}$, $b=(0,-1)^T$, ReLU hidden layer, output $v=(3,1)^T,c=0$. Hidden pre-activations:
+
+$$z=Wx+b=(1-2,\ 2+2-1)^T=(-1,3)^T.$$
+
+Hidden outputs $a=(0,3)^T$. Identity regression output $\hat y=3(0)+1(3)=3$. If target 2, squared loss $(3-2)^2=1$. Same hidden values with sigmoid output would instead give $p=1/(1+e^{-3})\approx0.9526$, a class probability; that is a changed task/output model.
+
+Keep a small table: neuron → weighted sum → bias → pre-activation → activation. First neuron ke negative sum ko next layer tak pass karna ReLU bypass kar dega. Q4 identity output; Q5 sigmoid output; Q6 asks squared loss after keeping full-precision prediction.
 
 ### Q4 — Two ReLU neurons and a regression output
 
@@ -991,6 +1026,14 @@ $$\delta^{[\ell]}=\left((W^{[\ell+1]})^T\delta^{[\ell+1]}\right)\odot g_\ell'(z^
 
 $\odot$ means elementwise multiply. Last equation ka meaning: next layer ki sensitivity weights ke through peeche bhejo, then current activation ke local derivative se multiply karo. Batch **mean** loss ho toh sample gradients average hote hain.
 
+**Backprop local derivatives ko same tiny network par apply karo:** Above regression example has prediction 3, target 2, loss 1. Output sensitivity $\partial L/\partial\hat y=2(3-2)=2$. Output weights gradient $2a=(0,6)$; output bias gradient 2. Hidden sensitivities before ReLU are $2v=(6,2)$; gates at $z=(-1,3)$ are $(0,1)$, hence hidden pre-activation gradients $(0,2)$.
+
+For hidden row 2, $z_2=W_{21}x_1+W_{22}x_2+b_2$, so gradients $\partial L/\partial W_{21}=2(1)=2$, $\partial L/\partial W_{22}=2(2)=4$, $\partial L/\partial b_2=2$. Row 1 gradients zero **for this example**. All gradients old forward values se nikle hain.
+
+With $\eta=0.01$, new row 2 weights $(1.98,0.96)$, bias $-1.02$; new output weights $(3,0.94)$, bias $-0.02$. Fresh forward pass: $z_2=1.98+0.96(2)-1.02=2.88$, output $0.94(2.88)-0.02=2.6872$, loss $(2.6872-2)^2=0.47224384<1$. Derivatives calculation **backprop**, subsequent subtraction **gradient descent**. Q6's existing worked update below applies same path/gate logic to its official forward values.
+
+**Why paths add:** If an activation feeds multiple next-layer neurons, its small change affects all those paths. Sensitivity is their weighted sum, then local activation derivative gates that sum. Matrix transpose in backprop routes outgoing weights back to their source activations; $\odot$ applies one derivative to each matching neuron, not matrix multiplication.
+
 ### 6.4 Worked learning example: Q6 ke same forward values se ek update
 
 Ye backward pass samajhne ke liye **practice continuation** hai; Q6 ka exam answer already $\hat y=0.1,L=1.21$ hai. Forward calculation repeat nahi karenge.
@@ -1112,6 +1155,10 @@ Loss $1.21\to1.08491$ decrease hui. Prediction target ki taraf move hui. Ye part
 | Update one weight and use it for remaining gradients | Same old forward state se all gradients compute karo, then update |
 
 ### 7.3 Question solve karne ka checklist
+
+**Recall:** Zero training classification error imply zero hinge/BCE? No: margin requirement/confidence still matter. ReLU hidden output zero imply permanent dead neuron? No: it may activate on another input or later parameters. Why retain unrounded forward values? Gradients/loss use them; rounding intermediate probabilities can change required numerical answers. Why one update changes multiple parameters together? All derivatives belong to the same old computation graph.
+
+**Course connection:** PCA learned directions to preserve input variance; regression learned weights to predict numerical labels; NB learned class-wise data distributions; logistic/SVM learned scores with different losses; trees/ensembles combined feature decisions; ANN now learns intermediate nonlinear features jointly with prediction weights. When an unfamiliar question arrives, identify **representation, prediction rule, training objective, update rule, and evaluation** separately. Changed representation can keep the same loss; changed loss can keep the same score architecture.
 
 1. **Loss graph:** Axis signed margin hai ya raw score? Kink, minimum aur zero region check karo.
 2. **Labels:** Margin formulas mein $\pm1$; BCE formula mein 0/1.

@@ -12,6 +12,7 @@
 <div class="layout"><aside class="weeks"><details open><summary>Course weeks <span>12</span></summary><nav aria-label="Course weeks"><a class="week-link " href="index.html" ><span class="week-number">01</span><span>Principal Component Analysis</span></a><a class="week-link " href="week2.html" ><span class="week-number">02</span><span>Kernel PCA</span></a><a class="week-link " href="week3.html" ><span class="week-number">03</span><span>K-Means Clustering</span></a><a class="week-link " href="week4.html" ><span class="week-number">04</span><span>Estimation, GMM and EM Algorithm</span></a><a class="week-link " href="week5.html" ><span class="week-number">05</span><span>Linear and Kernel Regression</span></a><a class="week-link " href="week6.html" ><span class="week-number">06</span><span>Regularisation and Cross-Validation</span></a><a class="week-link " href="week7.html" ><span class="week-number">07</span><span>KNN and Decision Tree</span></a><a class="week-link " href="week8.html" ><span class="week-number">08</span><span>Naive Bayes</span></a><a class="week-link " href="week9.html" ><span class="week-number">09</span><span>Perceptron and Logistic Regression</span></a><a class="week-link " href="week10.html" ><span class="week-number">10</span><span>Support Vector Machine</span></a><a class="week-link " href="week11.html" ><span class="week-number">11</span><span>Soft-Margin SVM and Ensemble Methods</span></a><a class="week-link selected" href="week12.html" aria-current=page><span class="week-number">12</span><span>Loss Functions and Artificial Neural Networks</span></a></nav></details></aside>
 <main id="notes"><div class="eyebrow">MACHINE LEARNING TECHNIQUES <span>/ WEEK 12</span></div><article><h1 id="topic-0">MLT Week 12: Loss Functions and Artificial Neural Networks Notes</h1>
 <p><strong>Flow:</strong> Prediction ki galti measure karna → classification losses → neuron ka calculation → activations aur architecture → parameter counting → forward pass → loss → backward pass aur learning.</p>
+<p><strong>Network ko ek calculation chain samjho:</strong> Input → weighted sums plus biases → hidden activations → next weighted sums → output activation → target-dependent loss. Har layer mein $z$ (before activation) aur $a$ (after activation) separately likho. Parameter counting mein weights/biases count hote hain; inputs, intermediate activations aur one-sample loss additional learned parameters nahi hain.</p>
 <h2 id="topic-1">Topic index</h2>
 <table>
 <thead>
@@ -70,14 +71,18 @@
 </tbody>
 </table>
 <hr />
-<h2 id="topic-2">1. Classification loss: Model ki galti ko number kaise dein?</h2>
-<h3 id="topic-3">1.1 Loss function ka meaning</h3>
+<h2 id="topic-2">Prerequisite bridge: Purane models ko ek training language mein jodo</h2>
+<p>Week 5 squared residual loss; Week 9 perceptron updates, sigmoid/BCE and gradient descent; Weeks 10–11 signed margin and hinge; Week 6 regularization. Is week ka first goal un losses ka meaning compare karna. Second goal learned hidden features ka forward calculation aur training gradient samajhna.</p>
+<p>$y\in\{-1,+1\}$ loss-graph signed label; $t\in\{0,1\}$ BCE target, with $y=2t-1$. $f$ real classification score, $u=yf$ signed functional margin, $p=\sigma(f)$ model probability. Neural network mein $z$ pre-activation, $a=g(z)$ post-activation; $W$ matrix of learned weights, $b$ learned bias. A number ka role pehle identify karo, phir its formula use karo.</p>
+<p><strong>Learning order:</strong> Same margin par loss compare → one neuron → multiple neurons/layers and parameter count → full forward pass → output loss → local derivatives → backward sensitivities → one simultaneous parameter update. Forward-pass questions mein weights fit nahi karne; backward example mein actual learning step hota hai.</p>
+<h2 id="topic-3">1. Classification loss: Model ki galti ko number kaise dein?</h2>
+<h3 id="topic-4">1.1 Loss function ka meaning</h3>
 <p><strong>Short definition:</strong> Loss ek numerical penalty hai jo batati hai ki model ki prediction target se kitni disagree karti hai.</p>
 <p><strong>Real-life connection:</strong> Test mein marks deduct karne ka rule socho. Sirf answer wrong hai ya kitna wrong hai—different marking schemes different penalties denge. ML mein loss function wahi marking scheme hai.</p>
 <p>Single example ki loss $L_i$ aur poore dataset ki average loss alag hain:</p>
 <p>$$\text{Average training loss}=\frac1n\sum_{i=1}^n L_i.$$</p>
 <p><strong>Connection:</strong> Week 9 mein perceptron/logistic regression aur Weeks 10–11 mein SVM dekha. Ab un models ke training penalties ko ek common quantity ke through compare karenge.</p>
-<h3 id="topic-4">1.2 Score, predicted label aur signed margin</h3>
+<h3 id="topic-5">1.2 Score, predicted label aur signed margin</h3>
 <p>Binary labels abhi $y\in\{-1,+1\}$ hain. Linear model ka score:</p>
 <p>$$f(x)=w^Tx+b.$$</p>
 <p>Question mein bias nahi hai toh $f(x)=w^Tx$ use karo. Prediction convention:</p>
@@ -122,20 +127,20 @@
 </table>
 <p><strong>Rule:</strong> $u&gt;0$ means correct side; $u&lt;0$ means wrong side. $u=0$ boundary hai, jahan prediction tie convention par depend karegi.</p>
 <p>Ye functional margin hai, geometric distance nahi. SVM wali geometric signed distance $u/\lVert w\rVert$ hoti hai when $w\ne0$.</p>
-<h3 id="topic-5">1.3 0–1 loss: Bas correct ya wrong</h3>
+<h3 id="topic-6">1.3 0–1 loss: Bas correct ya wrong</h3>
 <p>$$\boxed{L_{01}(h(x),y)=\mathbf1[h(x)\ne y]}.$$</p>
 <p>Correct answer par 0, wrong answer par 1. Dataset mein 10 predictions mein 3 wrong hain toh average 0–1 loss $3/10=0.3$, aur accuracy $0.7$.</p>
 <p><strong>Property:</strong> Wrong prediction kitni badly wrong hai, 0–1 loss usse differentiate nahi karti.</p>
 <p><strong>Counterexample:</strong> $y=+1$ ke liye $f=-0.01$ aur $f=-100$ dono ki loss 1 hai. Training ko ye signal nahi milta ki score ko improve karne ke liye kitna move karna chahiye.</p>
 <p>Nonzero score ke liye $L_{01}=\mathbf1[u&lt;0]$. <strong>Boundary par care:</strong> Agar $f=0$ par prediction $+1$ hai aur true label $-1$, actual loss 1 hai, although $u=0$. Exact definition $\mathbf1[h(x)\ne y]$ always safe hai.</p>
-<h3 id="topic-6">1.4 Convex surrogates kyun?</h3>
+<h3 id="topic-7">1.4 Convex surrogates kyun?</h3>
 <p><strong>Short definition:</strong> Surrogate loss, difficult 0–1 objective ke badle use ki jaane wali optimization-friendly penalty hai.</p>
 <p>0–1 loss step jaisi hai: many regions mein flat aur boundary par jump. General linear classification mein exact empirical 0–1 minimization computationally hard ho sakta hai; standard gradient descent ko useful smooth direction nahi milti.</p>
 <p>Convex loss mein graph ke do points ko join karne wali line graph ke neeche nahi jaati. Linear score ke parameters mein convex losses optimize karna easier hota hai. <strong>Convex ka matlab smooth zaroori nahi:</strong> Hinge/perceptron mein corners hain; wahan subgradients use hote hain.</p>
 <p><strong>Important limit:</strong> Convex loss ko nonlinear neural network par lagane se poora training objective automatically convex nahi ban jaata. Prediction khud multiple layers ke parameters par nonlinearly depend karti hai.</p>
 <hr />
-<h2 id="topic-7">2. Four convex losses: Same margin, different penalties</h2>
-<h3 id="topic-8">2.1 Squared loss: Score ko target ke paas lao</h3>
+<h2 id="topic-8">2. Four convex losses: Same margin, different penalties</h2>
+<h3 id="topic-9">2.1 Squared loss: Score ko target ke paas lao</h3>
 <p>$$L=(f(x)-y)^2.$$</p>
 <p>For $y\in\{-1,+1\}$, $y^2=1$, so margin form is:</p>
 <p>$$\boxed{L_{\mathrm{sq}}(u)=(u-1)^2}.$$</p>
@@ -148,7 +153,7 @@
 <li>$u&gt;1$ badhane par penalty dobara increase hoti hai.</li>
 </ul>
 <p><strong>Counterexample:</strong> $y=+1$, score $f=5$ perfectly correct class predict karta hai, but squared loss $(5-1)^2=16$. Isliye large correct margin ko reward karne wali loss nahi hai.</p>
-<h3 id="topic-9">2.2 Hinge loss: Correct side ke saath safety margin</h3>
+<h3 id="topic-10">2.2 Hinge loss: Correct side ke saath safety margin</h3>
 <p>$$\boxed{L_{\mathrm{hinge}}(u)=\max(0,1-u)}.$$</p>
 <p>$$L_{\mathrm{hinge}}(u)=\begin{cases}1-u,&amp;u&lt;1,\\0,&amp;u\ge1.\end{cases}$$</p>
 <p><strong>Real life:</strong> Car sirf boundary ke correct side ho, enough nahi; safety distance bhi chahiye. Hinge required margin 1 tak penalty lagati hai.</p>
@@ -160,7 +165,7 @@
 </ul>
 <p><strong>Counterexample:</strong> $u=0.4$ means correct prediction, but hinge loss $1-0.4=0.6$. “Correct classification implies zero hinge loss” false hai.</p>
 <p><strong>Week 11 connection:</strong> Soft-margin SVM ki minimum slack exactly $\xi_i=\max(0,1-u_i)$ thi. Regularization term $\frac12\lVert w\rVert^2$ ke saath hinge penalties optimize ki jaati hain.</p>
-<h3 id="topic-10">2.3 Logistic loss: Confident wrong answers ko penalize karo</h3>
+<h3 id="topic-11">2.3 Logistic loss: Confident wrong answers ko penalize karo</h3>
 <p>$$\boxed{L_{\mathrm{log}}(u)=\ln(1+e^{-u})}.$$</p>
 <p><strong>Real life:</strong> Spam classifier confidently genuine email ko spam bole toh larger penalty; correct class ko high probability de toh smaller penalty.</p>
 <ul>
@@ -174,7 +179,7 @@
 <p>$$\boxed{L_{\mathrm{BCE}}=-t\ln p-(1-t)\ln(1-p)}.$$</p>
 <p>Corresponding signed label $y=2t-1$ lo toh ye same logistic loss $\ln(1+e^{-yf})$ hai. <strong>BCE mein $-1$ label directly substitute nahi karna.</strong></p>
 <p>Example: True class 1 ke liye $p=0.9$ par loss $-\ln0.9\approx0.1054$; $p=0.1$ par $-\ln0.1\approx2.3026$.</p>
-<h3 id="topic-11">2.4 Perceptron loss: Wrong side ki penalty</h3>
+<h3 id="topic-12">2.4 Perceptron loss: Wrong side ki penalty</h3>
 <p>$$\boxed{L_{\mathrm{perc}}(u)=\max(0,-u)}.$$</p>
 <p>$$L_{\mathrm{perc}}(u)=\begin{cases}-u,&amp;u&lt;0,\\0,&amp;u\ge0.\end{cases}$$</p>
 <p><strong>Meaning:</strong> Wrong side par penalty; positive safety margin 1 demand nahi karti.</p>
@@ -189,7 +194,7 @@
 <p><strong>Important counterexample:</strong> $w=0,b=0$ se sabhi margins zero, so perceptron loss zero on all examples! Lekin negative labels ko $+1$ tie prediction misclassify karegi. Isliye zero perceptron loss ko strict separation ka certificate mat samjho; boundary handling matter karti hai.</p>
 <p><strong>Same update connection appears as an exam question:</strong> Week 12 — Solve With Instructors, Q6 asks which objective produces $w_{t+1}=w_t+xy$ on a mistake, using SGD with learning rate 1. Options: (A) $w^Txy$, (B) $-w^Txy$, (C) $w^Tx+y$, (D) $-w^Tx+y$.</p>
 <p>SGD gives $w_{t+1}=w_t-\nabla_wL$, hence required gradient is $-xy$. <strong>Answer (B)</strong>, because $\nabla_w(-yw^Tx)=-yx$. This is the <strong>active mistake branch</strong> of perceptron loss, not the full objective on all points. Full loss remains $\max(0,-yw^Tx)$; always minimizing $-yw^Tx$ would update correctly classified points too. Gradient here is with respect to weights w, not the input x, despite the source's generic wording.</p>
-<h3 id="topic-12">2.5 Graphs aur quick comparison</h3>
+<h3 id="topic-13">2.5 Graphs aur quick comparison</h3>
 <p><img src="assets/week12/loss_functions.png" loading="lazy" alt="Four losses as functions of signed margin" /></p>
 <p>Left side negative margin = wrong side. Right side positive margin = correct side. Squared loss ka right side par rise hona especially notice karo.</p>
 <table>
@@ -241,7 +246,10 @@
 </tbody>
 </table>
 <p><strong>Graph recognition:</strong> Parabola → squared; kink at 1 → hinge; smooth decreasing curve → logistic; kink at 0 → perceptron.</p>
-<h3 id="topic-13">Q2 — Identify loss curves and their intersection</h3>
+<p><strong>Different losses ka need ek example se:</strong> True signed label $+1$ aur score $f=0.5$ gives correct label, margin $u=0.5$. Squared loss $(0.5-1)^2=0.25$; hinge $1-0.5=0.5$; logistic $\ln(1+e^{-0.5})\approx0.4741$; perceptron 0. Score improve to $f=2$: losses $1,0,0.1269,0$. Same correct classification, different objectives prefer different scores.</p>
+<p>Why? Squared loss <strong>target score 1</strong> seekhti hai; hinge <strong>at least margin 1</strong>; logistic ever-increasing correct-class probability; perceptron nonnegative signed margin par penalty stop karti hai. Q2 graph shapes; Q9 zero classification error versus positive surrogate loss; Q10 regularizer versus data loss. Raw numerical magnitudes across different losses ko directly model-quality ranking mat banana; compare each model with requested evaluation criterion.</p>
+<p><strong>Gradient directions bhi compare karo:</strong> Margin derivative squared $2(u-1)$, hinge $-1$ below 1 / 0 above 1, logistic $-1/(1+e^u)$, perceptron $-1$ below 0 / 0 above 0. Corners par subgradient needed. At $u=2$, squared gradient positive hai, so gradient descent margin <strong>decrease</strong> karegi; logistic negative hai, so increase karegi. Graph ka right-side behavior ab update se connect hota hai.</p>
+<h3 id="topic-14">Q2 — Identify loss curves and their intersection</h3>
 <p><strong>Source:</strong> 2024 Sep 01 ET, Q2.</p>
 <p><strong>Question:</strong></p>
 <p>Comprehension: The convex surrogates for the 0-1 loss are displayed below:</p>
@@ -256,6 +264,7 @@
 <p>(b) The logistic loss and the (SVM) hinge loss do not intersect.</p>
 <p>(c) The logistic loss and the (SVM) hinge loss intersect when $(w^Tx)y=\ln(1-\frac1e)$.</p>
 <p>(d) The logistic loss and the (SVM) hinge loss intersect when $(w^Tx)y=\frac1e$.</p>
+<p><strong>Write the four formulas first:</strong> With signed margin $u=yw^Tx$, squared loss is $(1-u)^2$, hinge is $\max(0,1-u)$, perceptron is $\max(0,-u)$, and logistic is $\ln(1+e^{-u})$. Their zero locations and smoothness distinguish the curves. For an intersection, choose a valid hinge branch before equating formulas, then check the resulting $u$ belongs to that branch.</p>
 <p><strong>Solution — (i) to (iv): Shape se identify karo</strong></p>
 <ol>
 <li>Curve <strong>(1)</strong> parabola hai with minimum at $u=1$. So squared loss.</li>
@@ -314,7 +323,7 @@
 </tbody>
 </table>
 <p>Source choices are (a) A→Perceptron, B→Logistic; (b) A→Logistic, D→Perceptron; (c) C→Hinge, B→Perceptron; (d) D→Perceptron, C→Hinge; (e) B→Logistic, A→Hinge; (f) C→Squared, D→Perceptron. <strong>Only (d) has both matches correct.</strong> Q2 already explains the full shape-identification method, so that solution is not repeated.</p>
-<h3 id="topic-14">2.6 Q9 — A correct label can still incur training loss</h3>
+<h3 id="topic-15">2.6 Q9 — A correct label can still incur training loss</h3>
 <p><strong>Source:</strong> Week 12 — Solve With Instructors, Q5.</p>
 <p><strong>Question:</strong></p>
 <p>Which losses penalize some data points that are correctly classified?</p>
@@ -322,6 +331,7 @@
 <p>(B) Squared Loss</p>
 <p>(C) Logistic Loss</p>
 <p>(D) Perceptron Loss</p>
+<p><strong>Translate the quantifier:</strong> “Some correctly classified points” asks whether at least one $u&gt;0$ has positive loss. Select $u=1/2$ and substitute it into each formula. One positive loss proves the claim for that loss; to exclude perceptron, use $u&gt;0\Rightarrow-u&lt;0\Rightarrow\max(0,-u)=0$ for every such point.</p>
 <p><strong>Solution:</strong></p>
 <p><strong>Step 1 — Translate “correct”:</strong> For a non-boundary binary example, signed margin $u=yf(x)&gt;0$ means correct side. It does not force $u=1$ or high confidence.</p>
 <p><strong>Step 2 — Use one concrete correct point:</strong> Let $u=0.5$.</p>
@@ -359,7 +369,7 @@
 <p><strong>Step 3:</strong> “Some” ke liye this single positive-margin example enough hai.</p>
 <p>$$\boxed{\text{A, B, C}}.$$</p>
 <p><strong>Properties:</strong> Hinge correct points ko only $0&lt;u&lt;1$ par penalize karti hai. Squared loss $u=1$ except all other positive margins par positive hai. Logistic finite positive margin par always positive hai. Perceptron positive margin par always zero hai. Isliye 100% training accuracy ka matlab cross-entropy zero hona nahi; loss measures more than the label alone.</p>
-<h3 id="topic-15">2.7 Q10 — Regularizer versus empirical data loss</h3>
+<h3 id="topic-16">2.7 Q10 — Regularizer versus empirical data loss</h3>
 <p><strong>Definition:</strong> Data-loss term training examples par prediction quality measure karta hai. Regularizer parameters ki size/complexity penalize karta hai, without explicitly summing over examples.</p>
 <p><strong>Real-life connection:</strong> Good fit chahiye, but unnecessarily large coefficients ki extra cost bhi rakhni hai. Dono terms model selection ko influence karte hain.</p>
 <p><strong>Source:</strong> Week 12 — Solve With Instructors, Q7.</p>
@@ -373,6 +383,7 @@
 <p>(D) Model Dependent</p>
 <p>(i) $\|w\|^2/2$</p>
 <p>(ii) $C\sum_i\max(0,(w^Tx_i)y_i)$</p>
+<p><strong>Identify what each term reads:</strong> $R(w)=\|w\|^2/2$ uses only weights. Empirical loss reads each input, label and prediction. To check the printed hinge expression, substitute a clearly wrong margin $u=-2$: a correct surrogate should penalize it. This immediate substitution exposes the missing $1-$ before assigning roles to the terms.</p>
 <p><strong>Step 1 — Correct the source formula before learning it:</strong> Printed term is missing <strong>$1-$</strong>. Standard soft-margin SVM is</p>
 <p>$$\boxed{J(w)=\underbrace{\frac12\|w\|^2}_{R(w)}+\underbrace{C\sum_i\max(0,1-y_iw^Tx_i)}_{\text{weighted empirical hinge loss}}}.$$</p>
 <p><strong>Counterexample to the printed expression:</strong> At signed margin −2, printed $\max(0,-2)=0$ gives no penalty to a wrong point; correct hinge is $\max(0,1-(-2))=3$. At margin +2, printed expression penalizes the confident correct point by 2, whereas hinge is 0. It is not an equivalent SVM objective as printed.</p>
@@ -380,8 +391,8 @@
 <p><strong>Step 3 — Interpret “model dependent”:</strong> Source lists <strong>D→(i)</strong> to contrast a parameter-only regularizer with data loss. Literally, <strong>both (i) and (ii) depend on w</strong>, so D→(i),(ii) if “model dependent” means any dependence on model parameters.</p>
 <p><strong>Source intended mapping:</strong> A→i, B→ii, C→ii, D→i. <strong>Precise distinction:</strong> regularizer is parameter-only; data loss is parameter-and-data dependent. “Data dependent” does not mean “model independent”.</p>
 <p><strong>Property:</strong> Changing labels while holding w fixed leaves $R(w)$ unchanged but can change the loss. Changing w can change both terms. With a nonlinear neural network, adding a convex regularizer does not make the entire training objective convex.</p>
-<h2 id="topic-16">3. Artificial neuron: Weighted sum ke baad activation</h2>
-<h3 id="topic-17">3.1 Linear model se neural network tak</h3>
+<h2 id="topic-17">3. Artificial neuron: Weighted sum ke baad activation</h2>
+<h3 id="topic-18">3.1 Linear model se neural network tak</h3>
 <p><strong>Short definition:</strong> Artificial neural network connected neurons ka model hai jo inputs ko successive layers mein transform karke output deta hai.</p>
 <p><strong>Real life:</strong> House-price prediction mein area, locality aur age ko combine karke intermediate features ban sakte hain; next layer un combinations ko use karke price predict karti hai. Hidden neurons learned combinations banate hain, unka meaning manually fix karna zaroori nahi.</p>
 <p>Single neuron ka calculation:</p>
@@ -394,7 +405,7 @@
 <li>$g$: activation function.</li>
 </ul>
 <p><strong>Most important distinction:</strong> $z$ aur $a$ same tabhi honge jab activation us input par identity behave kare. Sigmoid neuron mein $z=2$ ka output 2 nahi, $\sigma(2)\approx0.8808$ hai.</p>
-<h3 id="topic-18">3.2 Bias: Threshold ko shift karna</h3>
+<h3 id="topic-19">3.2 Bias: Threshold ko shift karna</h3>
 <p><strong>Short definition:</strong> Bias neuron ke weighted sum mein add hone wala learnable constant hai.</p>
 <p><strong>Real life:</strong> Alarm ki baseline sensitivity adjust karne jaisa. Same input par different bias neuron ko active/inactive bana sakta hai.</p>
 <p>All inputs zero ho toh $z=b$. ReLU output $\max(0,b)$:</p>
@@ -404,7 +415,7 @@
 </ul>
 <p><strong>Counterexample:</strong> Negative bias ka matlab neuron hamesha inactive nahi. $w^Tx=5,b=-2$ gives $z=3$, so ReLU output 3.</p>
 <p>Bias har incoming edge ka separate parameter nahi; standard dense layer mein <strong>har output neuron ka ek bias</strong> hota hai.</p>
-<h3 id="topic-19">3.3 ReLU activation</h3>
+<h3 id="topic-20">3.3 ReLU activation</h3>
 <p>$$\boxed{\operatorname{ReLU}(z)=\max(0,z)=\begin{cases}0,&amp;z&lt;0,\\z,&amp;z\ge0.\end{cases}}$$</p>
 <p><strong>Meaning:</strong> Negative weighted sum block karo, positive weighted sum unchanged pass karo.</p>
 <p>Examples:</p>
@@ -418,7 +429,7 @@
 </ul>
 <p><strong>Counterexample:</strong> ReLU probability nahi hai: input 4 gives output 4, jo probability range se bahar hai.</p>
 <p><strong>Same ReLU-evaluation variety:</strong> Week 12 — Solve With Instructors, Q4 asks for ReLU on $(-2.7,3.9,-1.0,4.2,6.4,-7.3)$. Apply the rule above entry by entry: negatives become 0, positives stay unchanged. Result <strong>$(0,3.9,0,4.2,6.4,0)$, option (e)</strong>. ReLU does not replace every positive input by 1; that would be a step activation.</p>
-<h3 id="topic-20">3.4 Sigmoid activation</h3>
+<h3 id="topic-21">3.4 Sigmoid activation</h3>
 <p>$$\boxed{\sigma(z)=\frac1{1+e^{-z}}}.$$</p>
 <p><strong>Meaning:</strong> Real-valued score ko 0 aur 1 ke beech compress karti hai.</p>
 <p>$$\sigma(0)=0.5,\quad\sigma(2)\approx0.8808,\quad\sigma(-2)\approx0.1192.$$</p>
@@ -432,12 +443,17 @@
 <p><strong>Counterexample:</strong> Activation 1.5 sigmoid se nahi aa sakti. Also exact mathematical sigmoid finite input par exactly 0 or 1 nahi deti; rounded display alag baat hai.</p>
 <p><img src="assets/week12/activations.png" loading="lazy" alt="ReLU and sigmoid activation curves" /></p>
 <p><strong>Same sigmoid-properties variety:</strong> Week 12 — Solve With Instructors, Q2 asks whether sigmoid is (a) continuously differentiable, (b) monotonic, (c) maximal as $z\to-\infty$, and (d) bounded between 0 and 1. <strong>Answers: (a), (b), (d)</strong>. Since $\sigma&#x27;(z)=\sigma(z)(1-\sigma(z))&gt;0$ for finite z, it is smooth and strictly increasing. At negative infinity its limit is 0, not 1. Source wording “attains maximum 1” should be read as a limit: on finite real inputs, 1 is a supremum, not an attained maximum.</p>
-<h3 id="topic-21">3.5 Hidden layers mein nonlinearity kyun?</h3>
+<h3 id="topic-22">3.5 Hidden layers mein nonlinearity kyun?</h3>
 <p>Multiple layers sirf linear/affine operations karein toh unka combined effect bhi affine hota hai:</p>
 <p>$$W_2(W_1x+b_1)+b_2=(W_2W_1)x+(W_2b_1+b_2).$$</p>
 <p>Isliye sirf linear layers stack karne se nonlinear boundaries represent karne ki ability nahi aati. ReLU/sigmoid jaise activations different input regions ko differently transform karte hain.</p>
 <p><strong>Counterexample:</strong> Two linear layers laga dene se XOR jaisi non-linearly separable pattern ka linear-separator limitation automatically solve nahi hota. Suitable nonlinear hidden layer ki zaroorat hoti hai.</p>
-<h3 id="topic-22">Q1 — Output of a sigmoid hidden neuron</h3>
+<p><strong>Nonlinearity kya extra kar sakti hai — teaching example:</strong> Binary inputs $x_1,x_2\in\{0,1\}$ ka XOR target 1 only jab exactly one input 1 ho. Hidden activations choose karo:</p>
+<p>$$a_1=\operatorname{ReLU}(x_1-x_2),\qquad
+ a_2=\operatorname{ReLU}(x_2-x_1).$$</p>
+<p>For $(0,0)$ both zero; $(1,0)$ gives $(1,0)$; $(0,1)$ gives $(0,1)$; $(1,1)$ both zero. Score $f=a_1+a_2-1/2$ is negative for equal inputs and positive for unequal inputs. Thus linear combination of <strong>nonlinear learned-feature candidates</strong> can separate XOR. This constructs weights to show representation capacity; it does not claim gradient descent necessarily learns these exact weights.</p>
+<p>One neuron ka calculation still dot product → bias add → activation hai. Q1 one sigmoid node; Q4/Q5 whole hidden layer; Q6 active/inactive ReLU paths. Network drawing complex dikh sakti hai, but each node same local operation repeat karti hai.</p>
+<h3 id="topic-23">Q1 — Output of a sigmoid hidden neuron</h3>
 <p><strong>Source:</strong> 2024 Apr 28 ET, Q1.</p>
 <p><strong>Question:</strong></p>
 <p>(SA) Consider a simple neural network with one hidden layer. The network has the following architecture: Input layer with 3 neurons. Hidden layer with 2 neurons, using the sigmoid activation function. Output layer with 1 neuron, using the linear activation function. The weights and biases for the network are as follows:</p>
@@ -455,6 +471,9 @@
 </li>
 </ul>
 <p>Assume that the input values are [0.6, 0.3, 0.8]. Calculate output of Neuron 1 in hidden layer.</p>
+<p><strong>Single-neuron formula:</strong> $z=w^Tx+b$ and output $a=\sigma(z)$. Here</p>
+<p>$$z=\begin{bmatrix}0.5&amp;-0.2&amp;0.8\end{bmatrix}\begin{bmatrix}0.6\\0.3\\0.8\end{bmatrix}+0.1.$$</p>
+<p>Multiply matching coordinates and add bias once. The requested hidden output is the sigmoid of this sum; final-layer weights do not enter that neuron's calculation.</p>
 <p><strong>Solution:</strong></p>
 <p><strong>Step 1: Requested neuron identify karo.</strong> Hidden layer ka neuron 1 chahiye. Uske weights $[0.5,-0.2,0.8]$, bias $0.1$ aur activation sigmoid hai.</p>
 <p><strong>Step 2: Har feature ka weighted contribution nikalo.</strong></p>
@@ -492,8 +511,8 @@
 <p><strong>Check:</strong> Positive pre-activation hai, so sigmoid output $0.5$ se bada aur 1 se chhota hona chahiye. Answer paper ke $0.70$–$0.80$ range mein hai.</p>
 <p><strong>Trap:</strong> $0.98$ pre-activation hai, requested output nahi. Second hidden neuron aur final output ke weights is particular answer ke liye needed nahi hain.</p>
 <hr />
-<h2 id="topic-23">4. Network architecture, output choice and parameter counting</h2>
-<h3 id="topic-24">4.1 Layers ka role</h3>
+<h2 id="topic-24">4. Network architecture, output choice and parameter counting</h2>
+<h3 id="topic-25">4.1 Layers ka role</h3>
 <ul>
 <li><strong>Input layer:</strong> Raw feature values hold karti hai; 5 input features means 5 input neurons.</li>
 <li><strong>Hidden layers:</strong> Previous activations ko weights/biases se combine karke new activations banati hain.</li>
@@ -501,13 +520,13 @@
 </ul>
 <p><strong>Fully connected/dense:</strong> Previous layer ka every neuron next layer ke every neuron se connected hai. <strong>Feed-forward:</strong> Computation input se output ki taraf jaati hai, cyclic feedback edges nahi.</p>
 <p>Input values data hain, learnable parameters nahi. Standard dense network mein weights and biases learnable hain; hidden activations har input ke saath change hoti hain, separately stored trainable parameters nahi.</p>
-<h3 id="topic-25">4.2 Matrix form: Rows ko neurons se match karo</h3>
+<h3 id="topic-26">4.2 Matrix form: Rows ko neurons se match karo</h3>
 <p>Layer $\ell$ mein $d_\ell$ neurons aur previous layer mein $d_{\ell-1}$ neurons hon:</p>
 <p>$$\boxed{z^{[\ell]}=W^{[\ell]}a^{[\ell-1]}+b^{[\ell]},\qquad a^{[\ell]}=g_\ell(z^{[\ell]})}.$$</p>
 <p>$$a^{[0]}=x,\qquad W^{[\ell]}\in\mathbb R^{d_\ell\times d_{\ell-1}},\qquad b^{[\ell]}\in\mathbb R^{d_\ell}.$$</p>
 <p><strong>Row convention:</strong> Each row contains incoming weights for one destination neuron. Shape check: $(d_\ell\times d_{\ell-1})(d_{\ell-1}\times1)$ gives $(d_\ell\times1)$.</p>
 <p><strong>Notation care:</strong> In Q4/Q5, $w_i^{(j)}$ ka superscript $j$ <strong>neuron number</strong> hai, layer number nahi. Surrounding definition read karo; notation ko blindly interpret mat karo.</p>
-<h3 id="topic-26">4.3 Task decides output activation and loss</h3>
+<h3 id="topic-27">4.3 Task decides output activation and loss</h3>
 <table>
 <thead>
 <tr>
@@ -541,7 +560,7 @@
 <p>Usual threshold $p\ge0.5$ par predicted label 1. <strong>Probability aur label different:</strong> $p=0.8$ probability hai; thresholded answer 1 label hai.</p>
 <p><strong>Counterexample:</strong> Regression output par unnecessarily sigmoid lagane se predictions $(0,1)$ mein restrict ho jayengi. Target 4 ho toh model output 4 de hi nahi paayega.</p>
 <p>Regression ka one-output rule yahan <strong>scalar target</strong> ke liye hai; vector-valued regression mein multiple output neurons possible hain. Hidden ReLU ka matlab output layer bhi ReLU use kare, aisa rule nahi.</p>
-<h3 id="topic-27">4.4 Total learnable parameters</h3>
+<h3 id="topic-28">4.4 Total learnable parameters</h3>
 <p>Layer sizes $d_0,d_1,\ldots,d_L$ ke liye:</p>
 <p>$$\boxed{N_{\mathrm{weights}}=\sum_{\ell=1}^L d_{\ell-1}d_\ell}.$$</p>
 <p>Each non-input neuron ka one bias ho toh:</p>
@@ -557,7 +576,9 @@
 </ol>
 <p><strong>Counterexample:</strong> Neurons count $3+4+2=9$ is not parameter count 26. Connections aur biases count karne hain, nodes nahi.</p>
 <p><strong>“Ignore biases”</strong> likha ho toh sirf products sum karo. Activation ReLU vs sigmoid choose karne se standard dense layer ke weight count par effect nahi padta.</p>
-<h3 id="topic-28">Q3 — Binary network: Parameters and activation choices</h3>
+<p><strong>Count ko forward shapes se verify karo:</strong> For $2\to2\to1$ dense network, hidden matrix $W$ shape $2\times2$ (4 weights), hidden bias length 2, output vector $v$ length 2, output bias scalar (1). Total $4+2+2+1=9$. Ek input change hone se activations change hoti hain, <strong>parameter count</strong> nahi. Sample count $n$ is count mein multiply nahi hota: same learned network all examples par reuse hota hai.</p>
+<p>Biases exclude hon toh 6. ReLU/sigmoid formula has no extra learnable coefficient in these standard activations. Q3/Q7 weights-only variants; Q8 multiple output neurons; Q11 biases included. Neuron count se connection count infer karne se pehle “fully connected?” aur “ignore biases?” read karo.</p>
+<h3 id="topic-29">Q3 — Binary network: Parameters and activation choices</h3>
 <p><strong>Source:</strong> 2024 Sep 01 ET, Q3.</p>
 <p><strong>Question:</strong></p>
 <p>Comprehension: Consider the following architecture of a neural network for a binary classification problem:</p>
@@ -598,6 +619,7 @@
 <p>What is the activation function used in the first hidden layer?</p>
 <p>(a) ReLU</p>
 <p>(b) Sigmoid</p>
+<p><strong>Counting and range rules:</strong> A fully connected $m\to n$ layer has $mn$ edge weights and, if included, $n$ biases. Sum over adjacent layers only. For activation choice, inspect required range: a binary probability lies in $(0,1)$ and suits sigmoid; ReLU can output any nonnegative number, including values above 1. Architecture counting and activation selection are separate subproblems.</p>
 <p><strong>Solution — (i): Adjacent layers ke connections count karo</strong></p>
 <p>Architecture $5\to10\to10\to1$ hai.</p>
 <table>
@@ -644,7 +666,7 @@
 </ol>
 <p>$$\boxed{\text{(a) ReLU}}.$$</p>
 <p><strong>Property from this question:</strong> Given choices mein range se activation identify kar sakte ho. Sirf nonnegative values dekhkar universally ReLU conclude nahi karna; example $[0.2,0.8]$ ReLU aur sigmoid dono se possible hai. Yahan values greater than 1 decisive hain.</p>
-<h3 id="topic-29">Q7 — Parameter count with three hidden layers</h3>
+<h3 id="topic-30">Q7 — Parameter count with three hidden layers</h3>
 <p><strong>Source:</strong> 2026 May 06 ET, Q7.</p>
 <p><strong>Question:</strong></p>
 <p>(SA) Consider a regression problem in which we use a neural network with the following architecture:</p>
@@ -654,6 +676,7 @@
 <li>Output layer with one neuron</li>
 </ul>
 <p>Find the total number of parameters in the network. Ignore the biases.</p>
+<p><strong>Explain each product:</strong> Ten first-hidden neurons each receive five inputs, giving 50 weights. Each next hidden layer has ten neurons receiving ten inputs, giving 100 per transition. The single output receives ten hidden activations, giving 10. Three hidden layers create two hidden-to-hidden transitions. Biases are excluded as specified.</p>
 <p><strong>Solution:</strong></p>
 <p><strong>Step 1: Architecture expand karo.</strong></p>
 <p>$$5\to10\to10\to10\to1.$$</p>
@@ -662,10 +685,11 @@
 <p><strong>Step 3: Sum.</strong></p>
 <p>$$\boxed{N=50+100+100+10=260}.$$</p>
 <p><strong>Q3 se connection:</strong> Same counting method; extra $10\to10$ transition adds 100 weights. Ye changed architecture hai, same numerical question nahi. Three hidden layers ke beech <strong>two</strong> hidden-to-hidden transitions hain.</p>
-<h3 id="topic-30">Q8 — Three output neurons: Can parameters be counted?</h3>
+<h3 id="topic-31">Q8 — Three output neurons: Can parameters be counted?</h3>
 <p><strong>Source:</strong> 2026 Sep 13 ET, Q8.</p>
 <p><strong>Question:</strong></p>
 <p>(SA) You build a fully-connected feed-forward neural network for a classification task. The input is a 5-dimensional vector; the network has two hidden layers of 10 neurons each, followed by an output layer of 3 neurons. Every layer is densely (fully) connected to the next. Ignoring all bias terms, compute the total number of weight parameters in the network. (Enter −1 if it cannot be determined.)</p>
+<p><strong>Matrix-shape check:</strong> Weight matrices have shapes $10\times5$, $10\times10$, and $3\times10$. Their entry counts are 50,100,30. Add to get 180 weights. Activation values do not change these shapes, and no missing numerical weight values prevent counting parameters. Biases remain excluded under the question's convention.</p>
 <p><strong>Solution:</strong></p>
 <p><strong>Step 1: Architecture likho.</strong></p>
 <p>$$5\to10\to10\to3.$$</p>
@@ -676,8 +700,8 @@
 <p><strong>Why not $-1$?</strong> Layer sizes aur full connectivity given hain. Weight count ke liye actual weight values, training data ya activation functions ki need nahi.</p>
 <p><strong>Related appearance:</strong> Q3 mein final layer $10\to1$ thi; yahan $10\to3$ hai. Final weights 10 se 30 hue, total $160+20=180$. Q7 mein depth changed thi; yahan output width changed hai.</p>
 <hr />
-<h2 id="topic-31">5. Forward pass: Input se prediction, phir loss</h2>
-<h3 id="topic-32">5.1 Calculation ka fixed order</h3>
+<h2 id="topic-32">5. Forward pass: Input se prediction, phir loss</h2>
+<h3 id="topic-33">5.1 Calculation ka fixed order</h3>
 <p><strong>Short definition:</strong> Fixed weights/biases ke saath input ko layer-by-layer process karke prediction nikalna forward pass hai.</p>
 <p><strong>Real life:</strong> Assembly line mein each station previous station ka output process karti hai. Next layer ko raw inputs dobara nahi; previous layer ki activations milti hain.</p>
 <ol>
@@ -689,13 +713,17 @@
 <li>Target given ho toh appropriate loss calculate karo.</li>
 </ol>
 <p><strong>Weights is pass mein change nahi hote.</strong> Update backward pass ke gradients ke baad hota hai.</p>
-<h3 id="topic-33">5.2 Regression forward pass</h3>
+<h3 id="topic-34">5.2 Regression forward pass</h3>
 <p>One hidden layer and scalar output ke liye:</p>
 <p>$$a=\operatorname{ReLU}(Wx+b),\qquad \boxed{\hat y=v^Ta+c}.$$</p>
 <p>Output identity hai, so output pre-activation itself prediction hai. Target $y$ ho toh:</p>
 <p>$$\boxed{L=(\hat y-y)^2}.$$</p>
 <p>Question $L=\frac12(\hat y-y)^2$ bole tabhi factor $1/2$ use karo; otherwise apni taraf se add mat karo.</p>
-<h3 id="topic-34">Q4 — Two ReLU neurons and a regression output</h3>
+<p><strong>First complete forward pass — teaching example:</strong> $x=(1,2)^T$, $W=\begin{pmatrix}1&amp;-1\\2&amp;1\end{pmatrix}$, $b=(0,-1)^T$, ReLU hidden layer, output $v=(3,1)^T,c=0$. Hidden pre-activations:</p>
+<p>$$z=Wx+b=(1-2,\ 2+2-1)^T=(-1,3)^T.$$</p>
+<p>Hidden outputs $a=(0,3)^T$. Identity regression output $\hat y=3(0)+1(3)=3$. If target 2, squared loss $(3-2)^2=1$. Same hidden values with sigmoid output would instead give $p=1/(1+e^{-3})\approx0.9526$, a class probability; that is a changed task/output model.</p>
+<p>Keep a small table: neuron → weighted sum → bias → pre-activation → activation. First neuron ke negative sum ko next layer tak pass karna ReLU bypass kar dega. Q4 identity output; Q5 sigmoid output; Q6 asks squared loss after keeping full-precision prediction.</p>
+<h3 id="topic-35">Q4 — Two ReLU neurons and a regression output</h3>
 <p><strong>Source:</strong> 2025 Apr 13 ET, Q4.</p>
 <p><strong>Question:</strong></p>
 <p>(SA) Consider a single-layer neural network comprising two neurons in the hidden layer. The parameters are given as below:</p>
@@ -703,6 +731,10 @@
 <p>$$w_1^{(2)}=1,\quad w_2^{(2)}=-1;$$</p>
 <p>$$w^{\mathrm{out}}=[2\quad -2]^T,$$</p>
 <p>where $w_i^{(j)}$ represents the weight associated with the $j$th neuron for the $i$th input feature. Suppose we are solving the regression problem, then determine the output of the neural network using ReLU as the activation function for the input $x=[1\quad3]^T$.</p>
+<p><strong>Matrix formation and activation order:</strong></p>
+<p>$$z=\begin{bmatrix}1/2&amp;1/2\\1&amp;-1\end{bmatrix}\begin{bmatrix}1\\3\end{bmatrix},\quad
+ a=\operatorname{ReLU}(z),\quad \hat y=\begin{bmatrix}2&amp;-2\end{bmatrix}a.$$</p>
+<p>ReLU is applied to each completed hidden weighted sum. The output receives activated values $a$, not raw $z$. Linear regression output then leaves its final weighted sum unchanged.</p>
 <p><strong>Solution:</strong></p>
 <p>Question ka hidden layer two neurons wala hai; regression output identity use karega. Bias terms given nahi hain, so calculation mein zero bias lete hain.</p>
 <p><strong>Step 1: Hidden neuron 1.</strong></p>
@@ -716,12 +748,12 @@
 <p>$$\boxed{\hat y=4}.$$</p>
 <p><strong>Trap:</strong> $z_2=-2$ ko directly output mein use karne se answer $2(2)-2(-2)=8$ aayega, jo wrong hai. Next layer ko $a_2=0$ milta hai.</p>
 <p><strong>Property:</strong> Negative weight allowed hai; ReLU negative <strong>pre-activation</strong> clip karti hai, individual weights ya input products ko separately clip nahi karti.</p>
-<h3 id="topic-35">5.3 Binary classification forward pass</h3>
+<h3 id="topic-36">5.3 Binary classification forward pass</h3>
 <p>Hidden computation same ho sakti hai, but output stage changes:</p>
 <p>$$a=\operatorname{ReLU}(Wx+b),\qquad s=v^Ta+c,$$</p>
 <p>$$\boxed{p=\sigma(s),\quad P(1\mid x)=p,\quad P(0\mid x)=1-p}.$$</p>
 <p><strong>Connection:</strong> Q4 mein output weighted sum final regression prediction tha. Ab wahi weighted sum <strong>score</strong> hai; probability ke liye sigmoid additionally apply karna hai.</p>
-<h3 id="topic-36">Q11 — Count a 3→3→3→1 network and calculate its cross-entropy</h3>
+<h3 id="topic-37">Q11 — Count a 3→3→3→1 network and calculate its cross-entropy</h3>
 <p><strong>Source:</strong> Week 12 — Solve With Instructors, Q3.</p>
 <p><strong>Question:</strong></p>
 <p>The diagram shows a classification neural network with two hidden layers and one output layer. Input is a column vector $x\in\mathbb R^3$. Each hidden layer contains 3 neurons; the output layer contains 1 neuron. Each neuron is connected to every neuron in the next layer. Each non-input neuron has a bias. The true output is 1.</p>
@@ -729,6 +761,7 @@
 <p><img src="assets/week12/new_network_source.png" loading="lazy" alt="Supplied network and final-layer weights" /></p>
 <p>(i) How many parameters are there in the network?</p>
 <p>(ii) The second hidden layer's output, after activation, is $(0.2,0.5,0.8)^T$. Find cross-entropy loss when the corresponding output weights are $(2,1,-1)^T$ and output bias is 1. Give two decimal places.</p>
+<p><strong>Two formulas for two requests:</strong> Parameter total is $\sum_l(n_{l-1}+1)n_l$ when every non-input neuron has a bias. The loss calculation starts from supplied hidden activations: compute $z=w_{out}^Ta+b$, then $p=\sigma(z)$, then BCE. For $y=1$, BCE simplifies to $-\ln p=\ln(1+e^{-z})$, a useful independent check.</p>
 <p><strong>Solution — (i), Step 1: Count each layer separately.</strong></p>
 <table>
 <thead>
@@ -769,7 +802,7 @@
 <p>$$L=-1\ln p-(1-1)\ln(1-p)=-\ln p.$$</p>
 <p>$$\boxed{L=\ln(1+e^{-1.1})\approx0.287335\approx0.29}.$$</p>
 <p><strong>Checks/properties:</strong> At threshold 0.5, predicted class is 1 and is correct, but loss is positive, connecting to Q9. To evaluate this one output from supplied hidden activations, earlier-layer weights are unnecessary; to count the full network parameters, all layers still matter. Preserve intermediate precision and round loss at the end.</p>
-<h3 id="topic-37">Q5 — ReLU hidden layer followed by sigmoid probabilities</h3>
+<h3 id="topic-38">Q5 — ReLU hidden layer followed by sigmoid probabilities</h3>
 <p><strong>Source:</strong> 2025 Aug 31 ET, Q5.</p>
 <p><strong>Question:</strong></p>
 <p>(MCQ) Suppose we are solving a binary classification task using a neural network with the following architecture:</p>
@@ -785,6 +818,7 @@
 <p>(b) $P(\text{class 1})=0.269,\quad P(\text{class 0})=0.731$</p>
 <p>(c) $P(\text{class 1})=0.731,\quad P(\text{class 0})=0.269$</p>
 <p>(d) $P(\text{class 1})=0.993,\quad P(\text{class 0})=0.007$</p>
+<p><strong>Forward-pass shapes:</strong> Input has two entries, hidden matrix is $2\times2$, and hidden output has two entries. ReLU acts entry by entry after matrix multiplication. The output vector then gives one scalar score $s=1a_1+2a_2$. Apply sigmoid once to that scalar and use its complement for class 0. Hidden units are not class probabilities.</p>
 <p><strong>Solution:</strong></p>
 <p>No bias values given hain, so zero bias calculation use karo.</p>
 <p><strong>Step 1: Hidden pre-activations.</strong></p>
@@ -800,7 +834,7 @@
 <p>$$\boxed{\text{Option (d): }P(1)\approx0.993,\quad P(0)\approx0.007}.$$</p>
 <p><img src="assets/week12/q5_forward_pass.png" loading="lazy" alt="Q5 numerical forward pass" /></p>
 <p><strong>Checks:</strong> Probabilities sum to 1; positive score 5 gives class-1 probability above 0.5. Hidden activations ko normalize karke probabilities banana correct method nahi—output weights aur sigmoid dono use hote hain.</p>
-<h3 id="topic-38">Q6 — Scalar input, ReLU gating and squared loss</h3>
+<h3 id="topic-39">Q6 — Scalar input, ReLU gating and squared loss</h3>
 <p><strong>Source:</strong> 2025 Dec 18 ET, Q6.</p>
 <p><strong>Question:</strong></p>
 <p>Comprehension: Consider the following neural network, which takes a single real-valued input $x$, passes it through two hidden ReLU units, and produces a scalar regression output. ReLU and the sigmoid activation is given by:</p>
@@ -812,6 +846,7 @@
 <p>Based on the above data, answer the given subquestions.</p>
 <p>(i) (SA) For input $x=0.5$, compute the regression output $\hat y$. Enter the answer correct to one decimal place.</p>
 <p>(ii) (SA) Suppose the target value for this input is $y=1.2$. Compute the squared loss $L=(\hat y-y)^2$. Enter the answer correct to two decimal places.</p>
+<p><strong>Separate prediction from loss:</strong> Scalar input feeds two hidden products, each passed through $\max(0,z)$. Multiply these activated values by output weights and add to obtain the regression prediction. Only then introduce the target using $L=(\hat y-y)^2$. A supplied sigmoid formula does not change a stated linear regression output into a probability.</p>
 <p><strong>Solution — (i): Regression output</strong></p>
 <p><strong>Step 1: Hidden weighted sums.</strong> Biases are not specified.</p>
 <p>$$z_1=0.2(0.5)=0.1,\qquad z_2=-0.4(0.5)=-0.2.$$</p>
@@ -828,8 +863,8 @@
 <p><strong>Q4 se connection:</strong> Dono mein one ReLU unit active aur one inactive hai. Q6 adds target-dependent loss calculation; repeated ReLU rule same hai, numerical inputs different hain.</p>
 <p><strong>Property:</strong> Negative residual possible hai, negative squared loss nahi. Prediction ko square karna $0.1^2=0.01$ loss nahi; pehle target subtract karna hai.</p>
 <hr />
-<h2 id="topic-39">6. Backward pass: Network actually seekhta kaise hai?</h2>
-<h3 id="topic-40">6.1 Forward, loss, backward, update</h3>
+<h2 id="topic-40">6. Backward pass: Network actually seekhta kaise hai?</h2>
+<h3 id="topic-41">6.1 Forward, loss, backward, update</h3>
 <p><strong>Short definition:</strong> Backpropagation chain rule use karke loss ka gradient har learnable weight/bias ke respect mein calculate karta hai, output se earlier layers ki direction mein.</p>
 <p><strong>Real life:</strong> Final product mein error mile toh assembly line mein peeche trace karo ki each stage ke change se final error kitna change hoga. Gradient isi sensitivity ko quantify karta hai.</p>
 <p><img src="assets/week12/training_cycle.png" loading="lazy" alt="Forward loss backward update training cycle" /></p>
@@ -841,7 +876,7 @@
 <li>Updated parameters ke saath repeat.</li>
 </ol>
 <p><strong>Difference:</strong> Backpropagation gradient calculation hai; gradient descent un gradients se parameters update karne ka rule hai. Dono related hain, identical operation nahi.</p>
-<h3 id="topic-41">6.2 Gradient-descent rule</h3>
+<h3 id="topic-42">6.2 Gradient-descent rule</h3>
 <p>All weights and biases ko collectively $\theta$ likhein:</p>
 <p>$$\boxed{\theta_{\mathrm{new}}=\theta_{\mathrm{old}}-\eta\nabla_\theta L(\theta_{\mathrm{old}})},\qquad\eta&gt;0.$$</p>
 <ul>
@@ -851,7 +886,7 @@
 <li>Learning rate $\eta$ step size control karti hai.</li>
 </ul>
 <p><strong>Counterexample to “bigger step always better”:</strong> $L(w)=w^2$, $w=1$, gradient 2. With $\eta=0.1$, new $w=0.8$, loss $0.64$. With $\eta=2$, new $w=-3$, loss 9. Large step loss increase kar sakta hai.</p>
-<h3 id="topic-42">6.3 Useful local gradients</h3>
+<h3 id="topic-43">6.3 Useful local gradients</h3>
 <p>For one example, no averaging factor:</p>
 <table>
 <thead>
@@ -889,7 +924,11 @@
 <p>$$\frac{\partial L}{\partial W^{[\ell]}}=\delta^{[\ell]}(a^{[\ell-1]})^T,\qquad\frac{\partial L}{\partial b^{[\ell]}}=\delta^{[\ell]},$$</p>
 <p>$$\delta^{[\ell]}=\left((W^{[\ell+1]})^T\delta^{[\ell+1]}\right)\odot g_\ell&#x27;(z^{[\ell]}).$$</p>
 <p>$\odot$ means elementwise multiply. Last equation ka meaning: next layer ki sensitivity weights ke through peeche bhejo, then current activation ke local derivative se multiply karo. Batch <strong>mean</strong> loss ho toh sample gradients average hote hain.</p>
-<h3 id="topic-43">6.4 Worked learning example: Q6 ke same forward values se ek update</h3>
+<p><strong>Backprop local derivatives ko same tiny network par apply karo:</strong> Above regression example has prediction 3, target 2, loss 1. Output sensitivity $\partial L/\partial\hat y=2(3-2)=2$. Output weights gradient $2a=(0,6)$; output bias gradient 2. Hidden sensitivities before ReLU are $2v=(6,2)$; gates at $z=(-1,3)$ are $(0,1)$, hence hidden pre-activation gradients $(0,2)$.</p>
+<p>For hidden row 2, $z_2=W_{21}x_1+W_{22}x_2+b_2$, so gradients $\partial L/\partial W_{21}=2(1)=2$, $\partial L/\partial W_{22}=2(2)=4$, $\partial L/\partial b_2=2$. Row 1 gradients zero <strong>for this example</strong>. All gradients old forward values se nikle hain.</p>
+<p>With $\eta=0.01$, new row 2 weights $(1.98,0.96)$, bias $-1.02$; new output weights $(3,0.94)$, bias $-0.02$. Fresh forward pass: $z_2=1.98+0.96(2)-1.02=2.88$, output $0.94(2.88)-0.02=2.6872$, loss $(2.6872-2)^2=0.47224384&lt;1$. Derivatives calculation <strong>backprop</strong>, subsequent subtraction <strong>gradient descent</strong>. Q6's existing worked update below applies same path/gate logic to its official forward values.</p>
+<p><strong>Why paths add:</strong> If an activation feeds multiple next-layer neurons, its small change affects all those paths. Sensitivity is their weighted sum, then local activation derivative gates that sum. Matrix transpose in backprop routes outgoing weights back to their source activations; $\odot$ applies one derivative to each matching neuron, not matrix multiplication.</p>
+<h3 id="topic-44">6.4 Worked learning example: Q6 ke same forward values se ek update</h3>
 <p>Ye backward pass samajhne ke liye <strong>practice continuation</strong> hai; Q6 ka exam answer already $\hat y=0.1,L=1.21$ hai. Forward calculation repeat nahi karenge.</p>
 <p>Notation simple rakhein:</p>
 <p>$$u_1=0.2,\ u_2=-0.4\quad\text{(input-to-hidden weights)},$$</p>
@@ -955,7 +994,7 @@
 <p>$$\hat y_{\mathrm{new}}=1.022(0.155)=0.15841.$$</p>
 <p>$$L_{\mathrm{new}}=(0.15841-1.2)^2\approx1.08491.$$</p>
 <p>Loss $1.21\to1.08491$ decrease hui. Prediction target ki taraf move hui. Ye particular step ka check hai, arbitrary learning rate par guarantee nahi.</p>
-<h3 id="topic-44">6.5 Training se judi important properties</h3>
+<h3 id="topic-45">6.5 Training se judi important properties</h3>
 <ul>
 <li><strong>Loss vs activation:</strong> Activation neuron ka output transform karti hai; loss prediction ko target se compare karti hai. Sigmoid activation aur logistic loss different functions hain.</li>
 <li><strong>Depth vs optimization:</strong> More layers representational flexibility de sakti hain, but training automatically easier ya answer automatically better nahi hota.</li>
@@ -964,8 +1003,8 @@
 <li><strong>Training vs prediction:</strong> Inference ke liye forward pass enough; target/loss/backward needed nahi. Training mein target se loss aur gradients calculate hote hain.</li>
 </ul>
 <hr />
-<h2 id="topic-45">7. Quick revision</h2>
-<h3 id="topic-46">7.1 Formula sheet</h3>
+<h2 id="topic-46">7. Quick revision</h2>
+<h3 id="topic-47">7.1 Formula sheet</h3>
 <table>
 <thead>
 <tr>
@@ -1048,7 +1087,7 @@
 </tr>
 </tbody>
 </table>
-<h3 id="topic-47">7.2 Common mistakes and corrections</h3>
+<h3 id="topic-48">7.2 Common mistakes and corrections</h3>
 <table>
 <thead>
 <tr>
@@ -1111,7 +1150,9 @@
 </tr>
 </tbody>
 </table>
-<h3 id="topic-48">7.3 Question solve karne ka checklist</h3>
+<h3 id="topic-49">7.3 Question solve karne ka checklist</h3>
+<p><strong>Recall:</strong> Zero training classification error imply zero hinge/BCE? No: margin requirement/confidence still matter. ReLU hidden output zero imply permanent dead neuron? No: it may activate on another input or later parameters. Why retain unrounded forward values? Gradients/loss use them; rounding intermediate probabilities can change required numerical answers. Why one update changes multiple parameters together? All derivatives belong to the same old computation graph.</p>
+<p><strong>Course connection:</strong> PCA learned directions to preserve input variance; regression learned weights to predict numerical labels; NB learned class-wise data distributions; logistic/SVM learned scores with different losses; trees/ensembles combined feature decisions; ANN now learns intermediate nonlinear features jointly with prediction weights. When an unfamiliar question arrives, identify <strong>representation, prediction rule, training objective, update rule, and evaluation</strong> separately. Changed representation can keep the same loss; changed loss can keep the same score architecture.</p>
 <ol>
 <li><strong>Loss graph:</strong> Axis signed margin hai ya raw score? Kink, minimum aur zero region check karo.</li>
 <li><strong>Labels:</strong> Margin formulas mein $\pm1$; BCE formula mein 0/1.</li>
@@ -1123,6 +1164,6 @@
 <li><strong>Final answer:</strong> Required decimal places par round karo; intermediate calculations mein precision rakho.</li>
 </ol>
 </article><nav class="next-prev" aria-label="Previous and next weeks"><a href="week11.html">← Week 11</a><span></span></nav></main>
-<aside class="contents"><details open><summary>On this page</summary><nav aria-label="Topic index"><a class="level-h2" href="#topic-1">Topic index</a><a class="level-h2" href="#topic-2">1. Classification loss: Model ki galti ko number kaise dein?</a><a class="level-h3" href="#topic-3">1.1 Loss function ka meaning</a><a class="level-h3" href="#topic-4">1.2 Score, predicted label aur signed margin</a><a class="level-h3" href="#topic-5">1.3 0–1 loss: Bas correct ya wrong</a><a class="level-h3" href="#topic-6">1.4 Convex surrogates kyun?</a><a class="level-h2" href="#topic-7">2. Four convex losses: Same margin, different penalties</a><a class="level-h3" href="#topic-8">2.1 Squared loss: Score ko target ke paas lao</a><a class="level-h3" href="#topic-9">2.2 Hinge loss: Correct side ke saath safety margin</a><a class="level-h3" href="#topic-10">2.3 Logistic loss: Confident wrong answers ko penalize karo</a><a class="level-h3" href="#topic-11">2.4 Perceptron loss: Wrong side ki penalty</a><a class="level-h3" href="#topic-12">2.5 Graphs aur quick comparison</a><a class="level-h3" href="#topic-13">Q2 — Identify loss curves and their intersection</a><a class="level-h3" href="#topic-14">2.6 Q9 — A correct label can still incur training loss</a><a class="level-h3" href="#topic-15">2.7 Q10 — Regularizer versus empirical data loss</a><a class="level-h2" href="#topic-16">3. Artificial neuron: Weighted sum ke baad activation</a><a class="level-h3" href="#topic-17">3.1 Linear model se neural network tak</a><a class="level-h3" href="#topic-18">3.2 Bias: Threshold ko shift karna</a><a class="level-h3" href="#topic-19">3.3 ReLU activation</a><a class="level-h3" href="#topic-20">3.4 Sigmoid activation</a><a class="level-h3" href="#topic-21">3.5 Hidden layers mein nonlinearity kyun?</a><a class="level-h3" href="#topic-22">Q1 — Output of a sigmoid hidden neuron</a><a class="level-h2" href="#topic-23">4. Network architecture, output choice and parameter counting</a><a class="level-h3" href="#topic-24">4.1 Layers ka role</a><a class="level-h3" href="#topic-25">4.2 Matrix form: Rows ko neurons se match karo</a><a class="level-h3" href="#topic-26">4.3 Task decides output activation and loss</a><a class="level-h3" href="#topic-27">4.4 Total learnable parameters</a><a class="level-h3" href="#topic-28">Q3 — Binary network: Parameters and activation choices</a><a class="level-h3" href="#topic-29">Q7 — Parameter count with three hidden layers</a><a class="level-h3" href="#topic-30">Q8 — Three output neurons: Can parameters be counted?</a><a class="level-h2" href="#topic-31">5. Forward pass: Input se prediction, phir loss</a><a class="level-h3" href="#topic-32">5.1 Calculation ka fixed order</a><a class="level-h3" href="#topic-33">5.2 Regression forward pass</a><a class="level-h3" href="#topic-34">Q4 — Two ReLU neurons and a regression output</a><a class="level-h3" href="#topic-35">5.3 Binary classification forward pass</a><a class="level-h3" href="#topic-36">Q11 — Count a 3→3→3→1 network and calculate its cross-entropy</a><a class="level-h3" href="#topic-37">Q5 — ReLU hidden layer followed by sigmoid probabilities</a><a class="level-h3" href="#topic-38">Q6 — Scalar input, ReLU gating and squared loss</a><a class="level-h2" href="#topic-39">6. Backward pass: Network actually seekhta kaise hai?</a><a class="level-h3" href="#topic-40">6.1 Forward, loss, backward, update</a><a class="level-h3" href="#topic-41">6.2 Gradient-descent rule</a><a class="level-h3" href="#topic-42">6.3 Useful local gradients</a><a class="level-h3" href="#topic-43">6.4 Worked learning example: Q6 ke same forward values se ek update</a><a class="level-h3" href="#topic-44">6.5 Training se judi important properties</a><a class="level-h2" href="#topic-45">7. Quick revision</a><a class="level-h3" href="#topic-46">7.1 Formula sheet</a><a class="level-h3" href="#topic-47">7.2 Common mistakes and corrections</a><a class="level-h3" href="#topic-48">7.3 Question solve karne ka checklist</a></nav></details></aside></div>
+<aside class="contents"><details open><summary>On this page</summary><nav aria-label="Topic index"><a class="level-h2" href="#topic-1">Topic index</a><a class="level-h2" href="#topic-2">Prerequisite bridge: Purane models ko ek training language mein jodo</a><a class="level-h2" href="#topic-3">1. Classification loss: Model ki galti ko number kaise dein?</a><a class="level-h3" href="#topic-4">1.1 Loss function ka meaning</a><a class="level-h3" href="#topic-5">1.2 Score, predicted label aur signed margin</a><a class="level-h3" href="#topic-6">1.3 0–1 loss: Bas correct ya wrong</a><a class="level-h3" href="#topic-7">1.4 Convex surrogates kyun?</a><a class="level-h2" href="#topic-8">2. Four convex losses: Same margin, different penalties</a><a class="level-h3" href="#topic-9">2.1 Squared loss: Score ko target ke paas lao</a><a class="level-h3" href="#topic-10">2.2 Hinge loss: Correct side ke saath safety margin</a><a class="level-h3" href="#topic-11">2.3 Logistic loss: Confident wrong answers ko penalize karo</a><a class="level-h3" href="#topic-12">2.4 Perceptron loss: Wrong side ki penalty</a><a class="level-h3" href="#topic-13">2.5 Graphs aur quick comparison</a><a class="level-h3" href="#topic-14">Q2 — Identify loss curves and their intersection</a><a class="level-h3" href="#topic-15">2.6 Q9 — A correct label can still incur training loss</a><a class="level-h3" href="#topic-16">2.7 Q10 — Regularizer versus empirical data loss</a><a class="level-h2" href="#topic-17">3. Artificial neuron: Weighted sum ke baad activation</a><a class="level-h3" href="#topic-18">3.1 Linear model se neural network tak</a><a class="level-h3" href="#topic-19">3.2 Bias: Threshold ko shift karna</a><a class="level-h3" href="#topic-20">3.3 ReLU activation</a><a class="level-h3" href="#topic-21">3.4 Sigmoid activation</a><a class="level-h3" href="#topic-22">3.5 Hidden layers mein nonlinearity kyun?</a><a class="level-h3" href="#topic-23">Q1 — Output of a sigmoid hidden neuron</a><a class="level-h2" href="#topic-24">4. Network architecture, output choice and parameter counting</a><a class="level-h3" href="#topic-25">4.1 Layers ka role</a><a class="level-h3" href="#topic-26">4.2 Matrix form: Rows ko neurons se match karo</a><a class="level-h3" href="#topic-27">4.3 Task decides output activation and loss</a><a class="level-h3" href="#topic-28">4.4 Total learnable parameters</a><a class="level-h3" href="#topic-29">Q3 — Binary network: Parameters and activation choices</a><a class="level-h3" href="#topic-30">Q7 — Parameter count with three hidden layers</a><a class="level-h3" href="#topic-31">Q8 — Three output neurons: Can parameters be counted?</a><a class="level-h2" href="#topic-32">5. Forward pass: Input se prediction, phir loss</a><a class="level-h3" href="#topic-33">5.1 Calculation ka fixed order</a><a class="level-h3" href="#topic-34">5.2 Regression forward pass</a><a class="level-h3" href="#topic-35">Q4 — Two ReLU neurons and a regression output</a><a class="level-h3" href="#topic-36">5.3 Binary classification forward pass</a><a class="level-h3" href="#topic-37">Q11 — Count a 3→3→3→1 network and calculate its cross-entropy</a><a class="level-h3" href="#topic-38">Q5 — ReLU hidden layer followed by sigmoid probabilities</a><a class="level-h3" href="#topic-39">Q6 — Scalar input, ReLU gating and squared loss</a><a class="level-h2" href="#topic-40">6. Backward pass: Network actually seekhta kaise hai?</a><a class="level-h3" href="#topic-41">6.1 Forward, loss, backward, update</a><a class="level-h3" href="#topic-42">6.2 Gradient-descent rule</a><a class="level-h3" href="#topic-43">6.3 Useful local gradients</a><a class="level-h3" href="#topic-44">6.4 Worked learning example: Q6 ke same forward values se ek update</a><a class="level-h3" href="#topic-45">6.5 Training se judi important properties</a><a class="level-h2" href="#topic-46">7. Quick revision</a><a class="level-h3" href="#topic-47">7.1 Formula sheet</a><a class="level-h3" href="#topic-48">7.2 Common mistakes and corrections</a><a class="level-h3" href="#topic-49">7.3 Question solve karne ka checklist</a></nav></details></aside></div>
 <footer>MLT Notes · Notes by Shiva <span>Learn one concept at a time.</span></footer>
 </body></html>

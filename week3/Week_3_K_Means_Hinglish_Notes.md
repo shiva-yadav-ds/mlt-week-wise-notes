@@ -4,6 +4,14 @@
 
 **K-Means ka calculation cycle:** Current centers se squared distances → nearest-center assignments → assigned points ka mean → new distances aur objective check. Initialization probabilities belong to K-Means++ and are calculated **before** the Lloyd fitting cycle. A cluster label, centroid coordinate, WCSS value and sampling probability answer different questions; har subpart ka requested stage pehle identify karo.
 
+## Prerequisites: PCA se clustering tak
+
+Weeks 1–2 mein representation change hui; ab observations ko groups assign karne hain. $x_i\in\mathbb R^d$ one sample; $\|x_i-\mu\|_2^2=\sum_{j=1}^d(x_{ij}-\mu_j)^2$ squared Euclidean distance; $\arg\min$ minimum **dene wala label/parameter** return karta hai, minimum value nahi. No target $y_i$ supplied hai.
+
+**Pehla sochne wala example — teaching example:** Points $0,2,8,10$, two centers $0,10$. Nearest-center assignments $\{0,2\}$ and $\{8,10\}$. Means 1 and 9. Old-center loss $0^2+2^2+(-2)^2+0^2=8$; updated-center loss $(-1)^2+1^2+(-1)^2+1^2=4$. Reassignment same rahegi, so stable. Zero loss zaroori nahi: each cluster mein two distinct points hain.
+
+Is tiny cycle mein three separate tasks hue: assign labels, average assigned points, evaluate loss. Q26 sirf averaging; Q1 full loop; Q36 intermediate-stage loss; Q2 initialization ki sampling poochhta hai. Har question ko requested task se connect karke padho.
+
 ## 1. Clustering, centroid aur objective
 
 ### 1.1 Clustering kya karti hai?
@@ -38,6 +46,13 @@ Assignment vector ka order dataset ke order se match karta hai. Labels swap karn
 Har point ke $K$ possible labels hon toh $K^n$ assignment vectors hain. Yeh **labelled assignments allowing empty clusters** ka count hai; exactly $K$ non-empty, unlabelled groups ka count nahi.
 
 ---
+
+**Average hi representative kyun?** Non-empty cluster ka mean $\bar x$ lo. Any candidate center $a$ ke liye $x_i-a=(x_i-\bar x)+(\bar x-a)$. Square aur sum karne par cross-term zero, because $\sum_i(x_i-\bar x)=0$:
+
+$$\sum_{i\in C}\|x_i-a\|^2
+=\sum_{i\in C}\|x_i-\bar x\|^2+|C|\|a-\bar x\|^2.$$
+
+First part fixed hai; second nonnegative aur only $a=\bar x$ par zero. Mean update exact minimizer hai. Is argument mein **squared Euclidean** essential hai: absolute-distance objective ka coordinate-wise minimizer median hota hai. Metric change karke mean ko automatically optimal mat maan lena.
 
 ### Q26 — Direct centroid update
 
@@ -385,6 +400,10 @@ PDF ka 16.68 rounded intermediate distances ka sum hai; exact answer $50/3$ hai.
 
 ---
 
+**Same starting centers, changed question:** Initial assignments poochhe toh distances old centers tak. First updated means poochhe toh old assignments ke averages. First-cycle WCSS poochhe toh question ne old ya updated centers specify kiye hain, woh read karo. Converged answer poochhe toh updated centers se assignment dobara check karni hogi. New point add ho toh old cluster size $m$ aur mean $\mu$ se provisional mean $(m\mu+x_{\rm new})/(m+1)$; phir all memberships recheck, because boundary shift ho gayi.
+
+Q1, Q17/Q45 and Q46 ek same assign–update idea ko different stopping stages par test karte hain. Final centers ka answer intermediate-stage objective mein substitute karna stage mismatch hai, arithmetic mistake nahi.
+
 ### 2.2 Iteration counting ka trap
 
 Jul 2023 Quiz 1 Q23 mein points $(1,1),(2,1),(4,3),(5,4)$ aur initial centers $(0,0),(4,4)$ hain. Initial squared-distance pairs $(2,18),(5,13),(25,1),(41,1)$ se groups first two / last two bante hain. Means $(1.5,1),(4.5,3.5)$.
@@ -688,6 +707,14 @@ $$\boxed{\text{Loss: red; penalty: black; selected }K=13}.$$
 ## 4. Cluster geometry: Boundary aur convexity
 
 ### 4.1 Nearest-center boundary
+
+**Linear boundary squares se kaise aati hai?** Two fixed centers $a,b$ ke distances equal set karo. Expand:
+
+$$\|x\|^2-2a^Tx+\|a\|^2=\|x\|^2-2b^Tx+\|b\|^2,$$
+
+$$2(b-a)^Tx=\|b\|^2-\|a\|^2.$$
+
+Common $\|x\|^2$ cancel hota hai, so boundary line/hyperplane banti hai. One dimension mein centers 1,9 give $16x=80$, hence midpoint 5. Cluster $a$ ka side check karne ke liye $x=a$ substitute karo: uski own distance zero honi chahiye. Three centers hon toh a point ko chosen center ke **dono competitors** se compare karo; one pairwise boundary enough nahi. Q49 two-center case, Q50 full half-space intersection test karta hai.
 
 **Definition:** Do centers se equal distance wale points decision boundary par hain. 2D Euclidean K-Means mein straight line; higher dimensions mein hyperplane.
 
@@ -1004,6 +1031,10 @@ Selected center ka score zero; denominator positive ho toh probability zero. Sab
 **Properties:** Farther point ka higher probability, guaranteed selection nahi. Centers spread karne mein help milti hai (May 2025 Quiz 1 Q9); global optimum, fixed iteration count aur automatically chosen $K$ guaranteed nahi. Uniform first choice aur weighted later choices ko mix mat karo.
 
 ---
+
+**Sampling ka beginner calculation:** Same four points $0,2,8,10$, first chosen center 0. Scores $D_i^2=(0,4,64,100)$; total 168. Next-center probabilities $(0,1/42,8/21,25/42)$; sum $(0+4+64+100)/168=1$. Farthest point 10 has largest probability $25/42$, certainty nahi.
+
+Agar next selected center 8 ho, nearest-selected-center scores **recompute** karo: $(0,4,0,4)$, so third center 2 or 10, probability $1/2$ each. Old scores $64,100$ keep karna galat hai because coverage change hui. Q2 one sampling step; Q5 and Q46(iii) same normalization after this minimum-distance recomputation.
 
 ### Q2 — Second center probability
 
@@ -1508,6 +1539,10 @@ WCSS center se squared error measure karta hai: lower better, nonnegative. Silho
 Low WCSS alone strong separation prove nahi karta; two compact groups bahut paas bhi ho sakte hain. $K$ select karte waqt scale, meaningful groups, elbow aur silhouette ko saath dekho.
 
 ## 8. Quick revision
+
+**Concept recall:** Lloyd ka loss kyun nahi badhta? Assignment each point ke liye best available center choose karti hai; update fixed assignments ka exact squared-error minimizer choose karta hai. Dono steps apne variables optimize karte hain, so loss non-increasing; joint global optimum follow nahi hota. More $K$ ka optimal WCSS lower/equal kyun? Larger model old grouping reproduce kar sakta hai; strict decrease har dataset par required nahi.
+
+**Week 4 bridge:** Hard membership $\mathbf1(z_i=k)$ ko uncertain membership $r_{ik}\in[0,1]$ se replace karoge toh cluster mean weighted mean banegi. GMM additionally spreads and mixture probabilities model karta hai; nearest center alone membership decide nahi karega. Is week ki assign–update thinking EM ko samajhne ka starting point hai.
 
 | Task | Formula / check |
 |---|---|

@@ -21,6 +21,14 @@
 
 ---
 
+## Prerequisites: Score, distance aur constraints
+
+Week 9 se signed labels $y_i\in\{-1,+1\}$, affine score $f_i=w^Tx_i+b$, positive signed score for correct side; Week 1 se perpendicular projection; Week 6 se squared norm. Perceptron mistake bound ne large geometric margin ka benefit suggest kiya; SVM now explicitly largest margin seekhega.
+
+Symbols: $\|w\|=\sqrt{\sum_jw_j^2}$, $b$ bias, $\alpha_i$ one constraint ka nonnegative dual multiplier, $Y=\operatorname{diag}(y_i)$ label signs ki diagonal matrix. $\min$ smallest objective value; $\arg\min$ us value ko achieve karne wala parameter. $\sup$ upper bound/supremum hai, which finite attained maximum hona required nahi.
+
+**Formulation first:** Notes mein with-bias aur no-bias versions both hain. Free $b$ ho toh boundary shift kar sakti hai and dual mein $\sum_i\alpha_i y_i=0$ needed. $b$ absent ho toh origin-boundary restriction hai; free bias add karke numerical answer change nahi karna.
+
 ## 1. Margin: Sirf correct classification se aage
 
 ### 1.1 Perceptron se SVM ka connection
@@ -109,6 +117,14 @@ General parallel hyperplanes $w^Tx+b=a$ and $w^Tx+b=c$ ka distance:
 $$\boxed{\frac{|a-c|}{\|w\|}}.$$
 
 **Trap:** Norm denominator $\|w\|$, squared norm $\|w\|^2$ nahi. In 2D, $\|w\|=\sqrt{w_1^2+w_2^2}$.
+
+**Distance formula kyun divide by norm karti hai?** Point $x$ ko normal direction mein move karke boundary tak lao. Unit normal $n=w/\|w\|$, signed travel length $t$; projected point $x-tn$. Boundary equation:
+
+$$w^T(x-tn)+b=0
+\Rightarrow w^Tx+b-t\|w\|=0
+\Rightarrow t=\frac{w^Tx+b}{\|w\|}.$$
+
+Distance $|t|$ hai; correct-side signed distance $yt$. Do planes at scores $+1,-1$ ki score difference 2 hai, isliye full width $2/\|w\|$. Kisi arbitrary unnormalized separator ke liye closest data distance automatically $1/\|w\|$ nahi: training minimum functional margin ko 1 par normalize karna pehle required hai. Q2 canonical width; Q8 arbitrary point-to-plane distance. Dono norm divide karte hain, numerator different reason se aata hai.
 
 ### 1.7 Q2 — Width from weight vector
 
@@ -210,6 +226,14 @@ $$\boxed{\min_w\frac12\|w\|^2\quad\text{subject to }y_iw^Tx_i\ge1\ \forall i}.$$
 - Scaling one feature changes Euclidean geometry, so SVM generally feature-scale sensitive hai.
 
 **Scaling counterexample:** Income rupees mein aur age years mein raw use karo toh coordinate scales different hain. Feature standardization geometry ko change karegi; unlike uniform rescaling of all coordinates, relative scales affect chosen separator.
+
+**First complete maximum-margin fit — teaching example, free bias:** One negative input $x=-2$ and one positive input $x=1$. Constraints
+
+$$2w-b\ge1,\qquad w+b\ge1.$$
+
+Add karke $3w\ge2$, so any feasible $w$ at least $2/3$. Minimum $w^2/2$ therefore $w=2/3$ par milta hai; first constraint gives $b\le1/3$, second $b\ge1/3$, hence $b=1/3$. Boundary $2x/3+1/3=0$ gives $x=-1/2$, midpoint of nearest opposite-class points. Norm $2/3$, one-sided margin $3/2$, full width 3, exactly gap between inputs −2 and 1.
+
+No-bias version would require $2w\ge1$ and $w\ge1$, so $w=1$, boundary 0, width 2. Same observations, different allowed model. Q1/Q7 require checking all sample constraints after a candidate is chosen; intuition from one visually convenient pair alone isn't enough.
 
 ### 2.4 Q1 — Separable dataset and width
 
@@ -509,6 +533,15 @@ $$\boxed{\sum_i\alpha_iy_i=0}.$$
 
 So **no-bias dual:** only $\alpha_i\ge0$. **Free-bias dual:** nonnegativity plus label-weighted sum zero. In both cases $w=\sum_i\alpha_i y_i x_i$.
 
+**Dual objective ka quadratic term kahan se aaya?** Let $v=\sum_i\alpha_i y_i x_i$. Lagrangian ka weight part $\|w\|^2/2-w^Tv$ hai. Completing the square:
+
+$$\frac12\|w\|^2-w^Tv
+=\frac12\|w-v\|^2-\frac12\|v\|^2.$$
+
+For fixed multipliers its minimum $w=v$ par hai, value $-\|v\|^2/2$. Remaining term $\sum_i\alpha_i$ add karo. Expand $\|v\|^2=\sum_{i,j}\alpha_i\alpha_jy_iy_jx_i^Tx_j$ to get the dual above. Only pairwise dot products bache, so kernel substitution possible hai.
+
+If bias free hai, remaining Lagrangian includes $-b\sum_i\alpha_i y_i$. Nonzero coefficient ho toh minimizing over unrestricted $b$ sends value to $-\infty$. Finite dual value needs label-weighted sum zero. This extra equality rule memorized decoration nahi, bias stationarity ka consequence hai.
+
 ### 5.4 KKT conditions: What to check at an optimum
 
 For hard-margin SVM with bias, the relevant conditions are:
@@ -542,6 +575,10 @@ Write $m_i=y_if(x_i)$.
 **Counterexample to “on margin always positive multiplier”:** Repeat positive input $+1$ twice, add negative input $-1$. At $w=1,b=0$, all three are on supporting hyperplanes. A valid optimal multiplier assignment in that order is $(1/2,0,1/2)$. Second positive duplicate is on-margin but has zero coefficient.
 
 Some texts call all on-margin points geometric support vectors. Here **positive-dual-coefficient criterion** follows the supplied slides' dual viewpoint; equality-on-margin alone does not guarantee positive coefficient.
+
+**KKT ko toy fit par verify karo:** Above two-point free-bias example has both margins 1. Bias condition $-\alpha_-+\alpha_+=0$ gives equal coefficients $a$. Reconstruction $w=a(-1)(-2)+a(+1)(1)=3a=2/3$ gives $a=2/9>0$. Feasibility, stationarity and complementary slackness all satisfied, so this is an optimal primal/dual pair.
+
+Point $x=4,y=+1$ add karo: its margin $(2/3)4+1/3=3>1$, hence $\alpha=0$. It adds no supporting term. Q9/Q14 ask supplied-coefficient reconstruction, not necessarily solving or certifying all KKT conditions; Q12/Q13 test what an active-looking point actually guarantees. Nonnegative, positive and exactly-on-margin are three different statements.
 
 ### 5.5A Q12 — Support vectors, primal variables and sparse representation
 
@@ -861,6 +898,10 @@ $$\boxed{\#\text{LOOCV errors}\le K\quad\Rightarrow\quad E_{\mathrm{CV}}\le\frac
 
 **Not equality:** Support point remove karne par model change ho sakta hai, but removed point necessarily misclassified nahi hota. Thus actual errors less than $K$ ho sakte hain.
 
+**Removing a zero coefficient ka proof:** An optimal dual certificate has $\alpha_i=0$. Us point ka constraint remove karoge toh same remaining coefficients and original $w,b$ still feasible, stationarity/complementary slackness still hold, and objectives match. Thus old classifier remains an optimum of the reduced problem. Unique/consistent classifier selection aur fixed preprocessing ke under its held-out prediction stays correct.
+
+Supporting point remove hone par original solution infeasible nahi hoti; **optimality certificate** and potentially selected optimum change hote hain. Isliye actual held-out mistakes support cases se at most count hoti hain, exactly count nahi. If $N=20,K=4$, bound $E_{CV}\le0.2$ hai; observed error 0, 0.05, 0.10, etc. ho sakti hai. Q5 removal; Q11 resulting bound. Retraining scaler on each reduced set changes feature geometry, so fixed-design proof ko that changed pipeline ka automatic theorem mat samjho.
+
 ### 6.3 Q11 — Select the LOOCV relationship
 
 **Source:** 2026 Sep 13 ET, Q11.
@@ -1111,6 +1152,10 @@ $$IG_2=0.970951-0.689660\approx\boxed{0.281291\text{ bits}}.$$
 | Similar question means identical geometry | Recheck points, bias and labels |
 
 ### 9.3 Last-minute solving checklist
+
+**Recall:** Smallest norm unconstrained solution zero hai; constraints why needed? They ensure meaningful signed separation at fixed score scale. Support coefficients real kyun? Optimization continuous hai; perceptron update-count integer interpretation apply nahi hota. Kernel sum mein $y_i$ kyun? Nonnegative $\alpha_i$ contribution ka strength hai, true label direction supply karta hai.
+
+**Week 11 bridge:** Noisy/nonseparable inputs all hard constraints satisfy nahi kar sakte. Har observation ko nonnegative shortfall $\xi_i$ allow karenge, but its cost pay karni hogi. Same dual will retain its quadratic form and gain upper bounds $\alpha_i\le C$.
 
 1. **Model:** Hard/soft margin? Linear/kernel? Bias allowed?
 2. **Labels:** Convert to $\pm1$ before using SVM constraints.

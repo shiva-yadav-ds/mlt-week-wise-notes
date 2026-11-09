@@ -23,6 +23,14 @@
 
 ---
 
+## Prerequisites: Classification + probability + estimation
+
+Week 7 se class labels aur training/validation difference; Week 4 se Bayes rule, Bernoulli counting aur Gaussian density. Agar Week 4 revise nahi kiya: $P(A\mid B)$ means B fixed/known hone ke baad A ka probability; $P(A,B)=P(A\mid B)P(B)$; disjoint class possibilities add karke total evidence milti hai.
+
+$N$ total samples, $d$ features, $C$ number of classes. $\pi_c=P(Y=c)$ prior, $\theta_{jc}=P(X_j=1\mid Y=c)$ binary feature parameter. $x_j$ observed value; $\theta_{jc}$ learned probability. Product $\prod_j$ matching feature factors multiply karta hai; sum $\sum_c$ possible classes ke contributions add karta hai. Estimated values par hat use hota hai.
+
+**Need:** Many features ka whole joint frequency table sparse ho jaata hai. Conditional independence se class-wise small tables estimate karke new combinations ko score kar sakte hain. Trade-off: fewer parameters, stronger modelling assumption. Model ko training labels supplied hain; Week 4 GMM ki tarah hidden class assignments learn nahi karne.
+
 ## 1. Model kya seekh raha hai?
 
 ### 1.1 Training aur test ka connection
@@ -132,6 +140,10 @@ $$P(1\mid x)=\frac{S_1}{S_0+S_1},\qquad P(0\mid x)=\frac{S_0}{S_0+S_1}.$$
 **Counterexample:** $S_1=0.02$, $S_0=0.03$ ho toh posterior $0.02$ nahi, $0.02/0.05=0.4$ hai. Scores ka sum 1 hona zaroori nahi; posterior class probabilities ka sum 1 hona chahiye.
 
 > Concept slides pp. 7–8 mein denominator drop karne ke baad posterior ke saath equality likhi hai. Correct relation $P(y\mid x)\propto P(x\mid y)P(y)$ hai. Equality sirf normalization ke baad.
+
+**Bayes before NB — teaching example:** Priors $P(1)=0.2$, $P(0)=0.8$; given observed feature vector ki likelihoods $P(x\mid1)=0.6$, $P(x\mid0)=0.2$. Joint scores $S_1=0.12$, $S_0=0.16$. Evidence $0.28$; posteriors $P(1\mid x)=3/7$, $P(0\mid x)=4/7$. Higher feature likelihood class 1 ke favour mein hai, but smaller prior ke baad class 0 wins.
+
+Same arithmetic four question types resolve karti hai: feature likelihood 0.6; joint 0.12; posterior $3/7$; predicted label 0. Q22 missing prior ko test karta hai; Q20 supplied joints normalize karta hai; Q25 features multiply karke joint scores se posterior tak poora pipeline leta hai.
 
 ### 2.2A Q22 — Likelihoods alone do not determine the label
 
@@ -348,6 +360,10 @@ $$\boxed{(C-1)+C\sum_{j=1}^{d}(r_j-1)}.$$
 Sab features ke $r$ values hon toh $(C-1)+Cd(r-1)$.
 
 **Trap:** $r$ categories ke liye $r$ free probabilities nahi; last one remaining mass hai.
+
+**Count ko table se build karo:** Two binary features, two classes. Full conditional table mein each class ke liye outcomes $(0,0),(0,1),(1,0),(1,1)$ ki four probabilities, sum 1, so 3 free values. Two classes → 6, plus one prior → 7.
+
+Naive model mein each class ke only $P(X_1=1\mid c)$ and $P(X_2=1\mid c)$ chahiye: 2 per class, total 4, plus prior → 5. $P(1,0\mid c)=\theta_{1c}(1-\theta_{2c})$ derive hota hai, independently choose nahi kar sakte. NB ki savings correlation patterns ko restrict karke aati hain. Q2/Q10 binary count; Q5 full joint comparison; Q21 categories ke through per-feature $r-1$ extension.
 
 ### 4.4 Q2 — Five classes, three binary features
 
@@ -574,6 +590,24 @@ $$\hat p_1^1=\frac13=\boxed{0.3333\ldots}.$$
 ---
 
 ## 6. Parameters se prediction: Ab poora pipeline
+
+**Training se prediction tak first complete example — teaching example:** Two binary features; six rows:
+
+| Class | Feature rows |
+|---|---|
+| 0 | $(0,0),(1,0),(0,1)$ |
+| 1 | $(1,1),(1,1),(1,0)$ |
+
+Priors both $1/2$. Class-0 ones counts $(1,1)$ out of 3; class-1 counts $(3,2)$ out of 3. Hence $\theta_{\cdot0}=(1/3,1/3)$, $\theta_{\cdot1}=(1,2/3)$.
+
+For query $(1,0)$, use first-feature presence and second-feature **absence**:
+
+$$S_0=\frac12\frac13\left(1-\frac13\right)=\frac19,\qquad
+S_1=\frac12(1)\left(1-\frac23\right)=\frac16.$$
+
+Class 1 wins; posterior $P(1\mid x)=(1/6)/(1/9+1/6)=(3/18)/(5/18)=3/5$. Query $(0,1)$ would make class-1 score zero because class-1 first feature was always 1. This is an unsmoothed fitted-model statement, not proof that real class 1 can never produce that query.
+
+Q1/Q17 test training counts; Q7 complements; Q3/Q12 zero factors; Q4/Q9 reuse a fitted table for changed queries. Once parameters fixed hain, new query ke liye counts refit nahi karne.
 
 ### 6.1 Fixed solving recipe
 
@@ -1048,6 +1082,12 @@ Yeh **standard binary add-one formula $(s+1)/(N_c+2)$ nahi** hai. Paper/slides i
 
 Graph mein smoothing se pehle ones count $0$, class size $3$ hai. Same starting data par answers $0$, $1/4$, $1/5$ hain. **Question ka operation pehle padho.**
 
+**Same data, changed smoothing rule:** Above class-1 feature 1 has 3 ones in 3 samples. Standard binary add-one gives $(3+1)/(3+2)=4/5$, absence $1/5$. One all-ones pseudo-row instead gives $(3+1)/(3+1)=1$, absence still zero. Three class-0 rows mein feature 1 has 1 one: standard gives $2/5$, all-ones-row rule $2/4$.
+
+Thus “add one” **kis count mein** add hua, woh decisive hai. Ordinary per-feature add-one smoothing mein absent/present both outcomes ko pseudo-count milta hai; all-ones data augmentation only present outcome support badhata hai. Priors automatically smooth hue assume nahi karna. Q16/Q18 ka explicitly stated pseudo-row operation use karo; Q11 general zero-frequency motivation poochhta hai.
+
+**Week 4 connection:** Beta(1,1) prior plus $s$ ones and $f$ zeros ka posterior mean $(s+1)/(s+f+2)$ standard binary add-one expression hai. Uniform-prior MAP generally $s/(s+f)$ hai when the mode is interior. Posterior mean aur MAP ko swap karke smoothing justify nahi karni.
+
 ### 7.4 Q11 — Smoothing ka purpose
 
 **Source:** 2025 Mar 16 Quiz 2, Q11.
@@ -1198,6 +1238,13 @@ Biggest $\ell_c$ ka class predict karo. Positive scores ke liye log increasing h
 
 ### 8.2 Linear decision boundary: Result, unnecessary derivation nahi
 
+**Linear form ko one feature se dekh lo:** Class log-score ratio mein feature $j$ contribution
+
+$$x_j\log\frac{\theta_{j1}}{\theta_{j0}}
++(1-x_j)\log\frac{1-\theta_{j1}}{1-\theta_{j0}}.$$
+
+Second bracket expand karo: constant absent-feature log ratio + $x_j$ times difference of two log ratios. Constants all features se bias mein add; $x_j$ ke coefficients weights mein. Thus product model ka logarithm affine score ban jaata hai. Finite expression ke liye probabilities strictly between 0 and 1 needed hain. Next formula isi collection ko compactly likhti hai.
+
 For two classes, with $0<\pi_1<1$ and $0<\theta_{jc}<1$:
 
 $$g(x)=\log\frac{S_1(x)}{S_0(x)}=w^Tx+b.$$
@@ -1300,6 +1347,12 @@ Full multivariate density for invertible covariance:
 $$f(x;\mu_c,\Sigma_c)=\frac{\exp\left[-\frac12(x-\mu_c)^T\Sigma_c^{-1}(x-\mu_c)\right]}{(2\pi)^{d/2}|\Sigma_c|^{1/2}}.$$
 
 Zero off-diagonal covariance in a multivariate Gaussian gives conditional independence. Full non-diagonal covariance generally naive independence satisfy nahi karti.
+
+**Gaussian prediction ka beginner example:** Equal priors, one continuous feature; class 0 $N(0,1)$, class 1 $N(2,1)$. At $x=0$, densities $1/\sqrt{2\pi}$ versus $e^{-2}/\sqrt{2\pi}$. Common normalizer and priors cancel, so posterior class 1
+
+$$\frac{e^{-2}}{1+e^{-2}}=\frac1{1+e^2}\approx0.1192.$$
+
+At general $x$, log-score ratio $-[(x-2)^2-x^2]/2=2x-2$, so boundary 1. The $x^2$ terms cancel because variances same. Unequal variances mein coefficients of $x^2$ different hote hain, cancellation generally nahi hogi. This explains next comparison and Week 9 ki logistic-score connection. Q15 mixed binary/Gaussian case mein multiply matching Bernoulli factor bhi karega; density ko interval probability se replace nahi karna.
 
 ### 9.5 Decision boundaries: Equal vs unequal covariance
 
@@ -1483,6 +1536,10 @@ $$S_1=0.4\times0.5\times0.352065\approx0.070413.$$
 | All stored priors ko free count karna | $C$ class priors have $C-1$ degrees of freedom |
 
 ### 10.3 Last-minute solving checklist
+
+**Recall:** Conditional independence class ke andar hai; overall data dependence still possible. Denominator label comparison mein kyun omit? Same positive evidence all classes ko divide karta hai. Posterior answer mein kyun retain? Required probabilities ko sum 1 banana hai. If all scores zero? Evidence zero under fitted model; normalized posterior undefined, tie-at-zero posterior nahi.
+
+**Week 9 bridge:** Bernoulli NB aur shared-covariance Gaussian classifier dono affine log-odds de sakte hain, despite generative training. Logistic regression same probability form ko directly fit karegi. Boundary linear hona aur training generative/discriminative hona separate comparisons hain.
 
 1. **Data ka type:** Binary, categorical, continuous, ya mixed?
 2. **Asked quantity:** Likelihood, joint, posterior, label, ya parameter count?

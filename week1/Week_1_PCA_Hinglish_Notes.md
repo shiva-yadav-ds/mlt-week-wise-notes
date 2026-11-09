@@ -4,6 +4,23 @@
 
 **PCA ka connected workflow:** Mean subtract karo → covariance banao → largest eigenvalue ki unit direction choose karo → dot products se compressed coordinates nikalo → retained directions se reconstruct karo. Direction $w$, scalar score $z=w^T(x-\mu)$, aur reconstructed vector $\mu+zw$ alag objects hain. Covariance eigenvalues batati hain kitni variance retained ya discarded hui; compression error is discarded variance.
 
+## Pehle ki zaroori maths: Is week ko independently padhna
+
+PCA ke liye probability distributions ya classification pehle aana required nahi. Vectors, averages aur squared distance ka meaning chahiye:
+
+| Notation | Iska operation | Chhota calculation |
+|---|---|---|
+| $x\in\mathbb R^d$ | $d$ real feature values ek column mein | $(3,4)^T$ has $d=2$ |
+| $x^T$ | Column ko row banana; values nahi badalti | $(3,4)$ |
+| $x^Tw=\sum_{j=1}^d x_jw_j$ | Matching coordinates multiply, then add | $(3,4)^T\cdot(1,0)=3$ |
+| $\|x\|_2^2=x^Tx$ | Length ka square | $3^2+4^2=25$ |
+| $\sum_{i=1}^n$ | Har observation ki contribution add | $\sum_{i=1}^3 i=1+2+3$ |
+| $\operatorname{span}(w)$ | $w$ ke all scalar multiples | $(1,2)$ se $(2,4),(-1,-2)$ bhi |
+
+Subscript $i$ sample identify karega; $j$ feature ya PC identify karega, context ke according. Hat $\hat x$ approximate reconstruction; tilde $\tilde x$ mean-subtracted input. **Eigenvector** ka meaning Section 4 mein build hoga; abhi formula memorize karne ki need nahi.
+
+**Learning target:** Kisi point ko fewer coordinates mein encode karna, phir wapas reconstruct karke exactly batana ki kya information lost hui. M1 representation start karta hai; M2 projection; M6–M9 direction choose karna; M12–M20 error/rank/storage. Har later question isi encode–decode story ka ek changed part hai.
+
 ## 1. Representation learning: Compression ka idea
 
 ### 1.1 Supervised, unsupervised aur PCA
@@ -236,6 +253,23 @@ For unit $w$, $\boxed{\operatorname{Var}(w)=w^TCw}$.
 
 $1/(n-1)$ sample covariance use ho toh eigenvalues/variances $n/(n-1)$ factor se change hote hain; eigenvectors aur explained-variance ratios same. Question ka denominator follow karo. Yahan default $1/n$ hai.
 
+**Covariance formula andar se kaise banti hai?** Two features ke centered values $a_i,b_i$ hon. Positive product $a_ib_i$ means dono apne means ke same side par hain; negative product opposite sides. Average product covariance hai. Diagonal par same feature multiply hoti hai, isliye average squared deviation, yani variance, milti hai.
+
+Unit direction $w=(u,v)^T$ ka sample score $z_i=ua_i+vb_i$ hai. Mean score zero, so:
+
+$$\frac1n\sum_i z_i^2
+=u^2\frac{\sum_i a_i^2}{n}+2uv\frac{\sum_i a_ib_i}{n}+v^2\frac{\sum_i b_i^2}{n}
+=\begin{bmatrix}u&v\end{bmatrix}C\begin{bmatrix}u\\v\end{bmatrix}.$$
+
+$2uv$ cross-term $(a+b)^2=a^2+2ab+b^2$ se aata hai. Isliye covariance matrix sirf bookkeeping nahi: **har possible direction ki variance** isi one matrix mein encoded hai.
+
+**Pehla numerical checkpoint — teaching example, official question nahi:** Raw points $(2,1),(4,1)$ ka mean $(3,1)$; centered points $(-1,0),(1,0)$. Thus
+
+$$C=\frac12\left[\begin{pmatrix}1&0\\0&0\end{pmatrix}+\begin{pmatrix}1&0\\0&0\end{pmatrix}\right]
+=\begin{pmatrix}1&0\\0&0\end{pmatrix}.$$
+
+Horizontal direction $(1,0)$ par scores $-1,1$, variance $(1+1)/2=1$. Vertical direction $(0,1)$ par scores $0,0$, variance zero. Horizontal coordinate retain karke mean add back karo: $(3,1)\pm(1,0)$ gives both original points. Ab M6 mein same calculation four non-axis-aligned points par hogi.
+
 ### M6 — Centered points se covariance
 
 Handwritten p. 11.
@@ -268,6 +302,14 @@ $$\boxed{C=\begin{bmatrix}2.5&2\\2&2.5\end{bmatrix}}.$$
 Cross-check: symmetric hai, trace 5; positive covariance means dono features together move karte hain.
 
 ### 4.3 Covariance properties and principal directions
+
+**Best direction eigenvector kyun niklegi?** $w^TCw$ maximize karna hai, but $w$ ki length fix karni hogi: warna $w$ double karke expression four times kar sakte hain without finding a better direction. Constraint $w^Tw=1$ ke saath multiplier $\lambda$ introduce karo:
+
+$$F(w,\lambda)=w^TCw-\lambda(w^Tw-1).$$
+
+Symmetric $C$ ke liye derivative $2Cw-2\lambda w=0$, hence $Cw=\lambda w$. Matrix $C$ is direction ko rotate nahi karti, sirf scale karti hai: that is an eigenvector. Unit $w$ ke liye $w^TCw=\lambda$. Maximum ke liye largest $\lambda$ choose karna ab variance criterion se directly follow hota hai.
+
+**Eigenpair nikalne ke operations:** $(C-\lambda I)w=0$ ko nonzero $w$ chahiye, so $\det(C-\lambda I)=0$. $I$ identity matrix hai; determinant zero means matrix invertible nahi. Pehle scalar roots $\lambda$ nikalo, phir each root substitute karke vector ratios solve karo, finally norm se divide karo. M9 exactly yahi sequence work out karta hai; M8 mein candidate directions supplied hain, isliye multiplication check enough hai.
 
 $C$ symmetric positive semidefinite hai: real, nonnegative eigenvalues. Orthonormal eigenvectors choose kar sakte hain. Descending order:
 
@@ -450,6 +492,13 @@ $$\boxed{\mathrm{EVR}(k)=\frac{\sum_{j\leq k}\lambda_j}{\sum_{j\leq d}\lambda_j}
 Target $q$ preserve karne ke liye smallest $k$ with cumulative ratio $\geq q$ choose karo. Equality qualifies for “at least”; “more than” ke liye strict inequality.
 
 All eigenvalues zero hon toh total variance zero; percentage $0/0$ undefined hai, even though mean-only reconstruction exact hai.
+
+**One point ka error aur whole dataset ka error connect karo:** Complete orthonormal basis mein $\tilde x_i=\sum_{j=1}^d z_{ij}w_j$, where $z_{ij}=w_j^T\tilde x_i$. Top $k$ retain karne par residual $\sum_{j>k}z_{ij}w_j$ bachta hai. Perpendicular components ke squared lengths add hote hain:
+
+$$\|r_i\|^2=\sum_{j>k}z_{ij}^2,qquad
+\frac1n\sum_i\|r_i\|^2=\sum_{j>k}\left(\frac1n\sum_i z_{ij}^2\right)=\sum_{j>k}\lambda_j.$$
+
+Single test point ka error directly eigenvalue sum nahi hota: uske actual discarded scores square karne honge. Eigenvalue sum **training-data average** hai. M10–M11 point-level calculations test karte hain; M12 whole-dataset average; M13 same spectrum ko retained percentage mein convert karta hai.
 
 ### M12 — Error from discarded eigenvalues
 
@@ -936,6 +985,10 @@ $$\frac{X_cv_1}{\sqrt{12}}=\frac{(2,1,1)}{\sqrt6}=w_1.$$
 Isi dataset se projection, covariance, rank, EVR, error, storage aur dual normalization sab connect ho gaye.
 
 ## 12. Master-question sequence and quick revision
+
+**Book band karke explain karo:** (1) Unit length kyun? (2) Mean wapas kyun add hota hai? (3) Eigenvalue direction ki variance kaise hai? (4) Zero error ka matlab storage saving kyun nahi? Answers: arbitrary scaling remove karna; original origin restore karna; $w^TCw=\lambda$; basis/mean ki shared storage bhi count hoti hai.
+
+**Week 2 ka bridge:** Yahan dot products explicit feature coordinates se nikle. Next week poochhega: agar useful features nonlinear aur bahut many hon, kya sirf unke dot products se same projection learning kar sakte hain? Gram matrix aur M21–M22 us answer ki preparation hain.
 
 | Solve in order | Skill covered |
 |---|---|

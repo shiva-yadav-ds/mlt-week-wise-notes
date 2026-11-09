@@ -22,6 +22,14 @@
 
 ---
 
+## Prerequisites: Bayes se direct boundary learning tak
+
+Week 8 class priors aur feature likelihoods learn karke posterior nikaalti thi. Yahan parameters directly classification score/probabilities se learn honge. Week 5 se dot product aur gradient update; Week 6 se regularization/validation recall karo. Generative versus discriminative **training target** ka difference hai, boundary straight/curved hone ka nahi.
+
+Four objects ek saath mix nahi karne: input $x$; real score $z=w^Tx+b$; probability $p=\sigma(z)$; thresholded label $\hat y$. Same score perceptron mein label decide karega, logistic model mein sigmoid ke through probability. Weights ke coordinates features se match; bias input se independent offset hai.
+
+**Labels ka conversion:** Signed label $s\in\{-1,+1\}$ ko binary $y=(s+1)/2$ maps to 0/1. Inverse $s=2y-1$. Perceptron update mein signed label chahiye; BCE/gradient $(p-y)x$ mein 0/1 label. Question ka label convention first mark karo.
+
 ## 1. Linear classification: Ek score se class kaise decide hoti hai?
 
 ### 1.1 Week 8 se connection
@@ -342,6 +350,17 @@ $$\boxed{y(w_{\mathrm{new}}^Tx)=y(w^Tx)+\eta\|x\|^2}.$$
 
 **Counterexample:** 1D $w=-100$, $x=1$, $y=+1$, $\eta=1$. Update ke baad $w=-99$; score improve hua, still negative. Doosre points ki classification bhi update se change ho sakti hai.
 
+**Zero-margin convention ka first complete run — teaching example:** Samples $x_1=(2,0),y_1=+1$ and $x_2=(0,1),y_2=-1$; no bias, $\eta=1$, start $w=(0,0)$. Use update condition $y_iw^Tx_i\le0$.
+
+| Visit | Old weight | Score $w^Tx_i$ | Signed score | Action/new weight |
+|---|---|---:|---:|---|
+| 1: $x_1$ | $(0,0)$ | 0 | 0 | Add $(+1)(2,0)$ → $(2,0)$ |
+| 2: $x_2$ | $(2,0)$ | 0 | 0 | Add $(-1)(0,1)$ → $(2,-1)$ |
+| 3: $x_1$ | $(2,-1)$ | 4 | 4 | No update |
+| 4: $x_2$ | $(2,-1)$ | −1 | 1 | No update |
+
+Two updates; second pass has no updates, so stop. At score zero predicted label could already be correct, yet this convention still updates. Q28 instead explicitly updates on **wrong predictions**, so use its stated rule. Q9 is pure vector arithmetic given mistakes; Q10/Q12 additionally need the current-score check and full-pass stopping logic.
+
 ### 2.4A Q28 — Correct initialization means zero updates
 
 **Source:** Week 9 — Solve With Instructors, Q2.
@@ -620,6 +639,20 @@ $M$ update/mistake bound hai, dataset passes ki count nahi. Zero-margin update v
 ![Geometric margin and how the mistake bound depends on it](images/04_margin_bound.png)
 
 **Bias caution:** Agar augmented features $(x,1)$ se bias train kar rahe ho, theorem apply karte waqt augmented-space radius/margin use karo. Raw $x$ ka radius directly plug karna generally valid nahi.
+
+**Bound ka reason: Progress must beat weight growth.** Let $u$ be a unit strict separator with $y_iu^Tx_i\ge\gamma>0$. Start at zero and use unit updates only when $y_iw^Tx_i\le0$. Every update adds $y_ix_i$, so progress toward $u$ increases by at least $\gamma$. After $M$ updates, $u^Tw_M\ge M\gamma$.
+
+Squared norm per update:
+
+$$\|w+y_ix_i\|^2=\|w\|^2+2y_iw^Tx_i+\|x_i\|^2
+\le\|w\|^2+R^2.$$
+
+Middle term nonpositive **because that was the update condition**. Hence $\|w_M\|^2\le MR^2$. Dot product with unit $u$ cannot exceed length (Cauchy–Schwarz), so
+
+$$M\gamma\le u^Tw_M\le\|w_M\|\le\sqrt M R
+\quad\Rightarrow\quad M\le R^2/\gamma^2\quad(M>0).$$
+
+$M=0$ already satisfies bound. This explains why sample count is not an extra multiplier. Q4 applies the bound; Q18 checks its dependencies; Q30 compares a qualitative trend without determining actual run counts. Nonzero initialization or bias augmentation changes which assumptions/radius/margin you must use.
 
 ### 3.3A Q30 — Compare convergence from the plotted margin
 
@@ -943,6 +976,10 @@ $$\boxed{z=\log\frac{p}{1-p}}\qquad(0<p<1).$$
 
 Unless question another base specifies, logistic formulas mein $\log$ means natural log $\ln$.
 
+**Sigmoid ka inverse derive karo:** $p=1/(1+e^{-z})$ gives $1/p-1=e^{-z}$, hence $(1-p)/p=e^{-z}$. Natural log lo: $-z=\ln[(1-p)/p]$, so $z=\ln[p/(1-p)]$. A probability constraint therefore becomes a linear equation in weights, $w^Tx+b=z$.
+
+One point ki given probability generally one equation deti hai; many weights compatible ho sakte hain. Q6 candidate vectors directly test karta hai. Q14 known weights ke saath required feature value solves karta hai. Q31 opposite inputs par complement use karta hai, which needs opposite **scores**: nonzero bias ho toh $z(-x)=-w^Tx+b\ne-z(x)$ generally.
+
 ### 4.5 Q6 — Probability given, compatible weights choose karo
 
 **Source:** 2024 Sep 01 ET, Q6.
@@ -1058,6 +1095,10 @@ Fixed model and fixed test set par:
 Definitions: **False negative (FN)** = actual positive ko negative bolna. **False positive (FP)** = actual negative ko positive bolna. Recall $=TP/(TP+FN)$, when denominator positive.
 
 **Counterexample:** Real negative point ki predicted positive probability 0.4 hai. Threshold 0.5 par correct negative; threshold 0.3 par false positive. Lower threshold har point ko better classify nahi karta.
+
+**Threshold shift ki geometry:** $p\ge\tau$ means $w^Tx+b\ge a$, where $a=\ln[\tau/(1-\tau)]$. Label boundary $w^Tx+(b-a)=0$ hai. Fixed $w$ ke saath cutoff raise karne se parallel boundary shifts; model ki probabilities at each point unchanged rehti hain.
+
+**Teaching example:** $w=1,b=0$ and inputs $0,1,2$ have probabilities $0.5,0.7311,0.8808$. Threshold 0.5 par all three positive; 0.8 par only last positive. No retraining hua. Q8 cost trade-off; Q11 one point; Q22 count; Q25 probability-to-score cutoff. Computation same monotone comparison hai, requested output different.
 
 ### 5.3 Q8 — Phishing emails miss nahi karne
 
@@ -1309,6 +1350,15 @@ $$\nabla_w L=\sum_i x_i(p_i-y_i),\qquad w^{t+1}=w^t-\eta\nabla_wL.$$
 Bias gradient: $\partial\ell/\partial b=\sum_i(y_i-p_i)$.
 
 **Mean loss** use ho toh gradient mein $1/N$ factor. **Single-sample/SGD** update ho toh sirf selected sample ka term. Full-batch gradient mein all $p_i$ same current $w^t$ par evaluate karte hain, beech mein sequentially weights change nahi karte.
+
+**Gradient mein sigmoid derivative kahan gayi?** Single BCE ke liye
+
+$$\frac{\partial L}{\partial p}=-\frac yp+\frac{1-y}{1-p}
+=\frac{p-y}{p(1-p)},\qquad\frac{dp}{dz}=p(1-p).$$
+
+Chain rule product mein $p(1-p)$ cancels, giving $\partial L/\partial z=p-y$. Since $z=w^Tx+b$, $\partial z/\partial w=x$, so $\nabla_wL=(p-y)x$ and $\partial L/\partial b=p-y$. This is why confidently wrong saturated sigmoid predictions still give a substantial **BCE output-score** gradient; sigmoid derivative small dekhkar extra $p(1-p)$ multiply karna wrong hoga.
+
+Fixed linear features ke liye Hessian of summed loss $\sum_i p_i(1-p_i)x_ix_i^T$ PSD hai, because any $v$ gives $\sum_i p_i(1-p_i)(x_i^Tv)^2\ge0$. Convex loss ka reason yahi hai; unique finite minimizer still needs the qualifications in Section 7.
 
 ### 6.6 What does $y-p$ tell us?
 
@@ -1738,6 +1788,10 @@ $$\boxed{\text{(C) only}}.$$
 | Logistic weights always settle at finite values | Strictly separable unregularized data may have no finite MLE |
 
 ### 9.3 Last-minute solving checklist
+
+**Recall:** Correct label ke baad logistic gradient zero kyun nahi? Finite probability still true label ko certainty assign nahi karti. Perceptron finite separator milne par stop kar sakta hai; separable logistic MLE ki weights grow kyun? Correct probabilities improve karne ke liye scores scale karte ja sakte hain. Bound actual number of passes kyun nahi? Bound correction events count karta hai; one pass many or no updates contain kar sakti hai.
+
+**Week 10 bridge:** Perceptron any valid separator find kar sakta hai. Multiple separators mein ek choose karne ka geometric principle chahiye: closest training points se largest distance. SVM score scale ko fix karke isi maximum-margin problem ko solve karega.
 
 1. **Labels:** $0/1$ hain ya $-1/+1$?
 2. **Boundary:** Bias hai? Zero score ka rule kya hai?

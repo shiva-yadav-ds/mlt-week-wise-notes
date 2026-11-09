@@ -22,6 +22,14 @@
 
 ---
 
+## Prerequisites: Prediction task aur complexity
+
+Week 5 se supervised input-target pairs $(x_i,y_i)$; Week 6 se training versus held-out error aur bias/variance. Classification mein $y_i$ class label hai. Regression mein $y_i$ numerical quantity hai. Same neighbours use hote hue **vote** aur **mean** ka difference isi target type se decide hota hai.
+
+This week two kinds of locality dekhega: KNN query ke nearby examples inspect karta hai; tree learned feature tests ke through query ko a region mein bhejti hai. Dono nonlinear boundaries bana sakte hain, but KNN ka expensive distance work prediction time par hota hai; tree ka split selection fitting time par.
+
+Symbols: $k$ neighbours ki count; $d$ features; $N_k(x)$ selected training indices; $\mathbf1[\cdot]$ condition true ho toh 1, else 0. $\arg\max$ largest vote count dene wala **class**, count itself nahi. Entropy ka $p$ a node ke andar positive-class fraction hoga; it is not the query ki distance.
+
 ## 1. Classification foundations
 
 ### 1.1 Features, labels and prediction
@@ -99,6 +107,10 @@ $$\boxed{\hat y=\arg\max_c\sum_{i\in N_k(x)}\mathbf1[y_i=c]}.$$
 Binary class mein odd $k$ majority-vote tie avoid karta hai, **distance tie nahi**. Equal-distance candidates at the $k$th position ke liye tie rule needed ho sakta hai.
 
 Workflow: distances → sort → first $k$ points → labels count → majority. Raw numerical feature values ka majority nahi lena.
+
+**First KNN calculation — teaching example:** Training locations/labels $(0,0),(2,1),(5,1),(9,0)$ in one dimension; first coordinate input, second class. Query $x=3$. Distances $3,1,2,6$; sorted neighbours input 2,5,0,9. With $k=1$, label 1; with $k=3$, labels $1,1,0$, majority 1. Training-row order use nahi karni; distance order chahiye.
+
+Agar same four inputs ke regression targets $10,20,40,100$ hon, $k=3$ prediction $(20+40+10)/3=70/3$. Neighbour set unchanged hai, output operation changed. Q7 first distances then classification vote; Q15/Q20 same first step then regression mean. Q26 Manhattan metric aur Q27 distance tie ko isolate karte hain.
 
 ### Q26 — Manhattan 1-NN from a plotted dataset
 
@@ -481,6 +493,10 @@ $$\boxed{\operatorname{LOOCV\ error}=\frac1n\sum_{i=1}^n\mathbf1[h_{D\setminus\{
 
 **Critical distinction:** Training-error questions explicitly self include kar sakte hain; LOOCV mein held-out point **exclude** hota hai. Same dataset aur k ke liye these errors different ho sakte hain.
 
+**Training versus leave-one-out ka small contrast:** Three inputs $(0,0),(1,1),(2,0)$ with class labels as second entries; use 1-NN. Self-including training error zero. LOOCV mein endpoint 0 ko input 1 ka label 1 milta hai (wrong); endpoint 2 also label 1 (wrong); middle 1 ke dono distance-1 neighbours label 0 hain, so wrong regardless of tie-breaking. LOOCV error $3/3=1$.
+
+Data identical hain; evaluation procedure changed hai. Q1/Q9 minimum **possible** training errors ask karte hain, universal guarantee nahi. Q13 specified dataset ka actual held-out count poochhta hai. “1-NN memorizes” ko “1-NN validates perfectly” mein convert nahi karna.
+
 ### Q13 — Test prediction, LOOCV and changing labels
 
 **Source:** 2025 Mar 16 Quiz 2, Q13.
@@ -799,6 +815,12 @@ Convention $0\log_2 0=0$ use karte hain. Entropy unit bits hai. Multiple classes
 
 ![Binary entropy versus positive-class proportion](images/entropy.png)
 
+**Log aur minus sign ka meaning:** Event with probability $p$ ki information $-\log_2p$ bits hai: probability $1/2$ gives 1 bit, $1/4$ gives 2. Entropy expected information hai, so each event ki information uski probability se weight hoti hai. $p<1$ par log negative hai; outer minus entropy nonnegative banata hai.
+
+Pure node ka only possible class probability 1: information $-\log_2 1=0$. Balanced node mein both labels probability $1/2$, so $-(1/2)(-1)-(1/2)(-1)=1$. Rare class ki information large ho sakti hai, but its probability weight small hai; isliye almost-pure node high entropy nahi rakhti. $0\log0=0$ continuous limiting convention hai, ordinary $\log0$ evaluation nahi.
+
+Q10 numerical logs; Q11 maximum; Q14 purity; Q22 balanced count. All questions same proportions-to-uncertainty map ke different cases hain.
+
 ### Q10 — Entropy from 60% and 40%
 
 **Source:** 2024 Dec 01 Quiz 2, Q10.
@@ -919,6 +941,15 @@ $$\boxed{IG=H(D)-\left[\frac{n_L}{n}H(D_L)+\frac{n_R}{n}H(D_R)\right]}.$$
 Weights sum to 1. Equal half-half weighting tabhi valid jab children same size ke hon.
 
 **Algorithm:** Candidate splits form karo → each split ka IG compute karo → maximum IG split choose karo → child nodes par repeat. This is greedy: local maximum gain globally best whole tree ki guarantee nahi.
+
+**One split ka full beginner example — teaching example:** Parent has 4 positive, 4 negative, entropy 1. Left child has 3 positive, 1 negative; right has 1 positive, 3 negative. Each child entropy
+
+$$-\frac34\log_2\frac34-\frac14\log_2\frac14
+\approx0.311278+0.5=0.811278.$$
+
+Each child half the samples leta hai, so remaining uncertainty $0.5(0.811278)+0.5(0.811278)=0.811278$; gain $1-0.811278=0.188722$ bits. Pure-child split hota toh gain 1. Same 50/50 composition dono children mein hoti toh gain 0.
+
+Weights ka reason: random parent sample probability $n_L/n$ se left child mein jaayega. $IG$ remaining uncertainty ki **expected** reduction hai. Child entropy ka unweighted sum sample ki expected uncertainty nahi. Q31 weight only; Q8/Q19 complete entropy subtraction; Q32 unchanged proportions se zero gain.
 
 ### Q31 — Child-size weighting factor gamma
 
@@ -1227,6 +1258,14 @@ $$\boxed{P(\text{class 1})=\frac{\operatorname{Area}(\text{class-1 part of }R)}{
 
 Disjoint leaf areas add kar sakte hain. Uniform assumption important: Nonuniform density mein same area necessarily same probability nahi.
 
+**Path se area tak — teaching example:** Unit square mein root asks $x_1\le1/2$. Yes child predicts class 1. No child asks $x_2\le1/4$; Yes predicts 1, No predicts 0. Class-1 region two disjoint pieces hai:
+
+$$\{x_1\le1/2\}\ \cup\ \{x_1>1/2,\ x_2\le1/4\}.$$
+
+Areas $1/2$ and $(1-1/2)(1/4)=1/8$, total $5/8$. Uniform query par probability $5/8$. Second test sirf right half par apply hua, so poore bottom strip ka area $1/4$ add karna overlap double-count karega. Root-to-leaf conditions AND, same-label leaves OR. Continuous uniform sampling mein boundaries have zero area, but exact boundary-point prediction mein $<$ versus $\le$ still matters.
+
+Q3 regions ka probability; Q16 same path logic se boundary/prediction; Q5 all box inequalities; Q21 number of splits versus longest path distinguish karta hai.
+
 ### Q3 — Probability of class 1 in the unit square
 
 **Source:** 2024 Apr 28 ET, Q3.
@@ -1534,6 +1573,10 @@ Each sample answers only two questions along its path, so **depth is 2**, not 3.
 | Zero training error means good generalization | Memorization may overfit |
 
 ### 9.3 Solving checklist
+
+**Recall:** Odd $k$ sab ties kyun nahi solve karta? Equal-distance candidates selected neighbour set change kar sakte hain. Tree depth aur total splits different kyun? Multiple branches parallel grow karti hain; one query sirf one path traverse karti hai. Maximum IG globally best tree kyun guarantee nahi? Greedy split future combinations examine nahi karta; XOR ko zero-gain first split chahiye ho sakti hai.
+
+**Week 8 bridge:** KNN votes aur tree leaf proportions class probability ka local estimate suggest karte hain. Naive Bayes instead class-wise feature distributions learn karega aur Bayes rule se posterior nikaalega. Week 11 bagging/random forest tree ki high variance ko multiple models combine karke reduce karega.
 
 1. **KNN:** Query, metric, k, self inclusion and tie rule read karo. Squared-distance table banao, neighbours choose karo, then vote/average.
 2. **Validation:** Held-out samples and preprocessing fitting separate rakho. Error count ko correct denominator se divide karo.

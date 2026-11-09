@@ -12,6 +12,7 @@
 <div class="layout"><aside class="weeks"><details open><summary>Course weeks <span>12</span></summary><nav aria-label="Course weeks"><a class="week-link " href="index.html" ><span class="week-number">01</span><span>Principal Component Analysis</span></a><a class="week-link " href="week2.html" ><span class="week-number">02</span><span>Kernel PCA</span></a><a class="week-link " href="week3.html" ><span class="week-number">03</span><span>K-Means Clustering</span></a><a class="week-link " href="week4.html" ><span class="week-number">04</span><span>Estimation, GMM and EM Algorithm</span></a><a class="week-link " href="week5.html" ><span class="week-number">05</span><span>Linear and Kernel Regression</span></a><a class="week-link selected" href="week6.html" aria-current=page><span class="week-number">06</span><span>Regularisation and Cross-Validation</span></a><a class="week-link " href="week7.html" ><span class="week-number">07</span><span>KNN and Decision Tree</span></a><a class="week-link " href="week8.html" ><span class="week-number">08</span><span>Naive Bayes</span></a><a class="week-link " href="week9.html" ><span class="week-number">09</span><span>Perceptron and Logistic Regression</span></a><a class="week-link " href="week10.html" ><span class="week-number">10</span><span>Support Vector Machine</span></a><a class="week-link " href="week11.html" ><span class="week-number">11</span><span>Soft-Margin SVM and Ensemble Methods</span></a><a class="week-link " href="week12.html" ><span class="week-number">12</span><span>Loss Functions and Artificial Neural Networks</span></a></nav></details></aside>
 <main id="notes"><div class="eyebrow">MACHINE LEARNING TECHNIQUES <span>/ WEEK 06</span></div><article><h1 id="topic-0">MLT Week 6: Regularisation and Cross-Validation Notes</h1>
 <p><strong>Flow:</strong> Linear regression ki uncertainty → bias–variance → Ridge shrinkage → LASSO sparsity → Gaussian/Laplace priors → cross-validation se hyperparameters → prediction threshold.</p>
+<p><strong>Concept ko connect karo:</strong> Training SSE asks “given data par fit kitna achha hai?” Regularization adds “weights kitne large hain?” Validation asks “unseen examples par prediction kaisi hai?” In teen quantities ko separate rakho. Ridge solve karte waqt objective differentiate karo: $2X(X^Tw-y)+2\lambda w=0$, hence $(XX^T+\lambda I)w=Xy$. Is extra diagonal term se fitting aur stability ke beech trade-off aata hai.</p>
 <h2 id="topic-1">Topic index</h2>
 <table>
 <thead>
@@ -75,8 +76,12 @@
 </tbody>
 </table>
 <hr />
-<h2 id="topic-2">1. Linear regression: Best training fit bhi unstable ho sakti hai</h2>
-<h3 id="topic-3">1.1 Model, noise and matrix convention</h3>
+<h2 id="topic-2">Prerequisites aur central problem</h2>
+<p>Week 5 se $\hat y=X^Tw$, $L=\|X^Tw-y\|^2$, normal equation $XX^Tw=Xy$, aur held-out fitting recall karo. Week 4 se posterior $\propto$ likelihood × prior. Yahan <strong>training loss, future prediction error, aur parameter-estimation error</strong> teen different quantities hain; question kiski baat kar raha hai first decide karo.</p>
+<p>$w_*$ true unknown weight; $\hat w$ one training dataset se fit; $E[\hat w]$ repeated noisy training datasets ka average estimate; $\sigma^2$ observation-noise variance. $\lambda$ penalty strength, $\eta$ optimization learning rate. $\lambda$ <strong>objective ka optimum</strong> change karta hai; $\eta$ same objective tak pahunchne ka path change karta hai.</p>
+<p><strong>Why change ordinary regression?</strong> Two identical features ke saath prediction $(w_1+w_2)x$ hai. Weights $(100,-99)$ aur $(1,0)$ same training predictions dete hain. Training SSE alone cannot prefer the stable/smaller description. Ridge weight size ko cost dega. Useful prediction ke liye kitni penalty chahiye, woh validation decide karega, smallest training loss nahi.</p>
+<h2 id="topic-3">1. Linear regression: Best training fit bhi unstable ho sakti hai</h2>
+<h3 id="topic-4">1.1 Model, noise and matrix convention</h3>
 <p><strong>Short definition:</strong> Linear regression features ka weighted combination use karke numerical target predict karti hai.</p>
 <p><strong>Real life:</strong> House area se price predict karo. Same area ke two houses ke prices amenities/location ki wajah se differ kar sakte hain; unexplained part noise hai.</p>
 <p>$$y_i=w_*^Tx_i+\epsilon_i,\qquad E[\epsilon_i]=0,\quad\operatorname{Var}(\epsilon_i)=\sigma^2.$$</p>
@@ -85,7 +90,7 @@
 <p>$$X=[x_1\ \cdots\ x_n]\in\mathbb R^{d\times n},\quad y\in\mathbb R^{n\times1},\quad w\in\mathbb R^{d\times1}.$$</p>
 <p>$$\boxed{\hat y=X^Tw},\qquad\boxed{\operatorname{SSE}(w)=\lVert X^Tw-y\rVert_2^2}.$$</p>
 <p>If a question instead writes $X\in\mathbb R^{n\times d}$, predictions are $Xw$ and the Gram matrix becomes $X^TX$. <strong>Square X hone par shape alone transpose mistake reveal nahi karegi; stated convention read karo.</strong></p>
-<h3 id="topic-4">1.2 Gaussian-noise MLE and least squares</h3>
+<h3 id="topic-5">1.2 Gaussian-noise MLE and least squares</h3>
 <p>With fixed positive noise variance:</p>
 <p>$$p(y\mid X,w)\propto\exp\left[-\frac1{2\sigma^2}\lVert y-X^Tw\rVert_2^2\right].$$</p>
 <p>Likelihood maximize karna equivalent to SSE minimize karna hai:</p>
@@ -93,14 +98,14 @@
 <p>If $A=XX^T$ invertible:</p>
 <p>$$\boxed{\hat w_{\mathrm{ML}}=(XX^T)^{-1}Xy=A^{-1}Xy}.$$</p>
 <p>Rank-deficient design mein least-squares solution unique nahi ho sakta; minimum-norm choice $\hat w=A^\dagger Xy$ hai, where $\dagger$ denotes Moore–Penrose pseudoinverse.</p>
-<h3 id="topic-5">1.3 Prediction MSE versus parameter MSE</h3>
+<h3 id="topic-6">1.3 Prediction MSE versus parameter MSE</h3>
 <p><strong>Prediction MSE on a dataset:</strong></p>
 <p>$$\operatorname{MSE}_{\mathrm{pred}}=\frac1n\sum_i(\hat y_i-y_i)^2=\frac{\operatorname{SSE}}n.$$</p>
 <p><strong>Parameter estimation MSE:</strong></p>
 <p>$$\boxed{R(\hat w)=E\left[\lVert\hat w-w_*\rVert_2^2\right]}.$$</p>
 <p>First compares predictions with labels. Second compares estimated parameter with true parameter over repeated noisy training datasets. <strong>Q7 and Q19 use the second meaning.</strong> Ridge can have larger training SSE but smaller expected parameter MSE.</p>
 <p>SSE and MSE give same ranking for a fixed dataset when no relative penalty changes. But $\operatorname{SSE}+\lambda\lVert w\rVert^2$ and $\operatorname{MSE}+\lambda\lVert w\rVert^2$ do not use the same effective penalty: multiplying the latter by n gives SSE + $n\lambda\lVert w\rVert^2$.</p>
-<h3 id="topic-6">1.4 Why ordinary least squares can have high variance</h3>
+<h3 id="topic-7">1.4 Why ordinary least squares can have high variance</h3>
 <p>For fixed full-row-rank X and independent noise covariance $\sigma^2I$:</p>
 <p>$$E[\hat w_{\mathrm{ML}}]=w_*,\qquad\operatorname{Cov}(\hat w_{\mathrm{ML}})=\sigma^2(XX^T)^{-1}.$$</p>
 <p>Therefore:</p>
@@ -113,8 +118,8 @@
 <p>$$R(A^\dagger Xy)=\sigma^2\operatorname{tr}(A^\dagger)+\lVert(I-P)w_*\rVert_2^2.$$</p>
 <p>So rank-deficient setting mein sirf trace term ko full parameter MSE bolna generally incomplete hai.</p>
 <hr />
-<h2 id="topic-7">2. Bias–variance: Flexibility ka trade-off</h2>
-<h3 id="topic-8">2.1 Short definitions and real-life connection</h3>
+<h2 id="topic-8">2. Bias–variance: Flexibility ka trade-off</h2>
+<h3 id="topic-9">2.1 Short definitions and real-life connection</h3>
 <p><strong>Bias:</strong> Average learned prediction systematic tareeke se true relationship se kitni different hai.</p>
 <p><strong>Variance:</strong> Training sample change hone par learned prediction kitni change hoti hai.</p>
 <p><strong>Real life:</strong> Curved house-price pattern par straight line fit karo toh systematic mismatch (bias). Very flexible curve har unusual house ko follow kare toh another sample par curve change (variance).</p>
@@ -123,7 +128,7 @@
 <p>Parameter-estimator analogue:</p>
 <p>$$\boxed{R(\hat w)=\lVert E[\hat w]-w_*\rVert_2^2+\operatorname{tr}(\operatorname{Cov}(\hat w))}.$$</p>
 <p>No extra irreducible target-noise term appears in this parameter-error formula.</p>
-<h3 id="topic-9">2.2 Underfitting, overfitting and complexity</h3>
+<h3 id="topic-10">2.2 Underfitting, overfitting and complexity</h3>
 <table>
 <thead>
 <tr>
@@ -157,7 +162,9 @@
 <p>These are standard tendencies, not strict promises for every dataset/optimizer.</p>
 <p><strong>Nested-model property:</strong> Linear functions are included in quadratic functions by setting quadratic coefficient zero. If both exactly minimize the same unregularized training SSE, quadratic model's minimum SSE <strong>cannot exceed</strong> linear model's minimum SSE; equality is possible. Test error has no such guarantee.</p>
 <p><img src="assets/week6/bias_variance.png" loading="lazy" alt="Schematic bias–variance trade-off" /></p>
-<h3 id="topic-10">Q1 — Linear versus quadratic house-price models</h3>
+<p><strong>Bias/variance ko actual repeated predictions mein dekho — teaching example:</strong> Fixed input par true noise-free target 5. Procedure A ke possible predictions $3,3$: average 3, bias $3-5=-2$, squared bias 4, variance 0. Procedure B ke predictions $3,7$: average 5, bias 0, variance $[(3-5)^2+(7-5)^2]/2=4$. Dono expected squared errors 4 hain, but reasons different.</p>
+<p>Procedure C predictions $4,6$ de toh mean 5, variance 1, hence error 1. Future observed target mein independent noise variance $\sigma^2$ ho toh all prediction risks mein $\sigma^2$ add hoga. Parameter error mein new target noise nahi aati. Q1/Q16 capacity compare karte hain; Q7/Q19 estimators ki expected parameter MSE. “Unbiased” ko “each dataset par exact” mat samjho.</p>
+<h3 id="topic-11">Q1 — Linear versus quadratic house-price models</h3>
 <p><strong>Source:</strong> 2024 Mar 24 Quiz 2, Q1.</p>
 <p><strong>Question:</strong></p>
 <p>Comprehension: Consider a regression problem where you are tasked with predicting the sale prices of houses based on their square footage. You decide to experiment with two different models:</p>
@@ -174,6 +181,7 @@
 <p>(b) Model Q might be sensitive to outliers in the square footage variable.</p>
 <p>(c) The choice between Model P and Model Q depends on the budget constraints of potential homebuyers.</p>
 <p>(d) Model Q will always perform well on the test dataset.</p>
+<p><strong>Apply model inclusion:</strong> Set $w_2=0$ in Q to obtain P exactly. Thus Q can reproduce P's best training predictions before trying any curved fit. Minimizing over this larger set cannot raise minimum training MSE. Test labels were not used in that minimization, so this inequality says nothing guaranteed about test MSE.</p>
 <p><strong>Solution:</strong></p>
 <p><strong>(i) Step 1:</strong> Q has every function P can express: choose $w_2=0$.</p>
 <p><strong>Step 2:</strong> Extra quadratic term allows curvature when useful. At exact unregularized training optimum, $\operatorname{MSE}_Q\le\operatorname{MSE}_P$.</p>
@@ -181,7 +189,7 @@
 <p>“More likely” ko “strictly smaller error always” mat samjho; exactly linear data par tie possible hai.</p>
 <p><strong>(ii):</strong> (a) true: straight-line model may miss curvature. (b) true: unusually large x gives even larger $x^2$, so outliers can strongly affect squared-error fitting. (c) is not the mathematical model-selection criterion here. (d) false: flexible training fit doesn't guarantee good unseen-data predictions.</p>
 <p>$$\boxed{\text{(a), (b)}}.$$</p>
-<h3 id="topic-11">Q3 — Higher bias and lower variance</h3>
+<h3 id="topic-12">Q3 — Higher bias and lower variance</h3>
 <p><strong>Source:</strong> 2024 Apr 28 ET, Q3.</p>
 <p><strong>Question:</strong></p>
 <p>Consider the following two models fitted on a one-dimensional dataset:</p>
@@ -192,10 +200,11 @@
 <p>(b) Model 2</p>
 <p>(c) Both models are equally sensitive to outliers</p>
 <p>(d) Insufficient data</p>
+<p><strong>Reason in two stages:</strong> First compare functions: Model 1 can only draw straight lines; Model 2 also draws curves. Then imagine changing the training sample: extra curvature can follow sample-specific deviations. The standard bias–variance comparison is less approximation flexibility → more bias, less sample sensitivity → less variance. These are tendencies, not numerical bias estimates from the supplied data.</p>
 <p><strong>Solution:</strong> Model 1 is less flexible; it cannot express curvature, but typically responds less to sample-specific fluctuations. Standard comparison gives higher bias and lower variance for Model 1.</p>
 <p>$$\boxed{\text{(a) Model 1}}.$$</p>
 <p>Q1 aur Q3 same complexity idea ask karte hain, but Q1 training fit and Q3 bias–variance compare karte hain.</p>
-<h3 id="topic-12">Q16 — Cubic truth, linear and degree-five fitted models</h3>
+<h3 id="topic-13">Q16 — Cubic truth, linear and degree-five fitted models</h3>
 <p><strong>Source:</strong> 2025 Apr 13 ET, Q16.</p>
 <p><strong>Question:</strong></p>
 <p>A set of data points is generated by the following process:</p>
@@ -208,6 +217,7 @@
 <p>(b) Model 2 will have a lower variance than Model 1.</p>
 <p>(c) Model 1 is more likely to underfit.</p>
 <p>(d) Model 1 is more likely to overfit.</p>
+<p><strong>Check representability first:</strong> Model 2 reproduces the true mean by setting $(a_0,a_1,a_2,a_3)=(w_0,w_1,w_2,w_3)$ and $a_4=a_5=0$. Model 1 cannot do this for nonzero quadratic/cubic terms. Its systematic miss is bias; fitting random $\epsilon_i$ instead of the mean is overfitting. Use these two distinctions to evaluate the options.</p>
 <p><strong>Solution:</strong></p>
 <ol>
 <li>Genuinely nonlinear cubic truth cannot generally be represented by Model 1.</li>
@@ -217,18 +227,19 @@
 </ol>
 <p>$$\boxed{\text{(a), (c)}}.$$</p>
 <p>If true nonlinear coefficients vanish, strict bias difference may disappear; intended comparison assumes meaningful cubic structure.</p>
-<h3 id="topic-13">Q9 — Does complexity always increase test error?</h3>
+<h3 id="topic-14">Q9 — Does complexity always increase test error?</h3>
 <p><strong>Source:</strong> 2024 Dec 22 ET, Q9.</p>
 <p><strong>Question:</strong></p>
 <p>Is the following statement true or false? For a fixed size of the training and the test set, increasing the complexity of the model always leads to an increment in the test error.</p>
 <p>(a) TRUE</p>
 <p>(b) FALSE</p>
+<p><strong>Test “always” with an explicit case:</strong> Let noiseless truth be $y=x^2$ and training inputs $-1,0,1$. OLS line is $\hat y=2/3$, giving error $1/9$ at test input 1. A quadratic fit gives $\hat y=x^2$, hence test error 0. Increasing complexity can therefore reduce test error; one counterexample disproves the universal claim.</p>
 <p><strong>Solution:</strong> False. Underfitted straight line ko suitable quadratic curve se replace karne par test error decrease ho sakta hai. Excessive flexibility later overfit kar sakti hai. Word <strong>always</strong> makes the statement wrong.</p>
 <p>$$\boxed{\text{(b) FALSE}}.$$</p>
-<h3 id="topic-14">2.3 Related concepts: Weak learners and bagging</h3>
+<h3 id="topic-15">2.3 Related concepts: Weak learners and bagging</h3>
 <p><strong>Weak learner:</strong> Appropriate task/distribution setting mein chance baseline se better learner; balanced binary random guessing accuracy 0.5 ho toh weak advantage 0.5 se above ho sakta hai.</p>
 <p><strong>Bagging:</strong> Training data ke bootstrap samples par independent base learners train karke predictions aggregate karo. Conditional on sampled datasets, base models one another's errors ka wait nahi karte, so parallel training possible hai. Aggregation often variance reduce karti hai.</p>
-<h3 id="topic-15">Q11 — Underfitting, trees, weak learners and bagging</h3>
+<h3 id="topic-16">Q11 — Underfitting, trees, weak learners and bagging</h3>
 <p><strong>Source:</strong> 2024 Dec 22 ET, Q11.</p>
 <p><strong>Question:</strong></p>
 <p>Which of the following options are correct? Select all that apply. (MSQ)</p>
@@ -236,6 +247,7 @@
 <p>(b) A decision tree with the maximum possible length may lead to overfitting.</p>
 <p>(c) Weak learners are those whose performance is slightly better than the random classifier.</p>
 <p>(d) All the estimators in bagging can be trained parallelly.</p>
+<p><strong>Definitions to apply, in order:</strong> Underfitting means the model cannot express the signal well. A deep tree can isolate very small sample groups and follow noise. A weak learner has an advantage over the relevant chance baseline. Bagging trains on separate bootstrap datasets; no model needs an earlier model's residuals. Match each statement to its definition.</p>
 <p><strong>Solution:</strong></p>
 <ul>
 <li>(a) False: Underfitting usually high bias/lower variance.</li>
@@ -244,7 +256,7 @@
 <li>(d) True: Bagging base learners trained independently; sequential dependence boosting ka characteristic hai.</li>
 </ul>
 <p>$$\boxed{\text{(b), (c), (d)}}.$$</p>
-<h3 id="topic-16">Q24 — Operations that change bias and variance</h3>
+<h3 id="topic-17">Q24 — Operations that change bias and variance</h3>
 <p><strong>Source:</strong> 2026 Sep 13 ET, Q24.</p>
 <p><strong>Question:</strong></p>
 <p>Consider the effect of each operation below on a model’s bias and variance. Which of the following statements are correct? (MSQ)</p>
@@ -252,6 +264,7 @@
 <p>(b) Increasing the maximum depth of a decision tree increases bias and decreases variance.</p>
 <p>(c) Increasing the number of hidden units in a neural network decreases bias and increases variance.</p>
 <p>(d) Removing all the non-support-vectors from the training set of an SVM leaves both bias and variance unchanged.</p>
+<p><strong>Separate capacity from fitted-model invariance:</strong> Weight penalties restrict fitting; tree depth and hidden units expand capacity. These operations suggest opposite bias–variance trends. For SVM deletion, use $w=\sum_i\alpha_i y_i x_i$: zero-coefficient points contribute nothing to that sum. This is a fact about one optimum, while bias and variance average over repeated datasets.</p>
 <p><strong>Solution:</strong></p>
 <ul>
 <li>(a) Standard trend: stronger coefficient restrictions add bias and reduce sensitivity/variance.</li>
@@ -262,8 +275,8 @@
 <p>$$\boxed{\text{Paper&#x27;s intended answer: (a), (c), (d)}}.$$</p>
 <p><strong>Care with (d):</strong> Bias/variance are repeated-dataset properties, not simply attributes read from one fitted boundary. Exact statement is about preserving the fitted SVM solution (with fixed penalty scaling and suitable uniqueness/tie handling). It is not a general distribution-level guarantee from arbitrary data deletion. Likewise (a)/(c) are standard trends, not universal strict inequalities for every optimizer/dataset.</p>
 <hr />
-<h2 id="topic-17">3. Ridge regression: Large weights par penalty</h2>
-<h3 id="topic-18">3.1 Definition, objective and practical details</h3>
+<h2 id="topic-18">3. Ridge regression: Large weights par penalty</h2>
+<h3 id="topic-19">3.1 Definition, objective and practical details</h3>
 <p><strong>Short definition:</strong> Ridge ordinary squared-error loss mein squared L2 weight penalty add karta hai.</p>
 <p>$$\boxed{J_\lambda(w)=\operatorname{SSE}(w)+\lambda\lVert w\rVert_2^2},\qquad\lambda\ge0.$$</p>
 <p>$$\lVert w\rVert_2^2=\sum_{j=1}^d w_j^2.$$</p>
@@ -276,14 +289,21 @@
 <li>Intercept usually penalize nahi karte. Numerical questions here given weight vector ke all entries penalized assume karte hain unless stated otherwise.</li>
 </ul>
 <p><strong>Counterexample to “ridge selects one redundant feature”:</strong> Identical columns/features ke effect ko ridge often both coefficients mein share karta hai. It does not generally drop the less important feature outright.</p>
-<h3 id="topic-19">3.2 Closed-form solution and invertibility</h3>
+<h3 id="topic-20">3.2 Closed-form solution and invertibility</h3>
 <p>For column-sample convention:</p>
 <p>$$\boxed{\hat w_R=(XX^T+\lambda I_d)^{-1}Xy}.$$</p>
 <p>Numerical workflow: compute $A=XX^T$, $b=Xy$, add $\lambda$ to <strong>diagonal only</strong>, solve $(A+\lambda I)w=b$.</p>
 <p>For $\lambda&gt;0$, $A+\lambda I$ positive definite even if X rank deficient, so unique ridge weights exist when all weights penalized. If $a_j$ eigenvalues of A:</p>
 <p>$$a_j(A+\lambda I)=a_j+\lambda.$$</p>
 <p>Adding positive $\lambda$ stabilizes near-zero eigenvalue directions.</p>
-<h3 id="topic-20">3.3 Shrinkage and parameter risk</h3>
+<p><strong>Penalty redundant features ko kya karegi?</strong> Previous identical-feature example mein effective slope $s=w_1+w_2$ fixed rakho. Since</p>
+<p>$$w_1^2+w_2^2=\frac{(w_1+w_2)^2+(w_1-w_2)^2}{2}
+=\frac{s^2}{2}+\frac{(w_1-w_2)^2}{2},$$</p>
+<p>smallest ridge penalty $w_1=w_2=s/2$ par hai. Ridge one feature drop karne ki jagah contribution share karti hai. $\lambda I$ diagonal add karta hai; off-diagonal covariance entries mein $\lambda$ add nahi hota.</p>
+<p><strong>Why inverse becomes possible:</strong> Any nonzero vector $v$ gives</p>
+<p>$$v^T(XX^T+\lambda I)v=\|X^Tv\|^2+\lambda\|v\|^2&gt;0\quad(\lambda&gt;0).$$</p>
+<p>Second term positive hone se even data ki unobserved direction ko positive curvature milti hai. Yeh all-weight penalty ka result hai; unpenalized coordinates hon toh us case ki identifiability separately check karni hogi.</p>
+<h3 id="topic-21">3.3 Shrinkage and parameter risk</h3>
 <p>Along an eigenvector with positive eigenvalue $a_j$, ridge coefficient is OLS coefficient multiplied by:</p>
 <p>$$\boxed{\frac{a_j}{a_j+\lambda}\in(0,1)}.$$</p>
 <p>This describes shrinkage in <strong>eigenvector coordinates</strong>, not a guarantee that each original-coordinate coefficient changes monotonically in magnitude.</p>
@@ -292,12 +312,18 @@
 <p>First numerator term → squared bias; second → variance. Ridge variance is <strong>not</strong> simply $\sigma^2\operatorname{tr}((A+\lambda I)^{-1})$; covariance is $\sigma^2(A+\lambda I)^{-1}A(A+\lambda I)^{-1}$.</p>
 <p><strong>Concrete example:</strong> One parameter, $a=1,w_*=1,\sigma^2=1$. OLS risk 1. Ridge at $\lambda=1$ gives bias-square $1/4$, variance $1/4$, total risk $1/2$. Biased estimator can be better in MSE.</p>
 <p><img src="assets/week6/ridge_shrinkage_risk.png" loading="lazy" alt="Ridge eigenvalue shrinkage and a parameter-risk example" /></p>
-<h3 id="topic-21">Q25 — One-dimensional ridge calculation</h3>
+<p><strong>Shrinkage factor derive karo:</strong> Eigenvector $q_j$ of $A=XX^T$ ke along OLS equation $a_jw_{ML,j}=b_j$, where $b_j=q_j^TXy$. Ridge equation $(a_j+\lambda)w_{R,j}=b_j$. Same $b_j$ ko compare karne se $w_{R,j}=[a_j/(a_j+\lambda)]w_{ML,j}$.</p>
+<p>Large $a_j$ means data that direction ko strongly constrain karta hai, so relatively little shrinkage; small $a_j$ weakly measured direction ko more shrinkage. $a_j=4,\lambda=1$ gives factor $4/5$; $a_j=0.01$ gives $0.01/1.01=1/101$. This connects Week 1 eigen-directions to Week 6 stability. Q25 scalar fit; Q26 ratio; Q13 limiting ratio. Original feature coordinates are mixtures of eigen-directions, so one coordinate ka sign bhi change ho sakta hai, as Q20 shows.</p>
+<h3 id="topic-22">Q25 — One-dimensional ridge calculation</h3>
 <p><strong>Source:</strong> 2026 Sep 13 ET, Q25.</p>
 <p><strong>Question:</strong></p>
 <p>Consider one-dimensional ridge regression with no bias term. Given</p>
 <p>$$\sum_i x_i^2=10\qquad\text{and}\qquad\sum_i x_i y_i=4,$$</p>
 <p>with $\lambda=10$, compute the optimal $w_{\mathrm{ridge}}$. Note that $x_i$ is ith data point and $y_i$ is ith label. (Round to 2 decimal places.)</p>
+<p><strong>Derive the scalar formula:</strong></p>
+<p>$$J(w)=\sum_i(wx_i-y_i)^2+\lambda w^2,$$
+$$J&#x27;(w)=2w\sum_i x_i^2-2\sum_i x_iy_i+2\lambda w=0.$$</p>
+<p>Group terms in $w$: $(\sum x_i^2+\lambda)w=\sum x_i y_i$. Here $J&#x27;&#x27;=2(10+10)=40&gt;0$, so the resulting weight is the unique minimum.</p>
 <p><strong>Solution:</strong></p>
 <ol>
 <li>Matrix formula scalar form:</li>
@@ -308,10 +334,13 @@
 </ol>
 <p>$$\boxed{w_R=0.20}.$$</p>
 <p>OLS would be $4/10=0.40$; ridge shrinks it by $10/(10+10)=1/2$.</p>
-<h3 id="topic-22">Q26 — Finite-penalty ridge-to-MLE ratio</h3>
+<h3 id="topic-23">Q26 — Finite-penalty ridge-to-MLE ratio</h3>
 <p><strong>Source:</strong> Week 6 — Solve With TAs, Q6. Scalar fitting method Q25 jaisa hai; yahan requested quantity finite-penalty <strong>ratio</strong> hai.</p>
 <p><strong>Question:</strong></p>
 <p>Consider the dataset $X=[-3,5,4]$ and $y=[-10,20,20]^T$. Assuming a ridge penalty $\lambda=50$, what is the value of $w_{ridge}/w_{MLE}$? Here $w_{ridge}$ and $w_{MLE}$ are the Ridge and MLE estimates of the weight, respectively.</p>
+<p><strong>Keep numerator and denominator visible:</strong> Write OLS as $b/a$ and ridge as $b/(a+\lambda)$, where $a=\sum x_i^2$ and $b=\sum x_i y_i$. Then</p>
+<p>$$\frac{b/(a+\lambda)}{b/a}=\frac{b}{a+\lambda}\frac{a}{b}=\frac{a}{a+\lambda}.$$</p>
+<p>Cancellation needs $b\ne0$. The data below give $b=210$, so the ratio is well-defined.</p>
 <p><strong>Solution:</strong></p>
 <p><strong>Step 1 — Shared sums:</strong> No intercept specified, so one scalar weight fit karna hai.</p>
 <p>$$a=\sum x_i^2=9+25+16=50.$$</p>
@@ -328,7 +357,7 @@
 <li>If $b=0$, both weights are zero and their ratio is undefined; do not cancel zero.</li>
 <li>This scalar ratio is not one universal multiplier for every coordinate of a general multifeature model; Section 3.3 gives the eigen-direction version.</li>
 </ul>
-<h3 id="topic-23">Q2 — Ridge coefficients for a 2 × 2 design</h3>
+<h3 id="topic-24">Q2 — Ridge coefficients for a 2 × 2 design</h3>
 <p><strong>Source:</strong> 2024 Mar 24 Quiz 2, Q2.</p>
 <p><strong>Question:</strong></p>
 <p>Given a design matrix $X\in\mathbb R^{d\times n}$ and a target vector $Y\in\mathbb R^{n\times1}$, where d represents the number of features, n represents the number of data points, and the data is defined as:</p>
@@ -339,6 +368,7 @@
 <p>(c) $\beta=[0.54,0.88]$</p>
 <p>(d) $\beta=[0.67,0.33]$</p>
 <p>(e) None of these</p>
+<p><strong>Formula and inverse rule:</strong> Differentiating $\|X^T\beta-Y\|^2+\lambda\beta^T\beta$ gives $2X(X^T\beta-Y)+2\lambda\beta=0$. Therefore $(XX^T+\lambda I)\beta=XY$. For the resulting $2\times2$ matrix, apply $\begin{bmatrix}a&amp;b\\c&amp;d\end{bmatrix}^{-1}=\frac1{ad-bc}\begin{bmatrix}d&amp;-b\\-c&amp;a\end{bmatrix}$. Add $\lambda$ only to the diagonal.</p>
 <p><strong>Solution:</strong></p>
 <p><strong>Step 1:</strong> X is d × n, so use $(XX^T+I)^{-1}XY$.</p>
 <p>$$XX^T=\begin{bmatrix}1^2+2^2&amp;1(3)+2(4)\\3(1)+4(2)&amp;3^2+4^2\end{bmatrix}=\begin{bmatrix}5&amp;11\\11&amp;25\end{bmatrix}.$$</p>
@@ -348,7 +378,7 @@
 <p>$$\beta=\frac1{35}\begin{bmatrix}26&amp;-11\\-11&amp;6\end{bmatrix}\begin{bmatrix}13\\29\end{bmatrix}=\frac1{35}\begin{bmatrix}338-319\\-143+174\end{bmatrix}=\begin{bmatrix}19/35\\31/35\end{bmatrix}.$$</p>
 <p>$$\boxed{\beta\approx[0.542857,0.885714]^T}.$$</p>
 <p><strong>Paper match:</strong> (c) is the intended approximate option. Its second entry 0.88 is truncated; standard rounding to two decimals would give <strong>[0.54, 0.89]</strong>, not [0.54, 0.88]. Exact calculation above avoids ambiguity; key selects (c).</p>
-<h3 id="topic-24">Q20 — OLS and ridge at two penalty strengths</h3>
+<h3 id="topic-25">Q20 — OLS and ridge at two penalty strengths</h3>
 <p><strong>Source:</strong> 2025 Aug 31 ET, Q20.</p>
 <p><strong>Question:</strong></p>
 <p>Comprehension: Consider a linear regression problem with design matrix $X\in\mathbb R^{d\times n}$ and target vector $Y\in\mathbb R^{n\times1}$, where n is the number of data points and d is the number of features. Let $w\in\mathbb R^{d\times1}$ denote the vector of regression coefficients:</p>
@@ -363,6 +393,11 @@
 <p>(a) The coefficients shrinks towards zero.</p>
 <p>(b) The coefficients increases in magnitude.</p>
 <p>(c) The coefficients remain unchanged.</p>
+<p><strong>Form the shared products explicitly:</strong></p>
+<p>$$XX^T=\begin{bmatrix}2(2)+0(0)&amp;2(1)+0(1)\\1(2)+1(0)&amp;1(1)+1(1)\end{bmatrix}
+=\begin{bmatrix}4&amp;2\\2&amp;2\end{bmatrix},$$
+$$XY=\begin{bmatrix}2(1)+0(3)\\1(1)+1(3)\end{bmatrix}=\begin{bmatrix}2\\4\end{bmatrix}.$$</p>
+<p>OLS solves $Aw=b$; each ridge case solves $(A+\lambda I)w=b$. Only the diagonal penalty changes between cases.</p>
 <p><strong>Solution — Shared calculations:</strong></p>
 <p>$$A=XX^T=\begin{bmatrix}4&amp;2\\2&amp;2\end{bmatrix},\qquad b=XY=\begin{bmatrix}2\\4\end{bmatrix}.$$</p>
 <p><strong>(i) Step 1: OLS.</strong> Determinant $4(2)-2(2)=4$:</p>
@@ -381,7 +416,7 @@
 <p><strong>Property from the example:</strong> First coefficient changes sign; ridge doesn't simply multiply the whole vector by one scalar. For this dataset,</p>
 <p>$$w_1(\lambda)=\frac{2\lambda-4}{\lambda^2+6\lambda+4},\qquad w_2(\lambda)=\frac{4\lambda+12}{\lambda^2+6\lambda+4}.$$</p>
 <p>At $\lambda=2$, $w_1=0$ exactly, though generic ridge does not promote sparse solutions. Overall L2 norm is non-increasing with increasing penalty, but each original-coordinate absolute coefficient need not be monotonic.</p>
-<h3 id="topic-25">Q13 — Norm ratio at zero and infinite penalty</h3>
+<h3 id="topic-26">Q13 — Norm ratio at zero and infinite penalty</h3>
 <p><strong>Source:</strong> 2025 Mar 16 Quiz 2, Q13.</p>
 <p><strong>Question:</strong></p>
 <p>Let $\hat w_R$ and $\hat w$ be the ridge coefficient estimate and the least squares estimate, respectively, of the linear regression problem. Which of the following holds true? (MSQ)</p>
@@ -389,6 +424,7 @@
 <p>(b) For $\lambda=0$, $\lVert\hat w_R\rVert_2/\lVert\hat w\rVert_2=0$.</p>
 <p>(c) For $\lambda=\infty$, $\lVert\hat w_R\rVert_2/\lVert\hat w\rVert_2=0$.</p>
 <p>(d) For $\lambda=\infty$, $\lVert\hat w_R\rVert_2/\lVert\hat w\rVert_2=1$.</p>
+<p><strong>Take the limits in eigen-directions:</strong> Ridge multiplies an OLS coordinate by $a_j/(a_j+\lambda)$ for $a_j&gt;0$. At $\lambda=0$ this multiplier is 1; as $\lambda\to\infty$ it tends to 0. Thus the entire penalized vector tends from the OLS vector to zero, giving the stated norm ratios when the OLS norm is nonzero.</p>
 <p><strong>Solution:</strong></p>
 <ol>
 <li>At zero penalty, ridge reduces to the same OLS estimate → ratio 1.</li>
@@ -396,7 +432,7 @@
 </ol>
 <p>$$\boxed{\text{(a), (c)}}.$$</p>
 <p>Assume denominator $\lVert\hat w\rVert_2\ne0$ and consistent least-squares solution selection. If OLS vector zero, ratio is 0/0, undefined. “$\lambda=\infty$” means a limit. An unpenalized intercept need not approach zero.</p>
-<h3 id="topic-26">Q14 — Role of the ridge penalty</h3>
+<h3 id="topic-27">Q14 — Role of the ridge penalty</h3>
 <p><strong>Source:</strong> 2025 Apr 13 ET, Q14.</p>
 <p><strong>Question:</strong></p>
 <p>What is the role of the regularization term in ridge regression?</p>
@@ -404,6 +440,7 @@
 <p>(b) It penalizes large coefficients to reduce overfitting.</p>
 <p>(c) It forces more coefficients to be exactly zero, performing feature selection.</p>
 <p>(d) It increases the variance of the model.</p>
+<p><strong>Inspect the actual penalty:</strong> $\lambda\|w\|^2=\lambda\sum_jw_j^2$. Doubling a coefficient quadruples its contribution to this penalty, making very large coefficients costly. This changes the optimization preference, not the distribution of the observed dataset. Stronger shrinkage can stabilize fitting, but excessive shrinkage can also remove useful signal.</p>
 <p><strong>Solution:</strong> L2 penalty discourages large coefficients and reduces instability. It doesn't change data distribution; exact sparsity more characteristic of LASSO; variance usually decreases.</p>
 <p>$$\boxed{\text{(b)}}.$$</p>
 <hr />
@@ -413,8 +450,8 @@
 <p>(C) Large coefficients are not penalized.</p>
 <p>(D) It can lead to a model that is too simple and overfits.</p>
 <p><strong>Answer: (A), (B).</strong> Q14 and Section 3.1 already explain the penalty mechanism. Very strong shrinkage can suppress useful signal and cause underfitting; “can” does not mean every dataset must underfit. For example, if the true penalized coefficients are zero, shrinking them toward zero need not introduce approximation bias.</p>
-<h2 id="topic-27">4. Constraint geometry and LASSO: Shrinkage versus sparsity</h2>
-<h3 id="topic-28">4.1 Penalized and constrained forms</h3>
+<h2 id="topic-28">4. Constraint geometry and LASSO: Shrinkage versus sparsity</h2>
+<h3 id="topic-29">4.1 Penalized and constrained forms</h3>
 <p><strong>Short definition:</strong> Penalty formulation large weights ko cost deti hai; constrained formulation allowed weight size ka budget fix karti hai.</p>
 <p>Ridge constrained form:</p>
 <p>$$\boxed{\min_w\operatorname{SSE}(w)\quad\text{subject to }\lVert w\rVert_2\le\theta}.$$</p>
@@ -423,7 +460,7 @@
 <p>Norm radius versus squared norm distinguish karo:</p>
 <p>$$\lVert w\rVert_2\le\theta\iff\sum_jw_j^2\le\theta^2.$$</p>
 <p>Feasible candidates mein <strong>smallest SSE/MSE</strong> choose karo, necessarily smallest norm nahi. Constraint satisfy hone ke baad objective error minimize karta hai.</p>
-<h3 id="topic-29">Q12 — Choose a feasible weight vector with minimum MSE</h3>
+<h3 id="topic-30">Q12 — Choose a feasible weight vector with minimum MSE</h3>
 <p><strong>Source:</strong> 2025 Mar 16 Quiz 2, Q12.</p>
 <p><strong>Question:</strong></p>
 <p>Below is the constrained version of the ridge regression optimization problem:</p>
@@ -438,6 +475,7 @@
 <p>(b) $w_2$</p>
 <p>(c) $w_3$</p>
 <p>(d) $w_4$</p>
+<p><strong>Use a two-stage selection rule:</strong> First reject vectors with $\|w\|_2&gt;10$, equivalently $\sum_jw_j^2&gt;100$. For example, $w_3$ has squared norm $1^2+2^2+0^2+1^2=6$, so it passes. Among passing vectors compare the supplied MSE values. The constraint is an eligibility test, not the objective to minimize.</p>
 <p><strong>Solution:</strong></p>
 <p><strong>Step 1: Feasibility check.</strong></p>
 <table>
@@ -485,7 +523,7 @@
 <p><strong>Step 3:</strong> Minimum MSE is 1, achieved by $w_3$.</p>
 <p>$$\boxed{\text{(c) }w_3}.$$</p>
 <p><strong>Trap:</strong> $w_1$ has smallest norm, but objective smallest norm nahi. Among the listed candidates, $w_3$ gives best feasible fit; no claim about unlisted vectors is needed.</p>
-<h3 id="topic-30">4.2 SSE contours and L2/L1 balls</h3>
+<h3 id="topic-31">4.2 SSE contours and L2/L1 balls</h3>
 <p>Full-rank least squares ke around SSE excess:</p>
 <p>$$\operatorname{SSE}(w)-\operatorname{SSE}(\hat w_{ML})=(w-\hat w_{ML})^TXX^T(w-\hat w_{ML}).$$</p>
 <p>In two dimensions these level sets generally ellipses hain. If $XX^T=I$, circles hain. Inner contour lower SSE, outer contour higher SSE.</p>
@@ -495,13 +533,13 @@
 </ul>
 <p>Minimum-error feasible point first SSE contour ka constraint region se contact hai. Diamond ke axis corners exact-zero coefficients ko encourage karte hain; circle has no such corners.</p>
 <p><img src="assets/week6/ridge_lasso_geometry.png" loading="lazy" alt="Ridge disk and LASSO diamond with SSE contours" /></p>
-<h3 id="topic-31">4.3 LASSO objective and feature selection</h3>
+<h3 id="topic-32">4.3 LASSO objective and feature selection</h3>
 <p><strong>Short definition:</strong> LASSO absolute coefficient values ki sum penalize karta hai:</p>
 <p>$$\boxed{J_L(w)=\operatorname{SSE}(w)+\lambda\lVert w\rVert_1},\qquad\lVert w\rVert_1=\sum_j|w_j|.$$</p>
 <p>Equivalent constrained viewpoint: minimize SSE subject to $\lVert w\rVert_1\le\theta$.</p>
 <p><strong>Real life:</strong> Many house attributes available hain; a sparse model kuch useful coefficients retain karke baaki zero kar sakta hai. Zero coefficient means that feature has no contribution in that fitted linear predictor.</p>
 <p><strong>Important:</strong> Standard LASSO uses $\lVert w\rVert_1$, <strong>not</strong> $\lVert w\rVert_1^2$. LASSO can produce zeros; har dataset/positive $\lambda$ par at least one zero guarantee nahi.</p>
-<h3 id="topic-32">4.3A Evaluating a loss is different from fitting weights</h3>
+<h3 id="topic-33">4.3A Evaluating a loss is different from fitting weights</h3>
 <p><strong>Definition:</strong> Loss evaluation means given w par predictions, residuals aur penalty calculate karna. Optimization means w change karke objective minimize karna. Fixed-weight question mein inverse nikalna unnecessary hai.</p>
 <p><strong>Real-life connection:</strong> Already chosen model ko score karna aur best model train karna alag tasks hain.</p>
 <p>Always identify three things:</p>
@@ -510,7 +548,7 @@
 <li>Penalty $\lambda\|w\|_2^2$, $(\lambda/2)\|w\|_2^2$, ya $\lambda\|w\|_1$ hai?</li>
 <li>Bias/intercept penalty mein included hai ya excluded?</li>
 </ol>
-<h3 id="topic-33">Q27 — Ridge and LASSO losses at the same given weight</h3>
+<h3 id="topic-34">Q27 — Ridge and LASSO losses at the same given weight</h3>
 <p><strong>Source:</strong> Week 6 — Solve With TAs, Q3.</p>
 <p><strong>Question:</strong></p>
 <p>Ajay has a dataset with a non-linear relationship between the features and the label. The dimension of the training samples is $4\times2$, excluding an additional all-ones feature for the bias term, which you should add. The label vector is $4\times1$ and the weight vector is $3\times1$. For all calculations, consider SSE to be $\frac12\|X^Tw-y\|^2$.</p>
@@ -543,6 +581,7 @@
 <p>$$w=[0.1,0.2,0.3]^T.$$</p>
 <p>(i) Compute the ridge loss for regularization parameter 0.2, correct to two decimal places.</p>
 <p>(ii) Compute the LASSO loss for regularization parameter 0.2, correct to two decimal places.</p>
+<p><strong>Calculation order:</strong> Add the constant feature → calculate four predictions → subtract targets → square and sum → multiply by $1/2$ → add the requested penalty. Ridge uses the sum of coefficient <strong>squares</strong>; LASSO uses the sum of <strong>absolute values</strong>. Since $w$ is supplied, the task is objective evaluation; no fitting formula is needed.</p>
 <p><strong>Solution:</strong></p>
 <p><strong>Step 1 — State the supplied solution's convention:</strong> Here use</p>
 <p>$$J_R=\frac12\|X^Tw-y\|^2+\frac\lambda2\|w\|_2^2,\qquad J_L=\frac12\|X^Tw-y\|^2+\lambda\|w\|_1.$$</p>
@@ -601,9 +640,9 @@
 <li>Half-SSE ke saath ridge penalty $\lambda\|w\|^2$ use karte toh $0.378\to0.38$. Same numeric lambda with a different relative normalization means a different objective.</li>
 <li>Here smaller numerical ridge objective se “ridge generalizes better” conclude nahi kar sakte. Different penalties ki raw objective values validation comparison ka substitute nahi hain.</li>
 </ul>
-<h3 id="topic-34">4.4 Subgradient and why exact zeros occur</h3>
+<h3 id="topic-35">4.4 Subgradient and why exact zeros occur</h3>
 <p>Absolute value derivative at zero unique nahi:</p>
-<p>$$\partial|w|=\begin{cases}\{1\},&amp;w&gt;0,\\[-1,1],&amp;w=0,\\\{-1\},&amp;w&lt;0.\end{cases}$$</p>
+<p>$$\partial|w|=\begin{cases}\{1\},&amp;w&gt;0,\\\left[-1,1\right],&amp;w=0,\\\{-1\},&amp;w&lt;0.\end{cases}$$</p>
 <p><strong>Short definition:</strong> Subgradient nondifferentiable convex function ke liye supporting slope ka generalized idea hai. At zero multiple supporting slopes possible hain.</p>
 <p>For one coordinate, zero coefficient possible when SSE slope can be balanced by penalty subgradient:</p>
 <p>$$\left|\frac{\partial\operatorname{SSE}}{\partial w_j}\right|\le\lambda\quad\text{at }w_j=0.$$</p>
@@ -612,7 +651,11 @@
 <p>If objective uses $\frac12\operatorname{SSE}+\lambda\lVert w\rVert_1$, threshold is $\lambda$, not $\lambda/2$. Scaling matters.</p>
 <p>General correlated design mein ordinary ridge-like inverse formula available nahi; coordinate descent, proximal/subgradient methods use ho sakte hain. Special cases like orthonormal design do have closed forms.</p>
 <p><img src="assets/week6/soft_threshold.png" loading="lazy" alt="Ridge shrinkage and LASSO soft-thresholding" /></p>
-<h3 id="topic-35">Q5 — Read LASSO geometry, selected features and total loss</h3>
+<p><strong>Exact zero ka small example — teaching example:</strong> One coefficient aur half-squared loss use karo:</p>
+<p>$$J(w)=\frac12(w-z)^2+\lambda|w|.$$</p>
+<p>$z$ unpenalized best coefficient hai. If $w&gt;0$, derivative $w-z+\lambda=0$ gives $w=z-\lambda$, valid only $z&gt;\lambda$. If $w&lt;0$, derivative $w-z-\lambda=0$ gives $w=z+\lambda$, valid only $z&lt;-\lambda$. Remaining $|z|\le\lambda$ mein zero minimizes objective, because the data slope $-z$ can be balanced by $\lambda[-1,1]$.</p>
+<p>Take $z=0.3,\lambda=0.5$: LASSO gives exactly 0. Same half-loss with ridge $\lambda w^2/2$ gives $w=z/(1+\lambda)=0.2$. Sparsity versus shrinkage ka difference directly visible hai. This separable example applies to orthonormal designs; correlated general designs need joint optimization. Q5 diamond ke axis contact se zero read karta hai; Q15 learned vectors ke patterns se penalty identify karta hai.</p>
+<h3 id="topic-36">Q5 — Read LASSO geometry, selected features and total loss</h3>
 <p><strong>Source:</strong> 2024 Aug 04 Quiz 2, Q5.</p>
 <p><strong>Question:</strong></p>
 <p>Comprehension: Consider the following image of the parameter space in a regression problem with regularization. f is the sum of squared errors (SSE) and $\lambda$ is the regularization parameter. The weight vector is $w=[w_1\ w_2]^T$. The contours of f and the regularization term in the loss are displayed below:</p>
@@ -633,6 +676,7 @@
 <p>(b) $c_1&lt;c_2$</p>
 <p>(c) Total loss at optimal point is $c_1+\lambda$</p>
 <p>(d) Total loss at optimal point is $c_2+\lambda$</p>
+<p><strong>Read the geometry as an optimization:</strong> A contour contains weights with equal SSE. Start at the unconstrained minimum and increase contour level until it first reaches the allowed region. The diamond is $|w_1|+|w_2|\le1$; its right corner is $(1,0)$. At that contact, compute the full loss by adding $\lambda(|1|+|0|)$ to the contour's SSE value.</p>
 <p><strong>Solution:</strong></p>
 <p><strong>(i):</strong> Blue diamond represents $|w_1|+|w_2|\le1$, so L1 constraint → <strong>LASSO, option (b)</strong>.</p>
 <p><strong>(ii), (iii):</strong> Lowest shown SSE contour touching feasible diamond contacts at its right corner $(1,0)$:</p>
@@ -645,7 +689,7 @@
 <p>$$J(w)=f(w)+\lambda\lVert w\rVert_1=c_1+\lambda.$$</p>
 <p>$$\boxed{\text{(a), (c)}}.$$</p>
 <p>The contour construction assumes the corresponding constraint budget/penalty yielding the depicted optimum. Same corner need not be optimal for every arbitrary $\lambda$.</p>
-<h3 id="topic-36">Q15 — Match OLS, ridge and LASSO weight patterns</h3>
+<h3 id="topic-37">Q15 — Match OLS, ridge and LASSO weight patterns</h3>
 <p><strong>Source:</strong> 2025 Apr 13 ET, Q15.</p>
 <p><strong>Question:</strong></p>
 <p>Consider that the three weight vectors $w_1,w_2,w_3$ are learned for a four-dimensional dataset using a linear regression model or regularized linear regression model (Not in any particular order).</p>
@@ -657,6 +701,10 @@
 <p>(b) $w_1\to$ Ridge regression, $w_2\to$ Linear regression, $w_3\to$ Lasso regression</p>
 <p>(c) $w_1\to$ Lasso regression, $w_2\to$ Ridge regression, $w_3\to$ Linear regression</p>
 <p>(d) $w_1\to$ Lasso regression, $w_2\to$ Linear regression, $w_3\to$ Ridge regression</p>
+<p><strong>Calculate the size clues:</strong></p>
+<p>$$\|w_1\|^2=0.1681+0.0676+0.2916+0.0289=0.5562,$$
+$$\|w_2\|^2=0.6561+0.7921+0.8649+0.2704=2.5835.$$</p>
+<p>Take square roots to compare L2 norms. Separately count exact zeros in $w_3$. Small dense weights suggest ridge; a sparse vector suggests LASSO. These are the pattern clues used by this MCQ.</p>
 <p><strong>Solution:</strong></p>
 <ol>
 <li>$w_3$ has two exact zeros → strongest clue for LASSO sparsity.</li>
@@ -672,8 +720,8 @@
 <p>$$w_3=(0.24,-0.03,0.1,0.02,0.09,-0.14)^T.$$</p>
 <p>Q15 ka same pattern-matching method applies: $w_1$ has three exact zeros → <strong>LASSO</strong>, $w_2$ has the largest norm → <strong>OLS</strong>, and the smaller dense $w_3$ → <strong>ridge</strong>. No duplicate full solution needed.</p>
 <p><strong>PDF correction:</strong> Handwritten labels follow this mapping, but typed solution swaps ridge/LASSO for $w_1,w_3$. Also LASSO/ridge are regularized models, despite the typed phrase “non-regularized model like LASSO or RIDGE”. A smaller norm alone does not identify “more regularized” across different penalty types/scales. These vectors give intended clues, not a proof of which fitting algorithm produced them.</p>
-<h2 id="topic-37">5. Bayesian view: Prior becomes regularizer</h2>
-<h3 id="topic-38">5.1 Gaussian likelihood plus Gaussian prior</h3>
+<h2 id="topic-38">5. Bayesian view: Prior becomes regularizer</h2>
+<h3 id="topic-39">5.1 Gaussian likelihood plus Gaussian prior</h3>
 <p><strong>Short definition:</strong> MAP selects weights maximizing posterior density. Gaussian prior centered at zero favors smaller squared weight norm.</p>
 <p><strong>Real life:</strong> Before observing houses, extremely large positive/negative coefficients seem less plausible. A zero-centered prior expresses this preference, while data can still move weights away from zero.</p>
 <p>Let noise variance be $\sigma_\epsilon^2$ and prior variance $\tau^2$:</p>
@@ -688,7 +736,9 @@
 <li>Larger prior variance → less restrictive prior → weaker regularization.</li>
 <li>Prior <strong>precision</strong> is inverse variance, not variance itself.</li>
 </ul>
-<h3 id="topic-39">Q17 — Noise/prior variance ratio</h3>
+<p><strong>Bayesian coefficients ko names se nahi, whole objective se match karo:</strong> Negative log-posterior $\mathrm{SSE}/(2\sigma_\epsilon^2)+\|w\|^2/(2\tau^2)$ hai. Multiply the <strong>entire expression</strong> by same positive constant, then compare coefficients with requested loss. For SSE coefficient 1, penalty $\sigma_\epsilon^2/\tau^2$; for MSE coefficient 1, penalty $\sigma_\epsilon^2/(n\tau^2)$. Data normalization change karke same numeric $\lambda$ rakhna same MAP model nahi hota.</p>
+<p>Week 5 Laplace <strong>noise</strong> residual absolute values laayi thi. Yahan Laplace <strong>weight prior</strong> coefficient absolute values laata hai. Q17/Q21/Q23 variance versus precision and half-factors test karte hain; Q7(ii) prior ki shape se LASSO identify karta hai.</p>
+<h3 id="topic-40">Q17 — Noise/prior variance ratio</h3>
 <p><strong>Source:</strong> 2025 Aug 03 Quiz 2, Q17.</p>
 <p><strong>Question:</strong></p>
 <p>In the Bayesian modeling for linear regression, we assume $y\mid x\sim\operatorname{Normal}(w^Tx,\sigma^2I)$ and $w\sim\operatorname{Normal}(0,\gamma^2I)$. Under this setup, the maximum aposteriori (MAP) estimator of the weights $\hat w_{MAP}$ is given by:</p>
@@ -698,6 +748,7 @@
 <p>(b) $\lambda=\gamma^2/\sigma^2$</p>
 <p>(c) $\lambda=\sigma^2/\gamma^2$</p>
 <p>(d) $\lambda=1/(\sigma^2+\gamma^2)$</p>
+<p><strong>Apply Bayes before matching coefficients:</strong> $p(w\mid X,y)\propto p(y\mid X,w)p(w)$. Taking minus logs changes this product into likelihood loss plus prior penalty. Gaussian exponents give coefficients $1/(2\sigma^2)$ and $1/(2\gamma^2)$. Divide the prior coefficient by the data-loss coefficient to express the objective with SSE coefficient 1.</p>
 <p><strong>Solution:</strong></p>
 <ol>
 <li>Negative log-likelihood contributes $\operatorname{SSE}/(2\sigma^2)$.</li>
@@ -706,7 +757,7 @@
 </ol>
 <p>$$\boxed{\lambda=\frac{\sigma^2}{\gamma^2}\quad\text{(c)}}.$$</p>
 <p>Sanity check: Very broad prior $\gamma^2\to\infty$ should give $\lambda\to0$; this rules out multiplying variances.</p>
-<h3 id="topic-40">Q21 — Gaussian prior precision and objective choice</h3>
+<h3 id="topic-41">Q21 — Gaussian prior precision and objective choice</h3>
 <p><strong>Source:</strong> 2025 Dec 18 ET, Q21.</p>
 <p><strong>Question:</strong></p>
 <p>In Bayesian linear regression, suppose the prior distribution over the weight vector is</p>
@@ -716,6 +767,7 @@
 <p>(b) $\lVert y-Xw\rVert^2+\alpha\lVert w\rVert$</p>
 <p>(c) $\lVert y-Xw\rVert^2+\alpha\lVert w\rVert^2$</p>
 <p>(d) $\lVert y-Xw\rVert^2-\alpha\lVert w\rVert^2$</p>
+<p><strong>Read covariance versus precision:</strong> For a Gaussian prior, the quadratic exponent is $\frac12w^T\Sigma^{-1}w$. Here $\Sigma=\alpha^{-1}I$, hence $\Sigma^{-1}=\alpha I$ and the exponent is $\alpha\|w\|^2/2$. Combine with Gaussian likelihood SSE/2 under unit noise, then multiply both terms by 2. The penalty must have a positive sign.</p>
 <p><strong>Solution:</strong></p>
 <ol>
 <li>Covariance $\alpha^{-1}I$ means precision $\alpha I$.</li>
@@ -724,7 +776,7 @@
 </ol>
 <p>$$\boxed{\operatorname{SSE}+\alpha\lVert w\rVert^2\quad\text{(c)}}.$$</p>
 <p>Here X uses row-sample convention as shown by $Xw$. Question omits noise variance; coefficient exactly $\alpha$ assumes unit noise variance. With noise variance $\sigma_\epsilon^2$, coefficient would be $\sigma_\epsilon^2\alpha$. Negative penalty in (d) rewards large weights, opposite of zero-centered Gaussian prior.</p>
-<h3 id="topic-41">Q23 — Match half-SSE and half-penalty coefficients</h3>
+<h3 id="topic-42">Q23 — Match half-SSE and half-penalty coefficients</h3>
 <p><strong>Source:</strong> 2026 Aug 14 Quiz 2, Q23.</p>
 <p><strong>Question:</strong></p>
 <p>Let the training data be $(x_i,y_i)_{i=1}^n$, where $x_i\in\mathbb R^d$ and $y_i\in\mathbb R$. Consider the ridge regression estimator defined, for a fixed $\lambda&gt;0$, as</p>
@@ -739,19 +791,22 @@
 <p>(b) $\lambda=1/(2\sigma^2)$</p>
 <p>(c) $\lambda=1$</p>
 <p>(d) $\lambda=1/\sigma^2$</p>
+<p><strong>Match the complete expressions:</strong> Likelihood variance is 1 and prior variance is $\sigma^2$, so the negative log-posterior is</p>
+<p>$$\tfrac12\operatorname{SSE}+\tfrac1{2\sigma^2}\|w\|^2+\text{constant}.$$</p>
+<p>Compare this with $\tfrac12\operatorname{SSE}+\tfrac\lambda2\|w\|^2$. Equal coefficients require $\lambda/2=1/(2\sigma^2)$; multiply both sides by 2.</p>
 <p><strong>Solution:</strong></p>
 <p><strong>Step 1:</strong> Unit likelihood variance gives negative log-likelihood $\frac12\operatorname{SSE}$.</p>
 <p><strong>Step 2:</strong> Prior variance $\sigma^2$ gives negative log-prior $\frac1{2\sigma^2}\lVert w\rVert^2$.</p>
 <p><strong>Step 3:</strong> Compare coefficient with specified ridge objective:</p>
 <p>$$\frac\lambda2=\frac1{2\sigma^2}\Rightarrow\boxed{\lambda=\frac1{\sigma^2}\quad\text{(d)}}.$$</p>
 <p>Q17 uses $\sigma^2$ for noise; <strong>this question uses it for prior variance</strong>. Match meanings, not symbol names. No extra factor 2 survives because both objectives already include halves.</p>
-<h3 id="topic-42">5.2 Laplace prior leads to LASSO</h3>
+<h3 id="topic-43">5.2 Laplace prior leads to LASSO</h3>
 <p>For independent coefficient priors $w_j\sim\operatorname{Laplace}(0,b)$:</p>
 <p>$$p(w)\propto\exp\left[-\frac1b\sum_j|w_j|\right].$$</p>
 <p>Negative log-prior is $\lVert w\rVert_1/b$. With Gaussian noise variance $\sigma_\epsilon^2$, multiplying negative log-posterior by $2\sigma_\epsilon^2$ gives:</p>
 <p>$$\boxed{\operatorname{SSE}+\frac{2\sigma_\epsilon^2}{b}\lVert w\rVert_1}.$$</p>
 <p>Gaussian prior → squared L2; independent Laplace prior → L1. Prior shape determines penalty shape.</p>
-<h3 id="topic-43">Q7 — Ridge estimator MSE and Laplace-prior MAP</h3>
+<h3 id="topic-44">Q7 — Ridge estimator MSE and Laplace-prior MAP</h3>
 <p><strong>Source:</strong> 2024 Dec 01 Quiz 2, Q7.</p>
 <p><strong>Question:</strong></p>
 <p>Comprehension: Consider the following linear regression model</p>
@@ -768,6 +823,7 @@
 <p>(b) $\hat w_{MAP}=\arg\max_w\sum_{i=1}^n(w^Tx_i-y_i)^2+\lambda\lVert w\rVert_2^2$, where $\lVert w\rVert_2^2=\sum_{i=1}^d w_i^2$</p>
 <p>(c) $\hat w_{MAP}=\arg\min_w\sum_{i=1}^n(w^Tx_i-y_i)^2+\lambda\lVert w\rVert_1$, where $\lVert w\rVert_1=\sum_{i=1}^d|w_i|$</p>
 <p>(d) $\hat w_{MAP}=\arg\max_w\sum_{i=1}^n(w^Tx_i-y_i)^2+\lambda\lVert w\rVert_1$, where $\lVert w\rVert_1=\sum_{i=1}^d|w_i|$</p>
+<p><strong>Identify which MSE is asked:</strong> Parameter risk is $E\|\hat w-w_*\|^2=\|E\hat w-w_*\|^2+\operatorname{tr}(\operatorname{Cov}\hat w)$. Ridge can reduce the second term enough to offset added bias. For a Laplace <strong>weight prior</strong>, $-\log p(w)=\sum_j|w_j|/b+\text{constant}$, so MAP adds an L1 coefficient penalty to the Gaussian data loss.</p>
 <p><strong>Solution — (i): Parameter MSE, not training SSE</strong></p>
 <p>Standard fixed-design, full-rank noisy linear model mein suitable positive shrinkage variance reduce karke added bias compensate kar sakti hai. Section 3.3 example: OLS risk 1, ridge at $\lambda=1$ risk 0.5.</p>
 <p>$$\boxed{\text{(a) TRUE}}.$$</p>
@@ -781,7 +837,7 @@
 <p><strong>Step 4:</strong> Maximizing posterior equals minimizing exponent's negative; multiply by 2:</p>
 <p>$$\boxed{\hat w_{MAP}=\arg\min_w[\operatorname{SSE}+\lambda\lVert w\rVert_1]\quad\text{(c)}}.$$</p>
 <p>This is LASSO. Prior needs independent-coordinate interpretation for the displayed vector L1 penalty.</p>
-<h3 id="topic-44">Q19 — Unbiasedness versus MSE</h3>
+<h3 id="topic-45">Q19 — Unbiasedness versus MSE</h3>
 <p><strong>Source:</strong> 2025 Aug 03 Quiz 2, Q19.</p>
 <p><strong>Question:</strong></p>
 <p>Consider the linear regression model $y=w^Tx+\epsilon$, where $\epsilon\sim N(0,\sigma^2)$.</p>
@@ -791,6 +847,7 @@
 <p>(b) The estimator $\hat w_{MAP}$ always provides better estimates than $\hat w_{MLE}$ because it uses prior information.</p>
 <p>(c) The estimator $\hat w_{MAP}$ can achieve lower MSE than $\hat w_{MLE}$ for some $\lambda&gt;0$, where $\lambda\in\mathbb R$.</p>
 <p>(d) The MSE of $\hat w_{MLE}$ and $\hat w_{MAP}$ is always equal when the sample size is small.</p>
+<p><strong>Apply bias–variance decomposition:</strong> Unbiasedness sets only $\|E\hat w-w_*\|^2$ to zero. It does not minimize variance. For example, risks $0^2+4=4$ and $1^2+1=2$ show that a biased estimator can have lower MSE. Judge any “always better” claim by the total, not by bias alone.</p>
 <p><strong>Solution:</strong></p>
 <ul>
 <li>(a) False: MSE includes variance as well as squared bias.</li>
@@ -801,8 +858,8 @@
 <p>$$\boxed{\text{(c)}}.$$</p>
 <p><strong>Counterexample to “MAP always better”:</strong> True scalar weight 10, design $a=1$, noise variance 1. OLS risk 1; extreme shrinkage toward zero has risk approaching $10^2=100$. Prior strength needs tuning.</p>
 <hr />
-<h2 id="topic-45">6. Cross-validation: Penalty aur complexity kaise choose karein?</h2>
-<h3 id="topic-46">6.1 Train, validation and test roles</h3>
+<h2 id="topic-46">6. Cross-validation: Penalty aur complexity kaise choose karein?</h2>
+<h3 id="topic-47">6.1 Train, validation and test roles</h3>
 <p><strong>Short definition:</strong> Validation uses held-out observations to compare hyperparameter settings; test set final evaluation ke liye reserve hota hai.</p>
 <p><strong>Real life:</strong> Practice questions se learn karo, mock test se study strategy choose karo, final exam se assess karo. Final exam answers dekhkar strategy tune karna fair evaluation nahi.</p>
 <ul>
@@ -811,7 +868,7 @@
 <li><strong>Test:</strong> Final selected procedure ki generalization assess karo.</li>
 </ul>
 <p>An 80:20 train-validation split common possible choice hai, universal rule nahi. One random split unrepresentative ho sakta hai; K-fold CV multiple holdouts average karti hai.</p>
-<h3 id="topic-47">6.2 K-fold and leave-one-out</h3>
+<h3 id="topic-48">6.2 K-fold and leave-one-out</h3>
 <p>Dataset ko K folds mein divide karo. For each hyperparameter candidate:</p>
 <ol>
 <li>One fold validation, other K−1 folds training.</li>
@@ -825,13 +882,16 @@
 <p>M candidates → MK CV fits, plus usually one final refit. LOOCV is K=n: each fit n−1 points, one held out.</p>
 <p><strong>Larger K always better?</strong> No. More training data per fit milta hai, but computation and variability/correlation of validation estimates matter karte hain. Time-series/groups ke liye appropriate nonleaking split scheme choose karna necessary hai; plain random folds universally suitable nahi.</p>
 <p>Preprocessing/scaling selection bhi each training fold par fit honi chahiye. Whole dataset par scaler fit karke CV karna held-out information leak kar sakta hai.</p>
-<h3 id="topic-48">Q4 — Four-fold CV model count and training size</h3>
+<p><strong>Model-selection mini example:</strong> Three-fold validation MSE for $\lambda=0$ is $(1,4,4)$, average 3; for $\lambda=1$, $(2,2,2)$, average 2; for $\lambda=10$, $(5,4,3)$, average 4. Choose $\lambda=1$. Nine fits compare candidates; tenth fit selected setting par all development samples use karega. Training SSE sabse low $\lambda=0$ ho sakti hai, phir bhi woh validation winner nahi.</p>
+<p>Fold losses unequal counts par given hon toh per-sample pooled error ke liye total held-out SSE / total held-out count use karo; question explicitly equal-weight fold average maange toh that definition follow karo. In equal-size folds, both coincide. Q4 model count; Q22 validation error selection; Q28 actual fold fit. Scaler, feature choice aur other learned preprocessing fold ke training part se hi calculate karo.</p>
+<h3 id="topic-49">Q4 — Four-fold CV model count and training size</h3>
 <p><strong>Source:</strong> 2024 Aug 04 Quiz 2, Q4.</p>
 <p><strong>Question:</strong></p>
 <p>Comprehension: A dataset for ridge regression has 1000 data-points. k-fold cross validation is performed to estimate the value of $\lambda$ in ridge regression with k = 4. For a given value of $\lambda$:
 Based on the above data, answer the given subquestions.</p>
 <p>(i) How many models have to be trained?</p>
 <p>(ii) While training each of these models, how many data-points does the training set have?</p>
+<p><strong>Count the roles of the folds:</strong> Divide 1000 samples into four disjoint groups of 250. Fit once with fold 1 held out, then folds 2, 3, and 4. Each fit uses $1000-250=750$ samples. The four fits evaluate one fixed candidate $\lambda$; selecting and refitting the winning candidate is a later operation.</p>
 <p><strong>Solution:</strong></p>
 <ol>
 <li>One candidate $\lambda$, four held-out fold choices → <strong>4 models</strong>.</li>
@@ -842,12 +902,12 @@ Based on the above data, answer the given subquestions.</p>
 <p>250 is validation count, not training count. Final refit is separate from requested four CV models.</p>
 <p><img src="assets/week6/four_fold_cv.png" loading="lazy" alt="Four-fold cross-validation with 1000 observations" /></p>
 <p><strong>Same counting method also appears:</strong> Week 6 — Solve With TAs, Q4 asks for total fits in five-fold CV comparing standard linear regression, polynomial kernel regression and Gaussian kernel regression. There are 3 candidate procedures and 5 folds, so <strong>$3\times5=15$ CV fits</strong>. One final refit, if separately requested, makes 16. This assumes one fixed configuration per model family; extra degree/bandwidth settings count as additional candidates.</p>
-<h3 id="topic-49">6.2A LOOCV: Fit an actual fold before predicting its held-out point</h3>
+<h3 id="topic-50">6.2A LOOCV: Fit an actual fold before predicting its held-out point</h3>
 <p><strong>Definition:</strong> LOOCV mein one sample validation hota hai; coefficients remaining samples se fit hote hain. Har held-out sample ke liye model refit karna hota hai.</p>
 <p>For $m$ training points and model $\hat y=w_0+w_1x$:</p>
 <p>$$\boxed{w_1=\frac{\sum(x_i-\bar x)(y_i-\bar y)}{\sum(x_i-\bar x)^2},\qquad w_0=\bar y-w_1\bar x}.$$</p>
 <p>Means and sums <strong>current training fold only</strong> se nikaalo. Denominator positive hona chahiye; all training inputs equal hon toh slope separately identifiable nahi hota.</p>
-<h3 id="topic-50">Q28 — Leave out sample 3, then fit slope and predict</h3>
+<h3 id="topic-51">Q28 — Leave out sample 3, then fit slope and predict</h3>
 <p><strong>Source:</strong> Week 6 — Solve With TAs, Q7.</p>
 <p><strong>Question:</strong></p>
 <p>Consider the dataset:</p>
@@ -885,6 +945,7 @@ Based on the above data, answer the given subquestions.</p>
 <p>The linear regression model is $y=w_0+w_1x$. Assume that Leave-One-Out Cross-Validation is applied.</p>
 <p>(i) Enter the value of $w_1$ obtained when the third sample is used as the validation data point.</p>
 <p>(ii) What is the predicted value for the left-out data point?</p>
+<p><strong>State the fitting rule:</strong> On the remaining three points use $w_1=S_{xy}/S_{xx}$, where $S_{xy}=\sum(x_i-\bar x)(y_i-\bar y)$ and $S_{xx}=\sum(x_i-\bar x)^2$. Then use $w_0=\bar y-w_1\bar x$. This is an intercept model, so the uncentered ratio $\sum xy/\sum x^2$ would fit a different model.</p>
 <p><strong>Solution:</strong></p>
 <p><strong>Step 1 — Split:</strong> Hold out $(5,12)$. Train using $(3,8),(0,3),(6,13)$. Held-out label 12 fitting mein use nahi hoga.</p>
 <p><strong>Step 2 — Training means:</strong></p>
@@ -900,7 +961,7 @@ Based on the above data, answer the given subquestions.</p>
 <p>$$\boxed{\hat y(5)=3+(5/3)(5)=34/3\approx11.33}.$$</p>
 <p><img src="assets/week6/new_loocv_fold.png" loading="lazy" alt="Training-fold line and the held-out sample with its prediction" /></p>
 <p><strong>Useful follow-through:</strong> Held-out residual $12-34/3=2/3$, absolute error $2/3$, squared error $4/9$. Training error zero hone ke baad bhi validation error nonzero hai. Yeh <strong>one fold's</strong> error hai; full LOOCV MSE ke liye all four held-out squared errors average karne padenge.</p>
-<h3 id="topic-51">Q18 — Select learning rate and iteration setting</h3>
+<h3 id="topic-52">Q18 — Select learning rate and iteration setting</h3>
 <p><strong>Source:</strong> 2025 Aug 03 Quiz 2, Q18.</p>
 <p><strong>Question:</strong></p>
 <p>You are evaluating the performance of a linear regression model using different hyperparameter settings (learning rate and number of iterations). Below are the results:</p>
@@ -950,12 +1011,13 @@ Based on the above data, answer the given subquestions.</p>
 <p>(b) Setting 2, because it has the lowest validation error and a relatively low training error, indicating a good generalization.</p>
 <p>(c) Setting 1, because it has the highest number of iterations and therefore likely to be more stable.</p>
 <p>(d) Setting 4, because it uses the highest learning rate and converges the fastest.</p>
+<p><strong>Selection formula:</strong> Choose $h^*=\arg\min_h E_{validation}(h)$ over the four listed settings. Here $150&lt;160$, $150&lt;190$, and $150&lt;180$. Thus setting 2 wins every comparison. The training error helps explain fitting behavior, but neither training error nor iteration count replaces the held-out selection criterion.</p>
 <p><strong>Solution:</strong></p>
 <p><strong>Step 1:</strong> Compare validation errors: 160, 150, 190, 180.</p>
 <p><strong>Step 2:</strong> Minimum 150 occurs at setting 2: learning rate 0.10, 800 iterations.</p>
 <p><strong>Step 3:</strong> Setting 3's better training error 140 doesn't outweigh much worse validation error 190. Number of iterations/learning rate alone isn't selection criterion.</p>
 <p>$$\boxed{\text{(b) Setting 2}}.$$</p>
-<h3 id="topic-52">Q22 — Select lambda from five-fold CV errors</h3>
+<h3 id="topic-53">Q22 — Select lambda from five-fold CV errors</h3>
 <p><strong>Source:</strong> 2026 Apr 06 Quiz 2, Q22.</p>
 <p><strong>Question:</strong></p>
 <p>In Ridge Regression, the optimal weight vector is given by $\hat w=(XX^T+\lambda I)^{-1}Xy$. The regularization parameter $\lambda$ is determined using 5-fold cross-validation. The following table summarizes the average Training Error and Validation Error (Mean Squared Error) obtained for various values of $\lambda$:</p>
@@ -1001,6 +1063,7 @@ Based on the above data, answer the given subquestions.</p>
 <p>(c) 1.0</p>
 <p>(d) 10.0</p>
 <p>(e) 100</p>
+<p><strong>Apply cross-validation averaging:</strong> For each candidate, $CV(\lambda)=\frac15\sum_{k=1}^5MSE_k(\lambda)$. The table already supplies these averages, so do not average the rows again. Compare $8.40,4.20,3.15,3.20,11.90$ and select the row with the smallest value. Training penalty size is not an extra term to add to this validation MSE.</p>
 <p><strong>Solution:</strong></p>
 <ol>
 <li>Choose by average validation MSE, not training MSE.</li>
@@ -1011,7 +1074,7 @@ Based on the above data, answer the given subquestions.</p>
 <p>Small $\lambda=0.001$ gives low training error but poor validation; very large $\lambda=100$ has high errors, suggesting excessive regularization.</p>
 <p><img src="assets/week6/q22_cv_errors.png" loading="lazy" alt="Training and validation errors from Q22" /></p>
 <p><strong>Property:</strong> Validation error can be below training error (here 3.15 versus 3.45). Different held-out samples can be easier; “training error must always be lower” is false.</p>
-<h3 id="topic-53">6.3 Loss curves versus lambda or model flexibility</h3>
+<h3 id="topic-54">6.3 Loss curves versus lambda or model flexibility</h3>
 <p>For exact ridge training optima on the same fixed dataset, increasing $\lambda$ gives:</p>
 <ul>
 <li>Fitted L2 norm non-increasing.</li>
@@ -1020,7 +1083,11 @@ Based on the above data, answer the given subquestions.</p>
 </ul>
 <p>Validation/test prediction error can first improve then worsen; no universal smooth U shape required. If horizontal axis is decreasing function of $\lambda$, these directions reverse.</p>
 <p><strong>Important distinction:</strong> Full regularized objective and prediction error differ. Validation normally compares prediction SSE/MSE without adding training penalty; graph's labels and question convention read karo.</p>
-<h3 id="topic-54">6.3A MAE and selecting polynomial degree from a graph</h3>
+<p><strong>Training-error direction ka reason:</strong> $\lambda_2&gt;\lambda_1$ par optima $w_2,w_1$, SSE values $S_2,S_1$, squared norms $R_2,R_1$ lo. Optimality gives</p>
+<p>$$S_1+\lambda_1R_1\le S_2+\lambda_1R_2,\qquad
+S_2+\lambda_2R_2\le S_1+\lambda_2R_1.$$</p>
+<p>Add: $(\lambda_2-\lambda_1)(R_2-R_1)\le0$, so $R_2\le R_1$. First inequality then gives $S_1\le S_2$. Thus penalty increase par <strong>optimal training fit worsen/equal</strong> hoti hai; validation better ho sakti hai. Q6 axis $1/\lambda$ ho toh left/right interpretation reverse hoga. Q10 time-axis par hai, so this penalty-axis argument directly apply nahi hota.</p>
+<h3 id="topic-55">6.3A MAE and selecting polynomial degree from a graph</h3>
 <p><strong>Definition:</strong> Mean absolute error averages prediction misses without squaring:</p>
 <p>$$\boxed{\operatorname{MAE}=\frac1n\sum_i|y_i-\hat y_i|}.$$</p>
 <p><strong>Real-life connection:</strong> Price prediction average kitne currency units se miss hui, MAE directly target units mein batata hai. MSE squared target units mein hota hai.</p>
@@ -1029,7 +1096,7 @@ Based on the above data, answer the given subquestions.</p>
 <li>MAE and MSE models ko different order mein rank kar sakte hain. Residuals A=$(0,4)$ and B=$(2.1,2.1)$: MAE A=2 &lt; B=2.1, but MSE A=8 &gt; B=4.41. Large miss squaring se zyada penalize hoti hai.</li>
 <li>Degree badhne par fit flexibility badhti hai; minimum training error alone model select karne ka criterion nahi.</li>
 </ul>
-<h3 id="topic-55">Q29 — Read the best polynomial degree from the supplied chart</h3>
+<h3 id="topic-56">Q29 — Read the best polynomial degree from the supplied chart</h3>
 <p><strong>Source:</strong> Week 6 — Solve With TAs, Q1.</p>
 <p><strong>Question:</strong></p>
 <p>The following chart plots MAE against degree of polynomial features for a regression task on the California housing dataset. Which is the optimal value of degree?</p>
@@ -1038,6 +1105,7 @@ Based on the above data, answer the given subquestions.</p>
 <p>(ii) 2</p>
 <p>(iii) 3</p>
 <p>(iv) 4</p>
+<p><strong>Read the requested metric first:</strong> $MAE=\sum|y_i-\hat y_i|/n$; lower is better. For every displayed degree, compare the held-out curve's height. The lowest point determines the selected degree, while the training curve explains whether extra flexibility is still improving fit on observed data. Exact decimal MAEs are unnecessary when the minimum location is clear.</p>
 <p><strong>Solution:</strong></p>
 <p><strong>Step 1 — Read axes and legend:</strong> Horizontal axis polynomial degree hai, vertical axis MAE. Purple training error hai; red curve supplied chart mein “Test error” labelled hai.</p>
 <p><strong>Step 2 — Locate the red curve's minimum:</strong> Degree 1 se 2 tak error decreases. Degree 2 ke baad 3, 4, 5 par increases. Precise plotted MAE values estimate karne ki zaroorat nahi; minimum location sufficient hai.</p>
@@ -1045,7 +1113,7 @@ Based on the above data, answer the given subquestions.</p>
 <p>$$\boxed{\text{Degree }2\quad\text{(ii)}}.$$</p>
 <p><strong>Step 4 — Explain the gap:</strong> Training MAE higher degrees par lower hoti hai, but held-out curve rises. Is graph mein added flexibility training data ko better fit karke unseen performance hurt kar rahi hai, consistent with overfitting.</p>
 <p><strong>Model-selection distinction:</strong> Question ka intended answer supplied red curve se 2 hai. Actual workflow mein degree <strong>validation/CV</strong> se select karte hain; untouched final test set ko tune karne ke liye use nahi karte. Agar labelled “test” set se degree choose ki, woh selection ke liye validation role play kar raha hai, unbiased final test evaluation nahi.</p>
-<h3 id="topic-56">Q6 — Identify the horizontal-axis function of lambda</h3>
+<h3 id="topic-57">Q6 — Identify the horizontal-axis function of lambda</h3>
 <p><strong>Source:</strong> 2024 Sep 01 ET, Q6.</p>
 <p><strong>Question:</strong></p>
 <p>Consider a regression problem that has a training and test dataset. Ridge regression is applied on the problem for various values of $\lambda$. The training and test loss are plotted against some function of $\lambda$, which we call $f(\lambda)$. Note that the continuous curves are obtained by connecting the points using a smooth curve. What is the most appropriate choice of $f(\lambda)$?
@@ -1055,16 +1123,17 @@ Recall that the regularized loss is the sum of the SSE and the regularization te
 <p>(b) $\lambda$</p>
 <p>(c) $\lambda^2$</p>
 <p>(d) $\log(\lambda)$</p>
+<p><strong>Why the training objective increases with penalty:</strong> If $\lambda_2&gt;\lambda_1$, then for every $w$, $SSE(w)+\lambda_2\|w\|^2\ge SSE(w)+\lambda_1\|w\|^2$. Taking minima preserves this inequality. A training curve decreasing left-to-right must therefore correspond to decreasing $\lambda$. Test each proposed horizontal-axis function for that direction.</p>
 <p><strong>Solution:</strong></p>
 <p><strong>Step 1:</strong> Graph mein training loss horizontal-axis value badhne par decrease ho rahi hai.</p>
 <p><strong>Step 2:</strong> For $\lambda&gt;0$, larger penalty produces non-decreasing optimized training regularized loss. So displayed x-axis must increase when $\lambda$ decreases.</p>
 <p><strong>Step 3:</strong> $\lambda,\lambda^2,\log\lambda$ are increasing on positive $\lambda$; $1/\lambda$ decreasing hai.</p>
 <p>$$\boxed{f(\lambda)=\frac1\lambda\quad\text{(a)}}.$$</p>
 <p>Moving right means weaker regularization/more flexibility. The depicted test curve can fall then rise as underfitting gives way to overfitting, but training-curve direction alone identifies the option. A smooth line through measured points is an illustration, not a theorem that real validation curves are always smooth.</p>
-<h3 id="topic-57">6.4 Training curves over time and early stopping</h3>
+<h3 id="topic-58">6.4 Training curves over time and early stopping</h3>
 <p>Training time/iterations badhne par optimizer training loss reduce karta hai. Validation may improve initially, flatten, or later rise if fitting noise starts dominating. Early stopping validation performance ke basis par iteration count select kar sakta hai.</p>
 <p>Time axis and complexity/penalty axis different concepts hain. Increasing training time does not automatically mean increasing model architecture size.</p>
-<h3 id="topic-58">Q10 — Identify training and validation curves</h3>
+<h3 id="topic-59">Q10 — Identify training and validation curves</h3>
 <p><strong>Source:</strong> 2024 Dec 22 ET, Q10.</p>
 <p><strong>Question:</strong></p>
 <p>Consider a supervised ML problem where a model is trained using a training dataset, and its performance is evaluated on both the training and validation datasets. During training, the model’s loss is plotted over time for both the datasets. Assume that the loss L(t) is decreasing as the model learns.</p>
@@ -1075,6 +1144,7 @@ Recall that the regularized loss is the sum of the SSE and the regularization te
 <p>(b) Curve (B) represents the training loss.</p>
 <p>(c) Curve (A) represents the validation loss.</p>
 <p>(d) Curve (B) represents the validation loss.</p>
+<p><strong>Use objective and axis together:</strong> Horizontal position is training time. The optimizer directly minimizes training loss, while validation loss is evaluated on samples excluded from updates. Read which curve continues decreasing and which levels off, then match the graph's labels. A growing gap suggests fitting improvements are not transferring equally to held-out examples.</p>
 <p><strong>Solution:</strong></p>
 <ol>
 <li>Curve A continues to lower loss; model is directly optimized on training data.</li>
@@ -1084,8 +1154,8 @@ Recall that the regularized loss is the sum of the SSE and the regularization te
 <p>$$\boxed{\text{(a), (d)}}.$$</p>
 <p><strong>Limit:</strong> Graph suggests a generalization gap, but higher curve is not universally validation in every experiment; Q22 already shows a counterexample to that absolute rule. No need to claim validation is rising here—it is flattening in the supplied graph.</p>
 <hr />
-<h2 id="topic-59">7. Classification threshold: Which mistakes matter more?</h2>
-<h3 id="topic-60">7.1 Probability to label</h3>
+<h2 id="topic-60">7. Classification threshold: Which mistakes matter more?</h2>
+<h3 id="topic-61">7.1 Probability to label</h3>
 <p><strong>Short definition:</strong> A threshold converts predicted positive-class probability into a binary decision:</p>
 <p>$$\hat y=\begin{cases}1,&amp;p(y=1\mid x)\ge t,\\0,&amp;p(y=1\mid x)&lt;t.\end{cases}$$</p>
 <p><strong>Real life:</strong> Spam/phishing detection mein dangerous email ko miss karna costly hai. Lower threshold more emails flag karega, including some harmless ones.</p>
@@ -1096,12 +1166,13 @@ Recall that the regularized loss is the sum of the SSE and the regularization te
 </ul>
 <p>Fixed scores ke saath lowering threshold positive-prediction set expand karta hai: false negatives cannot increase, but false positives may increase. Precision may change; exact value dataset par depend karegi.</p>
 <p><strong>Counterexample to “threshold must always be 0.5”:</strong> An email with phishing probability 0.4 is unflagged at t=0.5, flagged at t=0.2. Cost-sensitive policy can reasonably choose lower threshold.</p>
-<h3 id="topic-61">Q8 — Low threshold for phishing detection</h3>
+<h3 id="topic-62">Q8 — Low threshold for phishing detection</h3>
 <p><strong>Source:</strong> 2024 Dec 22 ET, Q8.</p>
 <p><strong>Question:</strong></p>
 <p>Consider a logistic regression model trained to detect spam emails. Emails containing harmful phishing links are labeled as spam (1), while regular emails are labeled as not spam (0).
 A good spam detector should correctly identify almost all emails with phishing links. Even a single phishing email incorrectly classified as not spam could expose users to significant risks. However, the detector may classify some regular emails as spam. This trade-off is acceptable to ensure safety.</p>
 <p>To ensure user safety, if the threshold is set to a low value to prioritize the detection of phishing emails, type 1. If the threshold is set to a high value to minimize false positives (misclassifying regular emails as spam), type 0.</p>
+<p><strong>Apply the threshold rule to an example:</strong> Predict spam when $p\ge t$. An email scored 0.3 is safe at $t=0.5$ but spam at $t=0.2$. Lowering $t$ expands the flagged set. An actual phishing email in the newly flagged group changes from false negative to true positive; harmless emails there become false positives. The question explicitly accepts this trade-off.</p>
 <p><strong>Solution:</strong></p>
 <ol>
 <li>Main priority: avoid false negatives, i.e. missed phishing emails.</li>
@@ -1111,8 +1182,8 @@ A good spam detector should correctly identify almost all emails with phishing l
 <p>$$\boxed{1\text{ — choose a low threshold}}.$$</p>
 <p>Threshold change decisions ko change karta hai; fitted logistic model coefficients automatically change nahi hote.</p>
 <hr />
-<h2 id="topic-62">8. Quick revision</h2>
-<h3 id="topic-63">8.1 Formula sheet</h3>
+<h2 id="topic-63">8. Quick revision</h2>
+<h3 id="topic-64">8.1 Formula sheet</h3>
 <table>
 <thead>
 <tr>
@@ -1191,7 +1262,7 @@ A good spam detector should correctly identify almost all emails with phishing l
 </tr>
 </tbody>
 </table>
-<h3 id="topic-64">8.2 Common mistakes</h3>
+<h3 id="topic-65">8.2 Common mistakes</h3>
 <table>
 <thead>
 <tr>
@@ -1266,7 +1337,9 @@ A good spam detector should correctly identify almost all emails with phishing l
 </tr>
 </tbody>
 </table>
-<h3 id="topic-65">8.3 Solving checklist</h3>
+<h3 id="topic-66">8.3 Solving checklist</h3>
+<p><strong>Recall:</strong> More penalty means larger bias usually, but kya smaller MSE guaranteed? No: variance reduction must outweigh squared-bias increase. Prior infinitely broad ho toh penalty zero ki taraf kyun? Large weights prior ke under less strongly discouraged hain. Best CV setting ke baad refit kyun? Ab hyperparameter selected hai, so reserved test ko untouched rakhte hue development data ka full information use kar sakte hain.</p>
+<p><strong>Week 7 bridge:</strong> Complexity control sirf $\lambda$ nahi. KNN ka neighbour count $k$ aur tree ki maximum depth bhi bias/variance control karte hain. Increasing $k$ generally model smoother karta hai; increasing depth generally more flexible. Inki directions opposite hain, so “bigger hyperparameter = more complexity” universal rule nahi.</p>
 <ol>
 <li>Identify requested quantity: training error, test/validation error, or expected parameter MSE.</li>
 <li>Matrix question mein X orientation, y shape and intercept treatment read karo.</li>
@@ -1278,6 +1351,6 @@ A good spam detector should correctly identify almost all emails with phishing l
 <li>“Always”, “can”, “for some” ko carefully read karo; final values end mein round karo.</li>
 </ol>
 </article><nav class="next-prev" aria-label="Previous and next weeks"><a href="week5.html">← Week 5</a><a href="week7.html">Week 7 →</a></nav></main>
-<aside class="contents"><details open><summary>On this page</summary><nav aria-label="Topic index"><a class="level-h2" href="#topic-1">Topic index</a><a class="level-h2" href="#topic-2">1. Linear regression: Best training fit bhi unstable ho sakti hai</a><a class="level-h3" href="#topic-3">1.1 Model, noise and matrix convention</a><a class="level-h3" href="#topic-4">1.2 Gaussian-noise MLE and least squares</a><a class="level-h3" href="#topic-5">1.3 Prediction MSE versus parameter MSE</a><a class="level-h3" href="#topic-6">1.4 Why ordinary least squares can have high variance</a><a class="level-h2" href="#topic-7">2. Bias–variance: Flexibility ka trade-off</a><a class="level-h3" href="#topic-8">2.1 Short definitions and real-life connection</a><a class="level-h3" href="#topic-9">2.2 Underfitting, overfitting and complexity</a><a class="level-h3" href="#topic-10">Q1 — Linear versus quadratic house-price models</a><a class="level-h3" href="#topic-11">Q3 — Higher bias and lower variance</a><a class="level-h3" href="#topic-12">Q16 — Cubic truth, linear and degree-five fitted models</a><a class="level-h3" href="#topic-13">Q9 — Does complexity always increase test error?</a><a class="level-h3" href="#topic-14">2.3 Related concepts: Weak learners and bagging</a><a class="level-h3" href="#topic-15">Q11 — Underfitting, trees, weak learners and bagging</a><a class="level-h3" href="#topic-16">Q24 — Operations that change bias and variance</a><a class="level-h2" href="#topic-17">3. Ridge regression: Large weights par penalty</a><a class="level-h3" href="#topic-18">3.1 Definition, objective and practical details</a><a class="level-h3" href="#topic-19">3.2 Closed-form solution and invertibility</a><a class="level-h3" href="#topic-20">3.3 Shrinkage and parameter risk</a><a class="level-h3" href="#topic-21">Q25 — One-dimensional ridge calculation</a><a class="level-h3" href="#topic-22">Q26 — Finite-penalty ridge-to-MLE ratio</a><a class="level-h3" href="#topic-23">Q2 — Ridge coefficients for a 2 × 2 design</a><a class="level-h3" href="#topic-24">Q20 — OLS and ridge at two penalty strengths</a><a class="level-h3" href="#topic-25">Q13 — Norm ratio at zero and infinite penalty</a><a class="level-h3" href="#topic-26">Q14 — Role of the ridge penalty</a><a class="level-h2" href="#topic-27">4. Constraint geometry and LASSO: Shrinkage versus sparsity</a><a class="level-h3" href="#topic-28">4.1 Penalized and constrained forms</a><a class="level-h3" href="#topic-29">Q12 — Choose a feasible weight vector with minimum MSE</a><a class="level-h3" href="#topic-30">4.2 SSE contours and L2/L1 balls</a><a class="level-h3" href="#topic-31">4.3 LASSO objective and feature selection</a><a class="level-h3" href="#topic-32">4.3A Evaluating a loss is different from fitting weights</a><a class="level-h3" href="#topic-33">Q27 — Ridge and LASSO losses at the same given weight</a><a class="level-h3" href="#topic-34">4.4 Subgradient and why exact zeros occur</a><a class="level-h3" href="#topic-35">Q5 — Read LASSO geometry, selected features and total loss</a><a class="level-h3" href="#topic-36">Q15 — Match OLS, ridge and LASSO weight patterns</a><a class="level-h2" href="#topic-37">5. Bayesian view: Prior becomes regularizer</a><a class="level-h3" href="#topic-38">5.1 Gaussian likelihood plus Gaussian prior</a><a class="level-h3" href="#topic-39">Q17 — Noise/prior variance ratio</a><a class="level-h3" href="#topic-40">Q21 — Gaussian prior precision and objective choice</a><a class="level-h3" href="#topic-41">Q23 — Match half-SSE and half-penalty coefficients</a><a class="level-h3" href="#topic-42">5.2 Laplace prior leads to LASSO</a><a class="level-h3" href="#topic-43">Q7 — Ridge estimator MSE and Laplace-prior MAP</a><a class="level-h3" href="#topic-44">Q19 — Unbiasedness versus MSE</a><a class="level-h2" href="#topic-45">6. Cross-validation: Penalty aur complexity kaise choose karein?</a><a class="level-h3" href="#topic-46">6.1 Train, validation and test roles</a><a class="level-h3" href="#topic-47">6.2 K-fold and leave-one-out</a><a class="level-h3" href="#topic-48">Q4 — Four-fold CV model count and training size</a><a class="level-h3" href="#topic-49">6.2A LOOCV: Fit an actual fold before predicting its held-out point</a><a class="level-h3" href="#topic-50">Q28 — Leave out sample 3, then fit slope and predict</a><a class="level-h3" href="#topic-51">Q18 — Select learning rate and iteration setting</a><a class="level-h3" href="#topic-52">Q22 — Select lambda from five-fold CV errors</a><a class="level-h3" href="#topic-53">6.3 Loss curves versus lambda or model flexibility</a><a class="level-h3" href="#topic-54">6.3A MAE and selecting polynomial degree from a graph</a><a class="level-h3" href="#topic-55">Q29 — Read the best polynomial degree from the supplied chart</a><a class="level-h3" href="#topic-56">Q6 — Identify the horizontal-axis function of lambda</a><a class="level-h3" href="#topic-57">6.4 Training curves over time and early stopping</a><a class="level-h3" href="#topic-58">Q10 — Identify training and validation curves</a><a class="level-h2" href="#topic-59">7. Classification threshold: Which mistakes matter more?</a><a class="level-h3" href="#topic-60">7.1 Probability to label</a><a class="level-h3" href="#topic-61">Q8 — Low threshold for phishing detection</a><a class="level-h2" href="#topic-62">8. Quick revision</a><a class="level-h3" href="#topic-63">8.1 Formula sheet</a><a class="level-h3" href="#topic-64">8.2 Common mistakes</a><a class="level-h3" href="#topic-65">8.3 Solving checklist</a></nav></details></aside></div>
+<aside class="contents"><details open><summary>On this page</summary><nav aria-label="Topic index"><a class="level-h2" href="#topic-1">Topic index</a><a class="level-h2" href="#topic-2">Prerequisites aur central problem</a><a class="level-h2" href="#topic-3">1. Linear regression: Best training fit bhi unstable ho sakti hai</a><a class="level-h3" href="#topic-4">1.1 Model, noise and matrix convention</a><a class="level-h3" href="#topic-5">1.2 Gaussian-noise MLE and least squares</a><a class="level-h3" href="#topic-6">1.3 Prediction MSE versus parameter MSE</a><a class="level-h3" href="#topic-7">1.4 Why ordinary least squares can have high variance</a><a class="level-h2" href="#topic-8">2. Bias–variance: Flexibility ka trade-off</a><a class="level-h3" href="#topic-9">2.1 Short definitions and real-life connection</a><a class="level-h3" href="#topic-10">2.2 Underfitting, overfitting and complexity</a><a class="level-h3" href="#topic-11">Q1 — Linear versus quadratic house-price models</a><a class="level-h3" href="#topic-12">Q3 — Higher bias and lower variance</a><a class="level-h3" href="#topic-13">Q16 — Cubic truth, linear and degree-five fitted models</a><a class="level-h3" href="#topic-14">Q9 — Does complexity always increase test error?</a><a class="level-h3" href="#topic-15">2.3 Related concepts: Weak learners and bagging</a><a class="level-h3" href="#topic-16">Q11 — Underfitting, trees, weak learners and bagging</a><a class="level-h3" href="#topic-17">Q24 — Operations that change bias and variance</a><a class="level-h2" href="#topic-18">3. Ridge regression: Large weights par penalty</a><a class="level-h3" href="#topic-19">3.1 Definition, objective and practical details</a><a class="level-h3" href="#topic-20">3.2 Closed-form solution and invertibility</a><a class="level-h3" href="#topic-21">3.3 Shrinkage and parameter risk</a><a class="level-h3" href="#topic-22">Q25 — One-dimensional ridge calculation</a><a class="level-h3" href="#topic-23">Q26 — Finite-penalty ridge-to-MLE ratio</a><a class="level-h3" href="#topic-24">Q2 — Ridge coefficients for a 2 × 2 design</a><a class="level-h3" href="#topic-25">Q20 — OLS and ridge at two penalty strengths</a><a class="level-h3" href="#topic-26">Q13 — Norm ratio at zero and infinite penalty</a><a class="level-h3" href="#topic-27">Q14 — Role of the ridge penalty</a><a class="level-h2" href="#topic-28">4. Constraint geometry and LASSO: Shrinkage versus sparsity</a><a class="level-h3" href="#topic-29">4.1 Penalized and constrained forms</a><a class="level-h3" href="#topic-30">Q12 — Choose a feasible weight vector with minimum MSE</a><a class="level-h3" href="#topic-31">4.2 SSE contours and L2/L1 balls</a><a class="level-h3" href="#topic-32">4.3 LASSO objective and feature selection</a><a class="level-h3" href="#topic-33">4.3A Evaluating a loss is different from fitting weights</a><a class="level-h3" href="#topic-34">Q27 — Ridge and LASSO losses at the same given weight</a><a class="level-h3" href="#topic-35">4.4 Subgradient and why exact zeros occur</a><a class="level-h3" href="#topic-36">Q5 — Read LASSO geometry, selected features and total loss</a><a class="level-h3" href="#topic-37">Q15 — Match OLS, ridge and LASSO weight patterns</a><a class="level-h2" href="#topic-38">5. Bayesian view: Prior becomes regularizer</a><a class="level-h3" href="#topic-39">5.1 Gaussian likelihood plus Gaussian prior</a><a class="level-h3" href="#topic-40">Q17 — Noise/prior variance ratio</a><a class="level-h3" href="#topic-41">Q21 — Gaussian prior precision and objective choice</a><a class="level-h3" href="#topic-42">Q23 — Match half-SSE and half-penalty coefficients</a><a class="level-h3" href="#topic-43">5.2 Laplace prior leads to LASSO</a><a class="level-h3" href="#topic-44">Q7 — Ridge estimator MSE and Laplace-prior MAP</a><a class="level-h3" href="#topic-45">Q19 — Unbiasedness versus MSE</a><a class="level-h2" href="#topic-46">6. Cross-validation: Penalty aur complexity kaise choose karein?</a><a class="level-h3" href="#topic-47">6.1 Train, validation and test roles</a><a class="level-h3" href="#topic-48">6.2 K-fold and leave-one-out</a><a class="level-h3" href="#topic-49">Q4 — Four-fold CV model count and training size</a><a class="level-h3" href="#topic-50">6.2A LOOCV: Fit an actual fold before predicting its held-out point</a><a class="level-h3" href="#topic-51">Q28 — Leave out sample 3, then fit slope and predict</a><a class="level-h3" href="#topic-52">Q18 — Select learning rate and iteration setting</a><a class="level-h3" href="#topic-53">Q22 — Select lambda from five-fold CV errors</a><a class="level-h3" href="#topic-54">6.3 Loss curves versus lambda or model flexibility</a><a class="level-h3" href="#topic-55">6.3A MAE and selecting polynomial degree from a graph</a><a class="level-h3" href="#topic-56">Q29 — Read the best polynomial degree from the supplied chart</a><a class="level-h3" href="#topic-57">Q6 — Identify the horizontal-axis function of lambda</a><a class="level-h3" href="#topic-58">6.4 Training curves over time and early stopping</a><a class="level-h3" href="#topic-59">Q10 — Identify training and validation curves</a><a class="level-h2" href="#topic-60">7. Classification threshold: Which mistakes matter more?</a><a class="level-h3" href="#topic-61">7.1 Probability to label</a><a class="level-h3" href="#topic-62">Q8 — Low threshold for phishing detection</a><a class="level-h2" href="#topic-63">8. Quick revision</a><a class="level-h3" href="#topic-64">8.1 Formula sheet</a><a class="level-h3" href="#topic-65">8.2 Common mistakes</a><a class="level-h3" href="#topic-66">8.3 Solving checklist</a></nav></details></aside></div>
 <footer>MLT Notes · Notes by Shiva <span>Learn one concept at a time.</span></footer>
 </body></html>

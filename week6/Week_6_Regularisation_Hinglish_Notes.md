@@ -21,6 +21,14 @@
 
 ---
 
+## Prerequisites aur central problem
+
+Week 5 se $\hat y=X^Tw$, $L=\|X^Tw-y\|^2$, normal equation $XX^Tw=Xy$, aur held-out fitting recall karo. Week 4 se posterior $\propto$ likelihood × prior. Yahan **training loss, future prediction error, aur parameter-estimation error** teen different quantities hain; question kiski baat kar raha hai first decide karo.
+
+$w_*$ true unknown weight; $\hat w$ one training dataset se fit; $E[\hat w]$ repeated noisy training datasets ka average estimate; $\sigma^2$ observation-noise variance. $\lambda$ penalty strength, $\eta$ optimization learning rate. $\lambda$ **objective ka optimum** change karta hai; $\eta$ same objective tak pahunchne ka path change karta hai.
+
+**Why change ordinary regression?** Two identical features ke saath prediction $(w_1+w_2)x$ hai. Weights $(100,-99)$ aur $(1,0)$ same training predictions dete hain. Training SSE alone cannot prefer the stable/smaller description. Ridge weight size ko cost dega. Useful prediction ke liye kitni penalty chahiye, woh validation decide karega, smallest training loss nahi.
+
 ## 1. Linear regression: Best training fit bhi unstable ho sakti hai
 
 ### 1.1 Model, noise and matrix convention
@@ -130,6 +138,10 @@ These are standard tendencies, not strict promises for every dataset/optimizer.
 **Nested-model property:** Linear functions are included in quadratic functions by setting quadratic coefficient zero. If both exactly minimize the same unregularized training SSE, quadratic model's minimum SSE **cannot exceed** linear model's minimum SSE; equality is possible. Test error has no such guarantee.
 
 ![Schematic bias–variance trade-off](images/bias_variance.png)
+
+**Bias/variance ko actual repeated predictions mein dekho — teaching example:** Fixed input par true noise-free target 5. Procedure A ke possible predictions $3,3$: average 3, bias $3-5=-2$, squared bias 4, variance 0. Procedure B ke predictions $3,7$: average 5, bias 0, variance $[(3-5)^2+(7-5)^2]/2=4$. Dono expected squared errors 4 hain, but reasons different.
+
+Procedure C predictions $4,6$ de toh mean 5, variance 1, hence error 1. Future observed target mein independent noise variance $\sigma^2$ ho toh all prediction risks mein $\sigma^2$ add hoga. Parameter error mein new target noise nahi aati. Q1/Q16 capacity compare karte hain; Q7/Q19 estimators ki expected parameter MSE. “Unbiased” ko “each dataset par exact” mat samjho.
 
 ### Q1 — Linear versus quadratic house-price models
 
@@ -366,6 +378,19 @@ $$a_j(A+\lambda I)=a_j+\lambda.$$
 
 Adding positive $\lambda$ stabilizes near-zero eigenvalue directions.
 
+**Penalty redundant features ko kya karegi?** Previous identical-feature example mein effective slope $s=w_1+w_2$ fixed rakho. Since
+
+$$w_1^2+w_2^2=\frac{(w_1+w_2)^2+(w_1-w_2)^2}{2}
+=\frac{s^2}{2}+\frac{(w_1-w_2)^2}{2},$$
+
+smallest ridge penalty $w_1=w_2=s/2$ par hai. Ridge one feature drop karne ki jagah contribution share karti hai. $\lambda I$ diagonal add karta hai; off-diagonal covariance entries mein $\lambda$ add nahi hota.
+
+**Why inverse becomes possible:** Any nonzero vector $v$ gives
+
+$$v^T(XX^T+\lambda I)v=\|X^Tv\|^2+\lambda\|v\|^2>0\quad(\lambda>0).$$
+
+Second term positive hone se even data ki unobserved direction ko positive curvature milti hai. Yeh all-weight penalty ka result hai; unpenalized coordinates hon toh us case ki identifiability separately check karni hogi.
+
 ### 3.3 Shrinkage and parameter risk
 
 Along an eigenvector with positive eigenvalue $a_j$, ridge coefficient is OLS coefficient multiplied by:
@@ -383,6 +408,10 @@ First numerator term → squared bias; second → variance. Ridge variance is **
 **Concrete example:** One parameter, $a=1,w_*=1,\sigma^2=1$. OLS risk 1. Ridge at $\lambda=1$ gives bias-square $1/4$, variance $1/4$, total risk $1/2$. Biased estimator can be better in MSE.
 
 ![Ridge eigenvalue shrinkage and a parameter-risk example](images/ridge_shrinkage_risk.png)
+
+**Shrinkage factor derive karo:** Eigenvector $q_j$ of $A=XX^T$ ke along OLS equation $a_jw_{ML,j}=b_j$, where $b_j=q_j^TXy$. Ridge equation $(a_j+\lambda)w_{R,j}=b_j$. Same $b_j$ ko compare karne se $w_{R,j}=[a_j/(a_j+\lambda)]w_{ML,j}$.
+
+Large $a_j$ means data that direction ko strongly constrain karta hai, so relatively little shrinkage; small $a_j$ weakly measured direction ko more shrinkage. $a_j=4,\lambda=1$ gives factor $4/5$; $a_j=0.01$ gives $0.01/1.01=1/101$. This connects Week 1 eigen-directions to Week 6 stability. Q25 scalar fit; Q26 ratio; Q13 limiting ratio. Original feature coordinates are mixtures of eigen-directions, so one coordinate ka sign bhi change ho sakta hai, as Q20 shows.
 
 ### Q25 — One-dimensional ridge calculation
 
@@ -814,7 +843,7 @@ $$J_L=0.35+0.2(0.6)=\boxed{0.47}.$$
 
 Absolute value derivative at zero unique nahi:
 
-$$\partial|w|=\begin{cases}\{1\},&w>0,\\[-1,1],&w=0,\\\{-1\},&w<0.\end{cases}$$
+$$\partial|w|=\begin{cases}\{1\},&w>0,\\\left[-1,1\right],&w=0,\\\{-1\},&w<0.\end{cases}$$
 
 **Short definition:** Subgradient nondifferentiable convex function ke liye supporting slope ka generalized idea hai. At zero multiple supporting slopes possible hain.
 
@@ -831,6 +860,14 @@ If objective uses $\frac12\operatorname{SSE}+\lambda\lVert w\rVert_1$, threshold
 General correlated design mein ordinary ridge-like inverse formula available nahi; coordinate descent, proximal/subgradient methods use ho sakte hain. Special cases like orthonormal design do have closed forms.
 
 ![Ridge shrinkage and LASSO soft-thresholding](images/soft_threshold.png)
+
+**Exact zero ka small example — teaching example:** One coefficient aur half-squared loss use karo:
+
+$$J(w)=\frac12(w-z)^2+\lambda|w|.$$
+
+$z$ unpenalized best coefficient hai. If $w>0$, derivative $w-z+\lambda=0$ gives $w=z-\lambda$, valid only $z>\lambda$. If $w<0$, derivative $w-z-\lambda=0$ gives $w=z+\lambda$, valid only $z<-\lambda$. Remaining $|z|\le\lambda$ mein zero minimizes objective, because the data slope $-z$ can be balanced by $\lambda[-1,1]$.
+
+Take $z=0.3,\lambda=0.5$: LASSO gives exactly 0. Same half-loss with ridge $\lambda w^2/2$ gives $w=z/(1+\lambda)=0.2$. Sparsity versus shrinkage ka difference directly visible hai. This separable example applies to orthonormal designs; correlated general designs need joint optimization. Q5 diamond ke axis contact se zero read karta hai; Q15 learned vectors ke patterns se penalty identify karta hai.
 
 ### Q5 — Read LASSO geometry, selected features and total loss
 
@@ -980,6 +1017,10 @@ Thus $\boxed{\lambda=\sigma_\epsilon^2/\tau^2}$ for SSE + $\lambda\lVert w\rVert
 - Larger noise variance → trust noisy data less → stronger relative regularization.
 - Larger prior variance → less restrictive prior → weaker regularization.
 - Prior **precision** is inverse variance, not variance itself.
+
+**Bayesian coefficients ko names se nahi, whole objective se match karo:** Negative log-posterior $\mathrm{SSE}/(2\sigma_\epsilon^2)+\|w\|^2/(2\tau^2)$ hai. Multiply the **entire expression** by same positive constant, then compare coefficients with requested loss. For SSE coefficient 1, penalty $\sigma_\epsilon^2/\tau^2$; for MSE coefficient 1, penalty $\sigma_\epsilon^2/(n\tau^2)$. Data normalization change karke same numeric $\lambda$ rakhna same MAP model nahi hota.
+
+Week 5 Laplace **noise** residual absolute values laayi thi. Yahan Laplace **weight prior** coefficient absolute values laata hai. Q17/Q21/Q23 variance versus precision and half-factors test karte hain; Q7(ii) prior ki shape se LASSO identify karta hai.
 
 ### Q17 — Noise/prior variance ratio
 
@@ -1231,6 +1272,10 @@ M candidates → MK CV fits, plus usually one final refit. LOOCV is K=n: each fi
 
 Preprocessing/scaling selection bhi each training fold par fit honi chahiye. Whole dataset par scaler fit karke CV karna held-out information leak kar sakta hai.
 
+**Model-selection mini example:** Three-fold validation MSE for $\lambda=0$ is $(1,4,4)$, average 3; for $\lambda=1$, $(2,2,2)$, average 2; for $\lambda=10$, $(5,4,3)$, average 4. Choose $\lambda=1$. Nine fits compare candidates; tenth fit selected setting par all development samples use karega. Training SSE sabse low $\lambda=0$ ho sakti hai, phir bhi woh validation winner nahi.
+
+Fold losses unequal counts par given hon toh per-sample pooled error ke liye total held-out SSE / total held-out count use karo; question explicitly equal-weight fold average maange toh that definition follow karo. In equal-size folds, both coincide. Q4 model count; Q22 validation error selection; Q28 actual fold fit. Scaler, feature choice aur other learned preprocessing fold ke training part se hi calculate karo.
+
 ### Q4 — Four-fold CV model count and training size
 
 **Source:** 2024 Aug 04 Quiz 2, Q4.
@@ -1415,6 +1460,13 @@ For exact ridge training optima on the same fixed dataset, increasing $\lambda$ 
 Validation/test prediction error can first improve then worsen; no universal smooth U shape required. If horizontal axis is decreasing function of $\lambda$, these directions reverse.
 
 **Important distinction:** Full regularized objective and prediction error differ. Validation normally compares prediction SSE/MSE without adding training penalty; graph's labels and question convention read karo.
+
+**Training-error direction ka reason:** $\lambda_2>\lambda_1$ par optima $w_2,w_1$, SSE values $S_2,S_1$, squared norms $R_2,R_1$ lo. Optimality gives
+
+$$S_1+\lambda_1R_1\le S_2+\lambda_1R_2,\qquad
+S_2+\lambda_2R_2\le S_1+\lambda_2R_1.$$
+
+Add: $(\lambda_2-\lambda_1)(R_2-R_1)\le0$, so $R_2\le R_1$. First inequality then gives $S_1\le S_2$. Thus penalty increase par **optimal training fit worsen/equal** hoti hai; validation better ho sakti hai. Q6 axis $1/\lambda$ ho toh left/right interpretation reverse hoga. Q10 time-axis par hai, so this penalty-axis argument directly apply nahi hota.
 
 ### 6.3A MAE and selecting polynomial degree from a graph
 
@@ -1626,6 +1678,10 @@ Threshold change decisions ko change karta hai; fitted logistic model coefficien
 | Low phishing threshold reduces false positives | It prioritizes fewer false negatives, possibly more false positives |
 
 ### 8.3 Solving checklist
+
+**Recall:** More penalty means larger bias usually, but kya smaller MSE guaranteed? No: variance reduction must outweigh squared-bias increase. Prior infinitely broad ho toh penalty zero ki taraf kyun? Large weights prior ke under less strongly discouraged hain. Best CV setting ke baad refit kyun? Ab hyperparameter selected hai, so reserved test ko untouched rakhte hue development data ka full information use kar sakte hain.
+
+**Week 7 bridge:** Complexity control sirf $\lambda$ nahi. KNN ka neighbour count $k$ aur tree ki maximum depth bhi bias/variance control karte hain. Increasing $k$ generally model smoother karta hai; increasing depth generally more flexible. Inki directions opposite hain, so “bigger hyperparameter = more complexity” universal rule nahi.
 
 1. Identify requested quantity: training error, test/validation error, or expected parameter MSE.
 2. Matrix question mein X orientation, y shape and intercept treatment read karo.

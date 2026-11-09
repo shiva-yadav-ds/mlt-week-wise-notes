@@ -4,6 +4,22 @@
 
 **Kernel PCA connection:** Ordinary PCA works with explicit centered coordinates. Kernel PCA uses their pairwise inner products instead. Form raw $K$, center to $K_c$, solve its positive eigenpairs, then divide each unit eigenvector by the square root of its eigenvalue. Kernel entries, Gram eigenvalues, covariance eigenvalues and sample scores are different quantities; every conversion below states its normalization.
 
+## Prerequisite bridge: Week 1 se kya saath laana hai?
+
+Week 1 mein input $x_i\in\mathbb R^d$, mean $\mu$, centered vector $x_i-\mu$, unit PC $w$, aur score $w^T(x_i-\mu)$ tha. **Score scalar hai; PC direction vector hai.** PCA maximum centered variance choose karti hai; eigenvalue that variance batati hai. Gram matrix mein samples compare hote hain, covariance mein features.
+
+Is week mein three spaces separate rakho:
+
+| Space | Ek vector kya represent karta hai? | Dimension |
+|---|---|---|
+| Input | Original observation $x$ | $d$ |
+| Feature | Transformed observation $\phi(x)$ | $D$, possibly infinite |
+| Sample coefficients | $n$ training vectors ko combine karne ki list $\alpha$ | $n$ |
+
+$\phi$ (phi) fixed feature map; $k(x,y)$ corresponding inner product; $K$ all training-pair values ki matrix. $\mu_j$ below Gram eigenvalue hai, mean vector nahi; $\lambda_j=\mu_j/n$ covariance eigenvalue hai. Subscript ke saath context read karo.
+
+**Core need:** Straight line original space mein curved data represent nahi kar paati. Useful nonlinear features banana helps, but explicitly storing all of them expensive ho sakta hai. Kernel unke inner products directly calculate karega; PCA ki variance/projection story same rahegi.
+
 ## 1. PCA ko sample space mein solve karna
 
 ### 1.1 Why a second matrix?
@@ -186,6 +202,16 @@ Scalar coordinate aur projection **vector** different hain; vector $z_{ik}w_k$ h
 
 ### 3.1 Feature map and implicit dot product
 
+**Feature banana aur dimension ghatana alag steps hain:** Scalar points $x=-1,0,1$ ko $\phi(x)=(x,x^2)$ map karo. Images $(-1,1),(0,0),(1,1)$ 2D hain. Ab feature space mein PCA apply karke fewer coordinates choose kar sakte hain. Mapping alone dimensionality reduction nahi hai.
+
+For two scalar inputs $x,y$:
+
+$$\phi(x)^T\phi(y)=xy+x^2y^2=:k(x,y).$$
+
+Colon-equals means right expression ko kernel naam de rahe hain. At $x=-1,y=1$, value $-1+1=0$. It is allowed: a valid kernel is an inner product, not necessarily a number between 0 and 1. RBF ki bounded similarity property all kernels par apply nahi hoti.
+
+**Coefficient ka square root kyun?** Agar kernel term $2xy$ hai, corresponding coordinate $\sqrt2x$ honi chahiye, because $(\sqrt2x)(\sqrt2y)=2xy$. Coordinate $2x$ choose karoge toh product $4xy$ banega. Q6 simple scalar map se ye skill start karta hai; Q9 same matching mixed monomials par apply karta hai.
+
 **Definition:** Feature map $\phi(x)$ input se new coordinates banati hai. Kernel directly their dot product calculate karta hai:
 
 $$\boxed{k(x,y)=\langle\phi(x),\phi(y)\rangle}.$$
@@ -237,6 +263,12 @@ $$\boxed{\phi_1(x)=10\frac{\phi(x)}{\|\phi(x)\|}}.$$
 ## 4. Polynomial kernels: Feature count and actual map
 
 ### 4.1 Brackets placement matters
+
+**Feature counting ka small model:** Two input features aur inhomogeneous degree 2 mein constant, linear aur quadratic terms list karo:
+
+$$1,\ x_1,\ x_2,\ x_1^2,\ x_1x_2,\ x_2^2.$$
+
+Total 6. $x_1x_2$ aur $x_2x_1$ same scalar feature hain; twice count nahi karna. Homogeneous degree 2 mein only last three terms rahenge. General formulas isi distinct-monomial counting ko compress karte hain: homogeneous $\binom{d+p-1}{p}$; all degrees through $p$, $\binom{d+p}{p}$. $\binom ab=a!/[b!(a-b)!]$ combinations ki count hai, sample count nahi. Q8 mein many observations diye hone se feature-map dimension nahi badalti; observed matrix rank ki separate sample limit hoti hai.
 
 For $x\in\mathbb R^d$, integer degree $p\geq1$:
 
@@ -818,6 +850,13 @@ $$\approx\begin{bmatrix}0.222222&-0.011111&-0.211111\\-0.011111&0.155556&-0.1444
 
 ### 8.1 One consistent notation
 
+**Normalization ko two operations mein dekho:** $\beta_j$ training observations ki coefficient direction hai. Actual feature vector $u=\Phi_c\beta_j$ banao. Iska squared length
+
+$$u^Tu=\beta_j^T\Phi_c^T\Phi_c\beta_j
+=\beta_j^TK_c\beta_j=\mu_j\beta_j^T\beta_j=\mu_j.$$
+
+Hence $u$ ki length $\sqrt{\mu_j}$, so unit PC banane ke liye isi se divide. Coefficients $\alpha_j=\beta_j/\sqrt{\mu_j}$ isi division ko feature vector banane se pehle carry out karte hain. Unit coefficient list aur unit feature vector different requirements hain. Q3–Q5 normalization ask karte hain; Q23 mein scores ka variance check karke same normalization independently verify karoge.
+
 For positive eigenpairs of the **centered** Gram matrix:
 
 $$K_c\beta_j=\mu_j\beta_j,\qquad\|\beta_j\|=1,\qquad\mu_1\geq\mu_2\geq\cdots>0.$$
@@ -918,6 +957,16 @@ $$\boxed{q_i^c=q_i-r_i-\bar q+g},\qquad
 \boxed{z_{*j}=\alpha_j^Tq^c}.$$
 
 Using training centering is necessary even if $x_*$ raw input is centered. For positive-eigenvalue components, $\mathbf1^T\alpha_j=0$, so score can simplify to $\alpha_j^T(q-r)$; keeping full formula is safer in hand calculations.
+
+**New-point centering ka complete small example — teaching example:** One-dimensional training inputs $1,3$, linear kernel $k(x,y)=xy$. Raw $K=\begin{pmatrix}1&3\\3&9\end{pmatrix}$, row means $r=(2,6)^T$, grand mean $g=4$. Thus $K_c=\begin{pmatrix}1&-1\\-1&1\end{pmatrix}$ and positive PC coefficients $\alpha=(-1/2,1/2)^T$ choose karo; sign Q23 se opposite hona valid hai.
+
+For $x_*=4$, raw cross values $q=(4,12)^T$, average $\bar q=8$:
+
+$$q^c=(4-2-8+4,\ 12-6-8+4)^T=(-2,2)^T,$$
+
+$$z_* =(-1/2)(-2)+(1/2)(2)=2.$$
+
+Direct PCA check: training mean 2 aur unit direction $+1$ gives score $4-2=2$. Raw weighted sum $\alpha^Tq=-2+6=4$ hoti, so $\sum_i\alpha_i=0$ alone raw-centering error remove nahi karta. Q24 mein arithmetic sum aur genuine centered score ke distinction ko isi example ke through read karo; Q25 full matrix consistency test hai.
 
 ### Q24 — Weighted kernel values: What is actually determined?
 
@@ -1113,6 +1162,10 @@ Raw $\alpha_j^Tq$ would give zero for both because coefficients sum to zero; it 
 | Q9A → Q10A | Homogeneous quadratic map → feature-space normal se shifted ellipse |
 | Q18A | Four-point mixed-kernel matrix with all distinct pair calculations |
 | Section 7.1 hint | Feature mean subtraction se kernel-centering identity |
+
+**Recall without looking:** Centered $K_c$ ke positive-eigenvalue coefficients ka sum zero kyun? $\mathbf1^TK_c=0$ and $K_c\beta=\mu\beta$ imply $0=\mu\mathbf1^T\beta$; $\mu>0$ se sum zero. Zero eigenvalue ko divide kyun nahi? Associated recovered feature vector ki length zero hai, so woh unit PC nahi bana sakta.
+
+**Aage ka connection:** Week 3 original/PCA coordinates par distances se groups banayega; full PCA rotation distance preserve karti hai, truncation clustering change kar sakti hai. Week 5 kernel regression aur Weeks 9–11 kernel classifiers same $K_{ij}=k(x_i,x_j)$ reuse karenge, lekin unke coefficients prediction/loss se learn honge, PCA variance objective se nahi.
 
 ### 11.1 Formula sheet
 
